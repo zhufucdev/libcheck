@@ -2,6 +2,7 @@ package ui.app
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -14,7 +15,11 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.*
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -23,6 +28,7 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.launch
 import model.*
 import ui.component.*
@@ -47,15 +53,19 @@ fun BooksApp(model: AppViewModel) {
 
     Scaffold(
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                text = { Text("New Book") },
-                icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "") },
-                onClick = { addingBook = true }
-            )
+            Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
+                Basket(model)
+                Spacer(Modifier.width(12.dp))
+                ExtendedFloatingActionButton(
+                    text = { Text("New Book") },
+                    icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "") },
+                    onClick = { addingBook = true }
+                )
+            }
         }
     ) {
         Box(Modifier.padding(it)) {
-            BookList(model.library) { book ->
+            BookList(model) { book ->
                 bookId = book.id
                 bookUri = book.avatarUri
                 bookTitle = book.name
@@ -197,13 +207,13 @@ fun BooksApp(model: AppViewModel) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
+private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
+    val library = model.library
     var sorting by remember { mutableStateOf(false) }
     var sortButtonPos by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
     val coroutine = rememberCoroutineScope()
-
 
     Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
@@ -256,24 +266,7 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
             library.bookList.items.forEach { book ->
                 item(book.id) {
                     Box(modifier = Modifier.animateItemPlacement()) {
-                        OutlinedCard(
-                            modifier = Modifier.padding(6.dp).fillMaxSize(),
-                            onClick = { onBookClicked(book) }
-                        ) {
-                            Column(
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                modifier = Modifier.padding(12.dp).fillMaxSize()
-                            ) {
-                                LazyAvatar(
-                                    uri = book.avatarUri,
-                                    defaultImageVector = Icons.Default.Book,
-                                    modifier = Modifier.size(120.dp)
-                                )
-                                Text(text = book.name, style = MaterialTheme.typography.h6)
-                                Text(text = book.author, style = MaterialTheme.typography.body2)
-                            }
-                        }
-
+                        BookCard(model, book) { onBookClicked(it) }
                         Text(
                             text = with(library) { book.inStock.toString() },
                             style = MaterialTheme.typography.button.copy(color = MaterialTheme.colors.onPrimary),
@@ -291,3 +284,74 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit) {
+    var dragging by remember { mutableStateOf(false) }
+    var dragOff by remember { mutableStateOf(Offset.Zero) }
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    val density = LocalDensity.current
+
+    LaunchedEffect(dragging) {
+        model.draggingIn = dragging
+    }
+
+    OutlinedCard(
+        modifier = Modifier.padding(6.dp)
+            .fillMaxSize()
+            .pointerInput(true) {
+                detectDragGestures(
+                    onDragStart = {
+                        dragOff = Offset.Zero
+                        dragging = true
+                    },
+                    onDrag = { _, o ->
+                        dragOff += o
+                    },
+                    onDragEnd = {
+                        dragging = false
+                        val p = bounds.translate(dragOff)
+                        if (!model.basketFabBounds.intersect(p).isEmpty) {
+                            model.addToBasket(book)
+                        }
+                    },
+                    onDragCancel = {
+                        dragging = false
+                    }
+                )
+            },
+        onClick = { onClicked(book) }
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(12.dp).fillMaxSize()
+        ) {
+            Box {
+                LazyAvatar(
+                    uri = book.avatarUri,
+                    defaultImageVector = Icons.Default.Book,
+                    modifier = Modifier.size(120.dp).onGloballyPositioned {
+                        bounds = it.boundsInRoot()
+                    }
+                )
+
+                if (dragging) {
+                    Popup {
+                        LazyAvatar(
+                            uri = book.avatarUri,
+                            defaultImageVector = Icons.Default.Book,
+                            modifier = with(density) {
+                                Modifier.size(120.dp).offset(
+                                    dragOff.x.toDp(), dragOff.y.toDp()
+                                )
+                            }
+                        )
+                    }
+                }
+            }
+            Text(text = book.name, style = MaterialTheme.typography.h6)
+            Text(text = book.author, style = MaterialTheme.typography.body2)
+        }
+    }
+
+}

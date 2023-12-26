@@ -93,7 +93,7 @@ class Library(private val workingDir: File) {
         bookList.items[index] = book
     }
 
-    fun getBook(id: UUID) = bookList.items.firstOrNull { it.id.uuid == id }
+    fun getBook(id: Identifier) = bookList.items.firstOrNull { it.id == id }
 
     fun sortBooks(order: SortOrder, by: BookSortable) {
         bookList = bookList.copy(sortOrder = order, sortedBy = by)
@@ -101,7 +101,7 @@ class Library(private val workingDir: File) {
     }
 
     fun borrow(borrower: Reader, book: Book, due: Instant) {
-        borrowList.items.add(Borrow(borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
+        borrowList.items.add(Borrow(Identifier(), borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
     }
 
     val Book.inStock
@@ -111,7 +111,7 @@ class Library(private val workingDir: File) {
         readerList.items.add(reader)
     }
 
-    fun getReader(id: UUID) = readerList.items.firstOrNull { it.id.uuid == id }
+    fun getReader(id: Identifier) = readerList.items.firstOrNull { it.id == id }
 
     fun updateReader(reader: Reader) {
         val index = readerList.items.indexOfFirst { it.id == reader.id }

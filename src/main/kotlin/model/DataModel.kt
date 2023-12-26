@@ -40,6 +40,7 @@ class Reader(val name: String, val id: Identifier, val avatarUri: String)
 
 @Serializable
 class Borrow(
+    val id: Identifier,
     val readerId: Identifier,
     val bookId: Identifier,
     val time: Long,
@@ -167,8 +168,8 @@ data class SortedBorrowList(
     fun sort(library: Library) {
         val instanced = items.map {
             BorrowInstanced(
-                library.getReader(it.readerId.uuid)!!,
-                library.getBook(it.bookId.uuid)!!,
+                library.getReader(it.readerId)!!,
+                library.getBook(it.bookId)!!,
                 it.time,
                 it.dueTime,
                 it.returned

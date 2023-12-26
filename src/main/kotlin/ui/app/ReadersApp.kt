@@ -10,15 +10,23 @@ import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material3.CardColors
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.*
 import ui.component.*
+import ui.variant
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ReadersApp(model: AppViewModel) {
@@ -33,15 +41,19 @@ fun ReadersApp(model: AppViewModel) {
 
     Scaffold(
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                text = { Text("New Reader") },
-                icon = { Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "") },
-                onClick = { addingReader = true }
-            )
+            Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
+                Basket(model)
+                Spacer(Modifier.width(12.dp))
+                ExtendedFloatingActionButton(
+                    text = { Text("New Reader") },
+                    icon = { Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "") },
+                    onClick = { addingReader = true }
+                )
+            }
         }
     ) {
         Box(Modifier.padding(it)) {
-            ReaderList(model.library) { reader ->
+            ReaderList(model) { reader ->
                 readerId = reader.id
                 readerName = reader.name
                 readerUri = reader.avatarUri
@@ -116,7 +128,8 @@ fun ReadersApp(model: AppViewModel) {
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-private fun ReaderList(library: Library, onReaderClick: (Reader) -> Unit) {
+private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
+    val library = model.library
     val coroutine = rememberCoroutineScope()
     var sorting by remember { mutableStateOf(false) }
 
@@ -164,8 +177,35 @@ private fun ReaderList(library: Library, onReaderClick: (Reader) -> Unit) {
         LazyVerticalGrid(columns = GridCells.Adaptive(200.dp)) {
             library.readerList.items.forEach { reader ->
                 item(reader.id) {
-                    Box(Modifier.padding(6.dp).animateItemPlacement()) {
-                        OutlinedCard(onClick = { onReaderClick(reader) }) {
+                    var bounds by remember { mutableStateOf(Rect.Zero) }
+                    val intersection by remember(bounds) { derivedStateOf { bounds.intersect(model.outDraggingBounds) } }
+                    val draggingIn by remember(bounds) {
+                        derivedStateOf {
+                            !intersection.isEmpty
+                                    && intersection.height * intersection.width >= model.outDraggingIntersection.let { it.height * it.width }
+                        }
+                    }
+                    LaunchedEffect(draggingIn) {
+                        if (draggingIn) {
+                            model.outDraggingTarget = reader
+                            model.outDraggingIntersection = intersection
+                        } else if (model.outDraggingTarget == reader) {
+                            model.outDraggingTarget = null
+                            model.outDraggingIntersection = Rect.Zero
+                        }
+                    }
+
+                    Box(
+                        Modifier.padding(6.dp).animateItemPlacement()
+                            .onGloballyPositioned { bounds = it.boundsInRoot() }) {
+                        OutlinedCard(
+                            onClick = { onReaderClick(reader) },
+                            colors = if (draggingIn) CardDefaults.outlinedCardColors(
+                                MaterialTheme.colors.primary.copy(
+                                    alpha = 0.1f
+                                )
+                            ) else CardDefaults.outlinedCardColors()
+                        ) {
                             Column(
                                 modifier = Modifier.padding(12.dp).fillMaxWidth(),
                                 horizontalAlignment = Alignment.CenterHorizontally
