@@ -1,36 +1,44 @@
 package ui.app
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import model.Book
-import model.Identifier
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.BookmarkAdd
-import androidx.compose.material.icons.filled.FileOpen
-import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
-import ui.component.AsyncImage
 import kotlinx.coroutines.launch
+import model.Book
+import model.BookSortable
+import model.Identifier
 import model.Library
+import ui.component.AsyncImage
+import ui.component.SortMenu
+import ui.component.SortMenuCaption
+import ui.component.SortMenuItem
 import ui.variant
-import java.util.UUID
+import java.util.*
 
 @Composable
 fun BooksApp(library: Library) {
@@ -87,7 +95,7 @@ fun BooksApp(library: Library) {
                 editingBook = false
             },
             text = {
-                CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.body1.copy(color = MaterialTheme.colors.onSurface)) {
+                CompositionLocalProvider(LocalContentAlpha provides 1f) {
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Icon(
@@ -228,11 +236,43 @@ fun BooksApp(library: Library) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
+    var sorting by remember { mutableStateOf(false) }
+    var sortButtonPos by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
+    val coroutine = rememberCoroutineScope()
+
     Column(Modifier.padding(12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+            SortMenu(
+                expanded = sorting,
+                offset = sortButtonPos,
+                onDismissRequest = { sorting = false },
+                sortOrder = library.bookList.sortOrder,
+                onSortOrderChanged = {
+                    library.sortBooks(it, library.bookList.sortedBy)
+                    coroutine.launch {
+                        library.writeToFile()
+                    }
+                }
+            ) {
+                SortMenuCaption("Keyword")
+                BookSortable.entries.forEach {
+                    val selected = library.bookList.sortedBy == it
+                    SortMenuItem(
+                        text = { Text(it.label) },
+                        icon = { Icon(imageVector = if (!selected) Icons.Default.SortByAlpha else Icons.Default.Done, contentDescription = "") },
+                        selected = selected,
+                        onClick = {
+                            library.sortBooks(library.bookList.sortOrder, it)
+                            coroutine.launch {
+                                library.writeToFile()
+                            }
+                        }
+                    )
+                }
+            }
             TextButton(
                 content = {
                     Icon(imageVector = Icons.Default.SortByAlpha, contentDescription = "")
@@ -240,7 +280,12 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
                     Text("Sort")
                 },
                 onClick = {
-
+                    sorting = true
+                },
+                modifier = Modifier.onGloballyPositioned {
+                    sortButtonPos = it.positionInParent().let { w ->
+                        DpOffset(w.x.dp, (w.y - it.boundsInParent().height).dp)
+                    }
                 }
             )
         }
@@ -248,7 +293,7 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
         LazyVerticalGrid(columns = GridCells.Fixed(3)) {
             library.bookList.items.forEach { book ->
                 item(book.id) {
-                    Box {
+                    Box(modifier = Modifier.animateItemPlacement()) {
                         OutlinedCard(
                             modifier = Modifier.padding(6.dp).fillMaxSize(),
                             onClick = { onBookClicked(book) }
@@ -295,3 +340,4 @@ private fun BookAvatar(uri: String, modifier: Modifier = Modifier) {
         )
     }
 }
+
