@@ -7,6 +7,7 @@ import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -77,4 +78,17 @@ fun SortMenuItem(text: @Composable () -> Unit, icon: @Composable () -> Unit, sel
             }
         }
     }
+}
+
+@Composable
+fun SortButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+    TextButton(
+        content = {
+            Icon(imageVector = Icons.Default.SortByAlpha, contentDescription = "")
+            Spacer(Modifier.width(4.dp))
+            Text("Sort")
+        },
+        onClick = onClick,
+        modifier = modifier
+    )
 }

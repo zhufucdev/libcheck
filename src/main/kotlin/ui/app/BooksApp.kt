@@ -14,10 +14,7 @@ import androidx.compose.material3.OutlinedCard
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.boundsInParent
-import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
-import androidx.compose.ui.layout.positionInRoot
+import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -33,10 +30,7 @@ import model.Book
 import model.BookSortable
 import model.Identifier
 import model.Library
-import ui.component.AsyncImage
-import ui.component.SortMenu
-import ui.component.SortMenuCaption
-import ui.component.SortMenuItem
+import ui.component.*
 import ui.variant
 import java.util.*
 
@@ -243,6 +237,7 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
     var sortButtonPos by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
     val coroutine = rememberCoroutineScope()
 
+
     Column(Modifier.padding(12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
             SortMenu(
@@ -273,12 +268,7 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
                     )
                 }
             }
-            TextButton(
-                content = {
-                    Icon(imageVector = Icons.Default.SortByAlpha, contentDescription = "")
-                    Spacer(Modifier.width(4.dp))
-                    Text("Sort")
-                },
+            SortButton(
                 onClick = {
                     sorting = true
                 },
