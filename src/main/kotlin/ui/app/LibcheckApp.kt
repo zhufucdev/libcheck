@@ -1,7 +1,6 @@
 package ui.app
 
 import model.Library
-import ReadersApp
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut

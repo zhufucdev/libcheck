@@ -1,3 +1,5 @@
+package ui.app
+
 import androidx.compose.material.ExtendedFloatingActionButton
 import androidx.compose.material.Icon
 import androidx.compose.material.Scaffold
