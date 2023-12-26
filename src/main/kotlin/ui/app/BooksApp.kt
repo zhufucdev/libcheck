@@ -187,7 +187,8 @@ fun BooksApp(model: AppViewModel) {
                             addingBook = false
                             editingBook = false
                         },
-                        enabled = canSave
+                        enabled = canSave,
+                        modifier = Modifier.padding(6.dp)
                     )
                     Spacer(Modifier.width(6.dp))
                 }
