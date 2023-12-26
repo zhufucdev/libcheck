@@ -59,13 +59,14 @@ fun SortMenuCaption(text: String) {
 }
 
 @Composable
-fun SortMenuItem(text: @Composable () -> Unit, icon: @Composable () -> Unit, selected: Boolean, onClick: () -> Unit) {
+fun SortMenuItem(text: @Composable () -> Unit, icon: @Composable () -> Unit, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier = Modifier.clickable { onClick() }
             .then(
                 if (selected) Modifier.background(color = MaterialTheme.colors.primarySurface.variant)
                 else Modifier
-            ),
+            )
+            .then(modifier),
     ) {
         CompositionLocalProvider(LocalContentColor provides if (selected) MaterialTheme.colors.onPrimary else LocalContentColor.current) {
             Row(

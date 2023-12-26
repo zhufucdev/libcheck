@@ -1,16 +1,17 @@
 package ui.app
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.PointerMatcher
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.onClick
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material.icons.filled.SortByAlpha
-import androidx.compose.material3.CardColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedCard
@@ -18,15 +19,16 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import model.*
+import model.AppViewModel
+import model.Identifier
+import model.Reader
+import model.ReaderSortable
 import ui.component.*
-import ui.variant
-import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun ReadersApp(model: AppViewModel) {
@@ -177,6 +179,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
         LazyVerticalGrid(columns = GridCells.Adaptive(200.dp)) {
             library.readerList.items.forEach { reader ->
                 item(reader.id) {
+                    var contextMenu by remember { mutableStateOf(false) }
                     var bounds by remember { mutableStateOf(Rect.Zero) }
                     val intersection by remember(bounds) { derivedStateOf { bounds.intersect(model.outDraggingBounds) } }
                     val draggingIn by remember(bounds) {
@@ -204,17 +207,30 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                 MaterialTheme.colors.primary.copy(
                                     alpha = 0.1f
                                 )
-                            ) else CardDefaults.outlinedCardColors()
+                            ) else CardDefaults.outlinedCardColors(),
+                            modifier = Modifier.onClick(matcher = PointerMatcher.mouse(PointerButton.Secondary)) {
+                                contextMenu = true
+                            }
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp).fillMaxWidth(),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                LazyAvatar(
-                                    uri = reader.avatarUri,
-                                    defaultImageVector = Icons.Default.Person,
-                                    modifier = Modifier.size(120.dp)
-                                )
+                                Box {
+                                    LazyAvatar(
+                                        uri = reader.avatarUri,
+                                        defaultImageVector = Icons.Default.Person,
+                                        modifier = Modifier.size(120.dp)
+                                    )
+
+                                    CommonContextMenu(
+                                        expanded = contextMenu,
+                                        onDismissRequest = { contextMenu = false },
+                                        onDelete = {
+                                            model.library.deleteReader(reader)
+                                        }
+                                    )
+                                }
                                 Text(text = reader.name, style = MaterialTheme.typography.h6)
                                 Text(
                                     text = with(library) {

@@ -100,6 +100,14 @@ class Library(private val workingDir: File) {
         bookList.sort(this)
     }
 
+    fun deleteBook(book: Book) {
+        val index = bookList.items.indexOfFirst { it.id == book.id }
+        if (index < 0) {
+            throw NoSuchElementException(book.name)
+        }
+        bookList.items.removeAt(index)
+    }
+
     fun borrow(borrower: Reader, book: Book, due: Instant) {
         borrowList.items.add(Borrow(Identifier(), borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
     }
@@ -126,6 +134,14 @@ class Library(private val workingDir: File) {
     fun sortReaders(order: SortOrder, by: ReaderSortable) {
         readerList = readerList.copy(sortedBy = by, sortOrder = order)
         readerList.sort()
+    }
+
+    fun deleteReader(reader: Reader) {
+        val index = readerList.items.indexOfFirst { it.id == reader.id }
+        if (index < 0) {
+            throw NoSuchElementException(reader.name)
+        }
+        readerList.items.removeAt(index)
     }
 
     fun sortBorrows(order: SortOrder, by: BorrowSortable) {

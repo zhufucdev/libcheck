@@ -1,11 +1,14 @@
 package ui.app
 
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.PointerMatcher
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
@@ -17,6 +20,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.pointer.PointerButton
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.LocalDensity
@@ -27,6 +33,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.launch
@@ -284,13 +291,14 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit) {
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
     val density = LocalDensity.current
+    var contextMenu by remember { mutableStateOf(false) }
 
     LaunchedEffect(dragging) {
         model.draggingIn = dragging
@@ -299,6 +307,9 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
     OutlinedCard(
         modifier = Modifier.padding(6.dp)
             .fillMaxSize()
+            .onClick(matcher = PointerMatcher.mouse(PointerButton.Secondary)) {
+                contextMenu = true
+            }
             .pointerInput(true) {
                 detectDragGestures(
                     onDragStart = {
@@ -348,6 +359,12 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                         )
                     }
                 }
+
+                CommonContextMenu(
+                    expanded = contextMenu,
+                    onDismissRequest = { contextMenu = false },
+                    onDelete = { model.library.deleteBook(book) },
+                )
             }
             Text(text = book.name, style = MaterialTheme.typography.h6)
             Text(text = book.author, style = MaterialTheme.typography.body2)
