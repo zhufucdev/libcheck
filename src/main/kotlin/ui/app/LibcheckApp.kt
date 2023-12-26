@@ -1,6 +1,5 @@
 package ui.app
 
-import model.Library
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -18,6 +17,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import model.AppViewModel
+import ui.WindowSize
 import kotlin.time.Duration.Companion.seconds
 
 enum class Route(val label: String, val icon: ImageVector) {
@@ -27,11 +28,11 @@ enum class Route(val label: String, val icon: ImageVector) {
 }
 
 @Composable
-fun LibcheckApp(library: Library) {
+fun LibcheckApp(model: AppViewModel) {
     var route by remember { mutableStateOf(Route.BOOKS) }
-    LaunchedEffect(library) {
+    LaunchedEffect(model.library) {
         delay(0.5.seconds)
-        library.initialize()
+        model.library.initialize()
     }
 
     Scaffold(
@@ -49,41 +50,55 @@ fun LibcheckApp(library: Library) {
                     }
                 )
                 AnimatedVisibility(
-                    visible = !library.initialized || library.saving,
+                    visible = !model.library.initialized || model.library.saving,
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    if (library.loadProgress <= 0) {
+                    if (model.library.loadProgress <= 0) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     } else {
-                        LinearProgressIndicator(progress = library.loadProgress, modifier = Modifier.fillMaxWidth())
+                        LinearProgressIndicator(
+                            progress = model.library.loadProgress,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            }
+        },
+        bottomBar = {
+            if (model.windowSize < WindowSize.WIDE) {
+                BottomNavigation {
+                    BottomNavigationItems(route) {
+                        route = it
                     }
                 }
             }
         }
     ) {
-        AnimatedVisibility(
-            visible = library.initialized,
-            enter = fadeIn() + slideIn { IntOffset(0, it.height / 3) },
-            exit = fadeOut()
-        ) {
-            Row {
-                PermanentDrawerSheet {
-                    NavigationItems(route) { route = it }
-                }
-                when (route) {
-                    Route.BOOKS -> BooksApp(library)
-                    Route.READERS -> ReadersApp(library)
-                    Route.BORROWING -> BorrowingApp(library)
+        Box(Modifier.padding(it)) {
+            AnimatedVisibility(
+                visible = model.library.initialized,
+                enter = fadeIn() + slideIn { IntOffset(0, it.height / 3) },
+                exit = fadeOut()
+            ) {
+                if (model.windowSize >= WindowSize.WIDE) {
+                    Row {
+                        PermanentDrawerSheet {
+                            NavigationDrawerItems(route) { route = it }
+                        }
+                        MainContent(route, model)
+                    }
+                } else {
+                    MainContent(route, model)
                 }
             }
-        }
-        AnimatedVisibility(
-            visible = !library.initialized,
-            enter = fadeIn(),
-            exit = fadeOut()
-        ) {
-            InitializationPlaceholder()
+            AnimatedVisibility(
+                visible = !model.library.initialized,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                InitializationPlaceholder()
+            }
         }
     }
 }
@@ -109,14 +124,35 @@ private fun InitializationPlaceholder() {
 }
 
 @Composable
-private fun NavigationItems(route: Route, onNavigation: (Route) -> Unit) {
+private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit) {
     Spacer(modifier = Modifier.height(12.dp))
     Route.entries.forEach {
         NavigationDrawerItem(
             label = { Text(it.label) },
             onClick = { onNavigation(it) },
             icon = { Icon(imageVector = it.icon, contentDescription = "") },
-            selected = route == it
+            selected = current == it
         )
+    }
+}
+
+@Composable
+private fun RowScope.BottomNavigationItems(current: Route, onNavigation: (Route) -> Unit) {
+    Route.entries.forEach {
+        BottomNavigationItem(
+            selected = current == it,
+            onClick = { onNavigation(it) },
+            icon = { Icon(it.icon, "") },
+            label = { Text(it.label) }
+        )
+    }
+}
+
+@Composable
+private fun MainContent(current: Route, model: AppViewModel) {
+    when (current) {
+        Route.BOOKS -> BooksApp(model)
+        Route.READERS -> ReadersApp(model)
+        Route.BORROWING -> BorrowingApp(model)
     }
 }

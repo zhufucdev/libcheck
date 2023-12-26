@@ -7,10 +7,11 @@ import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.runtime.Composable
+import model.AppViewModel
 import model.Library
 
 @Composable
-fun BorrowingApp(library: Library) {
+fun BorrowingApp(model: AppViewModel) {
     Scaffold(
         floatingActionButton = {
             ExtendedFloatingActionButton(

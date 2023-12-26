@@ -107,7 +107,21 @@ class Library(private val workingDir: File) {
     val Book.inStock
         get() = stock - borrowList.items.count { it.bookId == id && !it.returned }.toUInt()
 
+    fun addReader(reader: Reader) {
+        readerList.items.add(reader)
+    }
+
     fun getReader(id: UUID) = readerList.items.firstOrNull { it.id.uuid == id }
+
+    fun updateReader(reader: Reader) {
+        val index = readerList.items.indexOfFirst { it.id == reader.id }
+        if (index < 0) {
+            throw NoSuchElementException(reader.name)
+        }
+        readerList.items[index] = reader
+    }
+
+    val Reader.borrows get() = borrowList.items.count { it.readerId == id && !it.returned }
 
     fun sortReaders(order: SortOrder, by: ReaderSortable) {
         readerList = readerList.copy(sortedBy = by, sortOrder = order)

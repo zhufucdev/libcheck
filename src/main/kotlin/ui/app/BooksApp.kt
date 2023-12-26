@@ -24,16 +24,12 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import model.Book
-import model.BookSortable
-import model.Identifier
-import model.Library
+import model.*
 import ui.component.*
 import ui.variant
-import java.util.*
 
 @Composable
-fun BooksApp(library: Library) {
+fun BooksApp(model: AppViewModel) {
     val coroutine = rememberCoroutineScope()
     val textColor = MaterialTheme.colors.onSurface
 
@@ -59,7 +55,7 @@ fun BooksApp(library: Library) {
         }
     ) {
         Box(Modifier.padding(it)) {
-            BookList(library) { book ->
+            BookList(model.library) { book ->
                 bookId = book.id
                 bookUri = book.avatarUri
                 bookTitle = book.name
@@ -181,12 +177,12 @@ fun BooksApp(library: Library) {
                             )
 
                             if (addingBook) {
-                                library.addBook(book)
+                                model.library.addBook(book)
                             } else {
-                                library.updateBook(book)
+                                model.library.updateBook(book)
                             }
                             coroutine.launch {
-                                library.writeToFile()
+                                model.library.writeToFile()
                             }
                             addingBook = false
                             editingBook = false
@@ -208,7 +204,7 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
     val coroutine = rememberCoroutineScope()
 
 
-    Column(Modifier.padding(12.dp)) {
+    Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
             SortMenu(
                 expanded = sorting,
@@ -270,7 +266,7 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
                                 LazyAvatar(
                                     uri = book.avatarUri,
                                     defaultImageVector = Icons.Default.Book,
-                                    modifier = Modifier.size(60.dp)
+                                    modifier = Modifier.size(120.dp)
                                 )
                                 Text(text = book.name, style = MaterialTheme.typography.h6)
                                 Text(text = book.author, style = MaterialTheme.typography.body2)
