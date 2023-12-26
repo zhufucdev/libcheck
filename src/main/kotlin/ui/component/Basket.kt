@@ -43,8 +43,12 @@ import model.Reader
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
 import java.time.Instant
+import java.time.ZoneId
+import java.time.ZoneOffset
+import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
 import java.time.temporal.TemporalUnit
+import java.util.TimeZone
 
 @Composable
 fun Basket(model: AppViewModel) {
@@ -196,7 +200,7 @@ private fun BorrowDialog(
 ) {
     var step by remember { mutableIntStateOf(0) }
     val timePickerState = rememberTimePickerState()
-    val datePickerState = rememberDatePickerState(System.currentTimeMillis())
+    val datePickerState = rememberDatePickerState(Instant.now().toEpochMilli())
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -251,6 +255,7 @@ private fun BorrowDialog(
                                 Instant.ofEpochMilli(datePickerState.selectedDateMillis!!)
                                     .plus(timePickerState.hour.toLong(), ChronoUnit.HOURS)
                                     .plus(timePickerState.minute.toLong(), ChronoUnit.MINUTES)
+                                    .plus(-TimeZone.getDefault().rawOffset.toLong(), ChronoUnit.MILLIS)
                             )
                         }
                     },

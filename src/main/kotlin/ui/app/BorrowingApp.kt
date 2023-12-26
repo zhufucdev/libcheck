@@ -13,6 +13,7 @@ import model.AppViewModel
 import model.Library
 import java.text.SimpleDateFormat
 import java.time.Instant
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.util.*
@@ -28,13 +29,13 @@ fun BorrowingApp(model: AppViewModel) {
             )
         }
     ) {
-        val formatter = remember { SimpleDateFormat() }
+        val formatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.FULL) }
         LazyColumn {
             model.library.borrowList.items.forEach {
                 item(it.id) {
                     Text(
                         "${model.library.getBook(it.bookId)?.name} to ${model.library.getReader(it.readerId)?.name} due in ${
-                            formatter.format(Date(it.dueTime))
+                            Instant.ofEpochMilli(it.dueTime).atZone(ZoneId.systemDefault()).format(formatter)
                         }"
                     )
                 }
