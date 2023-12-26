@@ -6,6 +6,7 @@ import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
+import java.time.Instant
 import java.util.*
 
 @Serializable(IdentifierSerializer::class)
@@ -45,18 +46,23 @@ class Borrow(
     val bookId: Identifier,
     val time: Long,
     val dueTime: Long,
-    val returned: Boolean = false
+    val returnTime: Long? = null
 ) {
-    val expired get() = System.currentTimeMillis() >= dueTime
+    val expired get() = Instant.now().toEpochMilli() >= dueTime
 }
 
 private class BorrowInstanced(
-    val reader: Reader,
-    val book: Book,
+    val id: Identifier,
+    val readerId: Identifier,
+    val reader: Reader?,
+    val bookId: Identifier,
+    val book: Book?,
     val time: Long,
     val dueTime: Long,
-    val returned: Boolean
-)
+    val returnTime: Long?
+) {
+    val original get() = Borrow(id, readerId, bookId, time, dueTime, returnTime)
+}
 
 enum class SortOrder(val label: String) {
     ASCENDING("Ascending"),
@@ -74,7 +80,8 @@ enum class ReaderSortable(val label: String) {
 
 enum class BorrowSortable(val label: String) {
     BOOK_NAME("Book Name"), BOOK_ID("Book UUID"), BOOK_AUTHOR("Book Author"),
-    READER_NAME("Reader Name"), READER_ID("Reader UUID")
+    READER_NAME("Reader Name"), READER_ID("Reader UUID"),
+    BORROW_TIME("Borrow Time"), RETURN_TIME("Return Time")
 }
 
 @Serializable
@@ -168,49 +175,70 @@ data class SortedBorrowList(
     fun sort(library: Library) {
         val instanced = items.map {
             BorrowInstanced(
-                library.getReader(it.readerId)!!,
-                library.getBook(it.bookId)!!,
+                it.id,
+                it.readerId,
+                library.getReader(it.readerId),
+                it.bookId,
+                library.getBook(it.bookId),
                 it.time,
                 it.dueTime,
-                it.returned
+                it.returnTime
             )
         }.toMutableList()
 
         when (sortedBy) {
             BorrowSortable.BOOK_NAME ->
                 if (sortOrder == SortOrder.ASCENDING) {
-                    instanced.sortBy { it.book.name }
+                    instanced.sortBy { it.book?.name ?: "" }
                 } else {
-                    instanced.sortByDescending { it.book.name }
+                    instanced.sortByDescending { it.book?.name ?: "" }
                 }
 
             BorrowSortable.BOOK_ID ->
                 if (sortOrder == SortOrder.ASCENDING) {
-                    instanced.sortBy { it.book.id.uuid }
+                    instanced.sortBy { it.bookId.uuid }
                 } else {
-                    instanced.sortByDescending { it.book.id.uuid }
+                    instanced.sortByDescending { it.bookId.uuid }
                 }
 
             BorrowSortable.BOOK_AUTHOR ->
                 if (sortOrder == SortOrder.ASCENDING) {
-                    instanced.sortBy { it.book.author }
+                    instanced.sortBy { it.book?.author ?: "" }
                 } else {
-                    instanced.sortByDescending { it.book.author }
+                    instanced.sortByDescending { it.book?.author ?: "" }
                 }
 
             BorrowSortable.READER_NAME ->
                 if (sortOrder == SortOrder.ASCENDING) {
-                    instanced.sortBy { it.reader.name }
+                    instanced.sortBy { it.reader?.name ?: "" }
                 } else {
-                    instanced.sortByDescending { it.reader.name }
+                    instanced.sortByDescending { it.reader?.name ?: "" }
                 }
 
             BorrowSortable.READER_ID ->
                 if (sortOrder == SortOrder.ASCENDING) {
-                    instanced.sortBy { it.reader.id.uuid }
+                    instanced.sortBy { it.readerId.uuid }
                 } else {
-                    instanced.sortByDescending { it.reader.id.uuid }
+                    instanced.sortByDescending { it.readerId.uuid }
                 }
+
+            BorrowSortable.BORROW_TIME ->
+                if (sortOrder == SortOrder.ASCENDING) {
+                    instanced.sortBy { it.time }
+                } else {
+                    instanced.sortByDescending { it.time }
+                }
+
+            BorrowSortable.RETURN_TIME ->
+                if (sortOrder == SortOrder.ASCENDING) {
+                    instanced.sortBy { it.returnTime }
+                } else {
+                    instanced.sortByDescending { it.returnTime }
+                }
+        }
+
+        instanced.forEachIndexed { index, borrowInstanced ->
+            items[index] = borrowInstanced.original
         }
     }
 }
