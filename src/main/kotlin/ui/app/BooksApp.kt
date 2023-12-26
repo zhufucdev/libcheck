@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.*
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -24,7 +23,6 @@ import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
-import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 import kotlinx.coroutines.launch
 import model.Book
 import model.BookSortable
@@ -41,7 +39,7 @@ fun BooksApp(library: Library) {
 
     var addingBook by remember { mutableStateOf(false) }
     var editingBook by remember { mutableStateOf(false) }
-    var bookId by remember { mutableStateOf<UUID?>(null) }
+    var bookId by remember { mutableStateOf<Identifier?>(null) }
     var bookUri by remember { mutableStateOf("") }
     var bookTitle by remember { mutableStateOf("") }
     var bookAuthor by remember { mutableStateOf("") }
@@ -49,7 +47,6 @@ fun BooksApp(library: Library) {
     var bookStock by remember { mutableStateOf("10") }
     var bookStockParsed by remember { mutableStateOf<UInt?>(10u) }
 
-    var showFilePicker by remember { mutableStateOf(false) }
     val canSave by remember { derivedStateOf { bookStockParsed != null && bookTitle.isNotBlank() } }
 
     Scaffold(
@@ -63,7 +60,7 @@ fun BooksApp(library: Library) {
     ) {
         Box(Modifier.padding(it)) {
             BookList(library) { book ->
-                bookId = book.id.uuid
+                bookId = book.id
                 bookUri = book.avatarUri
                 bookTitle = book.name
                 bookAuthor = book.author
@@ -72,14 +69,6 @@ fun BooksApp(library: Library) {
                 editingBook = true
             }
         }
-    }
-
-    FilePicker(
-        show = showFilePicker,
-        fileExtensions = listOf("png", "jpg", "jpeg", "webp", "tiff", "bmp"),
-    ) {
-        bookUri = it?.let { "file://${it.path}" } ?: bookUri
-        showFilePicker = false
     }
 
     if (addingBook || editingBook) {
@@ -104,30 +93,12 @@ fun BooksApp(library: Library) {
                             )
                         }
                         Spacer(modifier = Modifier.height(12.dp))
-                        Row(modifier = Modifier.height(100.dp)) {
-                            BookAvatar(uri = bookUri, modifier = Modifier.size(100.dp))
-                            Spacer(Modifier.width(6.dp))
-                            Column {
-                                OutlinedTextField(
-                                    value = bookUri,
-                                    onValueChange = { bookUri = it },
-                                    label = { Text("Cover") },
-                                    modifier = Modifier.fillMaxWidth(),
-                                    singleLine = true
-                                )
-                                TextButton(
-                                    content = {
-                                        Icon(imageVector = Icons.Default.FileOpen, contentDescription = "")
-                                        Spacer(modifier = Modifier.width(4.dp))
-                                        Text("Select file")
-                                    },
-                                    onClick = {
-                                        showFilePicker = true
-                                    },
-                                    modifier = Modifier.align(Alignment.End)
-                                )
-                            }
-                        }
+                        AvatarInput(
+                            uri = bookUri,
+                            onUriChange = { bookUri = it },
+                            label = { Text("Cover") },
+                            Icons.Default.Book
+                        )
                         OutlinedTextField(
                             value = bookTitle,
                             onValueChange = { bookTitle = it },
@@ -200,20 +171,19 @@ fun BooksApp(library: Library) {
                     TextButton(
                         content = { Text("Save") },
                         onClick = {
-                            fun getBook() =
-                                Book(
-                                    bookTitle,
-                                    bookAuthor,
-                                    bookIsbn,
-                                    Identifier(if (editingBook) bookId!! else UUID.randomUUID()),
-                                    bookUri,
-                                    bookStockParsed!!
-                                )
+                            val book = Book(
+                                bookTitle,
+                                bookAuthor,
+                                bookIsbn,
+                                if (editingBook) bookId!! else Identifier(),
+                                bookUri,
+                                bookStockParsed!!
+                            )
 
                             if (addingBook) {
-                                library.addBook(getBook())
+                                library.addBook(book)
                             } else {
-                                library.updateBook(getBook())
+                                library.updateBook(book)
                             }
                             coroutine.launch {
                                 library.writeToFile()
@@ -257,7 +227,12 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
                     val selected = library.bookList.sortedBy == it
                     SortMenuItem(
                         text = { Text(it.label) },
-                        icon = { Icon(imageVector = if (!selected) Icons.Default.SortByAlpha else Icons.Default.Done, contentDescription = "") },
+                        icon = {
+                            Icon(
+                                imageVector = if (!selected) Icons.Default.SortByAlpha else Icons.Default.Done,
+                                contentDescription = ""
+                            )
+                        },
                         selected = selected,
                         onClick = {
                             library.sortBooks(library.bookList.sortOrder, it)
@@ -280,7 +255,7 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
             )
         }
 
-        LazyVerticalGrid(columns = GridCells.Fixed(3)) {
+        LazyVerticalGrid(columns = GridCells.Adaptive(240.dp)) {
             library.bookList.items.forEach { book ->
                 item(book.id) {
                     Box(modifier = Modifier.animateItemPlacement()) {
@@ -292,7 +267,11 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 modifier = Modifier.padding(12.dp).fillMaxSize()
                             ) {
-                                BookAvatar(book.avatarUri, modifier = Modifier.size(60.dp))
+                                LazyAvatar(
+                                    uri = book.avatarUri,
+                                    defaultImageVector = Icons.Default.Book,
+                                    modifier = Modifier.size(60.dp)
+                                )
                                 Text(text = book.name, style = MaterialTheme.typography.h6)
                                 Text(text = book.author, style = MaterialTheme.typography.body2)
                             }
@@ -312,22 +291,6 @@ private fun BookList(library: Library, onBookClicked: (Book) -> Unit) {
                 }
             }
         }
-    }
-}
-
-@Composable
-private fun BookAvatar(uri: String, modifier: Modifier = Modifier) {
-    if (uri.isNotBlank()) {
-        AsyncImage(
-            uri,
-            modifier = modifier
-        )
-    } else {
-        Icon(
-            imageVector = Icons.Default.Book,
-            contentDescription = "",
-            modifier = modifier
-        )
     }
 }
 
