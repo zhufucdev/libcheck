@@ -20,7 +20,7 @@ import ui.variant
 @Composable
 fun SortMenu(
     expanded: Boolean,
-    offset: DpOffset,
+    offset: DpOffset = DpOffset(0.dp, 0.dp),
     onDismissRequest: () -> Unit,
     sortOrder: SortOrder,
     onSortOrderChanged: (SortOrder) -> Unit,

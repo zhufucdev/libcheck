@@ -6,22 +6,22 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import model.AppViewModel
-import model.Identifier
-import model.Library
-import model.Reader
-import ui.component.AvatarInput
-import ui.component.LazyAvatar
-import ui.component.SortButton
+import model.*
+import ui.component.*
 
 @Composable
 fun ReadersApp(model: AppViewModel) {
@@ -44,10 +44,10 @@ fun ReadersApp(model: AppViewModel) {
         }
     ) {
         Box(Modifier.padding(it)) {
-            ReaderList(model.library) {
-                readerId = it.id
-                readerName = it.name
-                readerUri = it.avatarUri
+            ReaderList(model.library) { reader ->
+                readerId = reader.id
+                readerName = reader.name
+                readerUri = reader.avatarUri
                 editingReader = true
             }
         }
@@ -119,11 +119,48 @@ fun ReadersApp(model: AppViewModel) {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun ReaderList(library: Library, onReaderClick: (Reader) -> Unit) {
+    val coroutine = rememberCoroutineScope()
+    var sorting by remember { mutableStateOf(false) }
+
     Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-            SortButton(
-                onClick = {}
-            )
+            Box {
+                SortButton(
+                    onClick = { sorting = true },
+                )
+                SortMenu(
+                    expanded = sorting,
+                    onDismissRequest = { sorting = false },
+                    sortOrder = library.readerList.sortOrder,
+                    onSortOrderChanged = {
+                        library.sortReaders(it, library.readerList.sortedBy)
+                        coroutine.launch {
+                            library.writeToFile()
+                        }
+                    }
+                ) {
+                    SortMenuCaption("Keyword")
+                    ReaderSortable.entries.forEach {
+                        val selected = library.readerList.sortedBy == it
+                        SortMenuItem(
+                            text = { Text(it.label) },
+                            icon = {
+                                Icon(
+                                    imageVector = if (selected) Icons.Default.Done else Icons.Default.SortByAlpha,
+                                    contentDescription = ""
+                                )
+                            },
+                            selected = selected,
+                            onClick = {
+                                library.sortReaders(library.readerList.sortOrder, it)
+                                coroutine.launch {
+                                    library.writeToFile()
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
 
         LazyVerticalGrid(columns = GridCells.Adaptive(200.dp)) {
