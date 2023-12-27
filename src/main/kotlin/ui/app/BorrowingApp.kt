@@ -210,8 +210,6 @@ fun BorrowingApp(model: AppViewModel) {
                             }
                         }
                     }
-                }
-                item {
                     if (index < model.library.borrowList.items.lastIndex) {
                         Spacer(
                             Modifier.fillParentMaxWidth().height(1.dp).padding(horizontal = 12.dp)
