@@ -188,6 +188,8 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                     && intersection.height * intersection.width >= model.outDraggingIntersection.let { it.height * it.width }
                         }
                     }
+                    val cardColor = rememberRevealAnimation(model, reader.id)
+
                     LaunchedEffect(draggingIn) {
                         if (draggingIn) {
                             model.outDraggingTarget = reader
@@ -207,10 +209,10 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                 MaterialTheme.colors.primary.copy(
                                     alpha = 0.1f
                                 )
-                            ) else CardDefaults.outlinedCardColors(),
+                            ) else CardDefaults.outlinedCardColors(cardColor),
                             modifier = Modifier.onClick(matcher = PointerMatcher.mouse(PointerButton.Secondary)) {
                                 contextMenu = true
-                            }
+                            },
                         ) {
                             Column(
                                 modifier = Modifier.padding(12.dp).fillMaxWidth(),

@@ -304,30 +304,15 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
 @Composable
 private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit) {
     val coroutine = rememberCoroutineScope()
-    val primarySurfaceColor = MaterialTheme.colors.primarySurface.variant
-    val surfaceColor = MaterialTheme.colors.surface
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
     val density = LocalDensity.current
     var contextMenu by remember { mutableStateOf(false) }
-    var cardColor by remember { mutableStateOf(surfaceColor) }
+    val cardColor = rememberRevealAnimation(model, book.id)
 
     LaunchedEffect(dragging) {
         model.draggingIn = dragging
-    }
-
-    LaunchedEffect(model.reveal) {
-        if (model.reveal == book.id) {
-            val converter = Color.VectorConverter(cardColor.colorSpace)
-            animate(converter, cardColor, primarySurfaceColor) { v, _ ->
-                cardColor = v
-            }
-            delay(0.5.seconds)
-            animate(converter, cardColor, surfaceColor) { v, _ ->
-                cardColor = v
-            }
-        }
     }
 
     OutlinedCard(
