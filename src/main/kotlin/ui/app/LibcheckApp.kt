@@ -29,7 +29,6 @@ enum class Route(val label: String, val icon: ImageVector) {
 
 @Composable
 fun LibcheckApp(model: AppViewModel) {
-    var route by remember { mutableStateOf(Route.BOOKS) }
     LaunchedEffect(model.library) {
         delay(0.5.seconds)
         model.library.initialize()
@@ -68,8 +67,8 @@ fun LibcheckApp(model: AppViewModel) {
         bottomBar = {
             if (model.windowSize < WindowSize.WIDE) {
                 BottomNavigation {
-                    BottomNavigationItems(route) {
-                        route = it
+                    BottomNavigationItems(model.route) {
+                        model.route = it
                     }
                 }
             }
@@ -84,12 +83,12 @@ fun LibcheckApp(model: AppViewModel) {
                 if (model.windowSize >= WindowSize.WIDE) {
                     Row {
                         PermanentDrawerSheet {
-                            NavigationDrawerItems(route) { route = it }
+                            NavigationDrawerItems(model.route) { model.route = it }
                         }
-                        MainContent(route, model)
+                        MainContent(model)
                     }
                 } else {
-                    MainContent(route, model)
+                    MainContent(model)
                 }
             }
             AnimatedVisibility(
@@ -149,8 +148,8 @@ private fun RowScope.BottomNavigationItems(current: Route, onNavigation: (Route)
 }
 
 @Composable
-private fun MainContent(current: Route, model: AppViewModel) {
-    when (current) {
+private fun MainContent(model: AppViewModel) {
+    when (model.route) {
         Route.BOOKS -> BooksApp(model)
         Route.READERS -> ReadersApp(model)
         Route.BORROWING -> BorrowingApp(model)

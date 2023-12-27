@@ -4,8 +4,13 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.window.WindowState
 import ui.WindowSize
+import ui.app.Route
+import java.util.UUID
 
 class AppViewModel(val library: Library, val windowState: WindowState, val windowSize: WindowSize) {
+    var route by mutableStateOf(Route.BOOKS)
+    var reveal by mutableStateOf<Identifier?>(null)
+
     val booksInBasket = mutableStateListOf<Book>()
     var basketFabBounds by mutableStateOf(Rect.Zero)
     var draggingIn by mutableStateOf(false)

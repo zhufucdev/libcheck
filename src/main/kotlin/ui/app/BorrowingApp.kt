@@ -147,7 +147,10 @@ fun BorrowingApp(model: AppViewModel) {
                                 )
                             } else {
                                 TextButton(
-                                    onClick = {},
+                                    onClick = {
+                                        model.reveal = book.id
+                                        model.route = Route.BOOKS
+                                    },
                                     content = {
                                         Text(
                                             book.name,

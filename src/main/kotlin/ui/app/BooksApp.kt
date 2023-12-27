@@ -1,18 +1,19 @@
 package ui.app
 
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.PointerMatcher
-import androidx.compose.foundation.background
-import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.animation.VectorConverter
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animate
+import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.runtime.*
@@ -20,9 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerButton
-import androidx.compose.ui.input.pointer.PointerEventType
-import androidx.compose.ui.input.pointer.isSecondaryPressed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.platform.LocalDensity
@@ -32,14 +32,16 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.*
 import ui.component.*
 import ui.variant
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun BooksApp(model: AppViewModel) {
@@ -218,9 +220,16 @@ fun BooksApp(model: AppViewModel) {
 @Composable
 private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
     val library = model.library
+    val state = remember { LazyGridState() }
     var sorting by remember { mutableStateOf(false) }
     var sortButtonPos by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
     val coroutine = rememberCoroutineScope()
+
+    LaunchedEffect(model.reveal) {
+        val reveal = model.reveal ?: return@LaunchedEffect
+        val idx = model.library.bookList.items.indexOfFirst { it.id == reveal }
+        state.animateScrollToItem(idx)
+    }
 
     Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
@@ -269,7 +278,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
             )
         }
 
-        LazyVerticalGrid(columns = GridCells.Adaptive(240.dp)) {
+        LazyVerticalGrid(columns = GridCells.Adaptive(240.dp), state = state) {
             library.bookList.items.forEach { book ->
                 item(book.id) {
                     Box(modifier = Modifier.animateItemPlacement()) {
@@ -295,14 +304,30 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
 @Composable
 private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit) {
     val coroutine = rememberCoroutineScope()
+    val primarySurfaceColor = MaterialTheme.colors.primarySurface.variant
+    val surfaceColor = MaterialTheme.colors.surface
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
     val density = LocalDensity.current
     var contextMenu by remember { mutableStateOf(false) }
+    var cardColor by remember { mutableStateOf(surfaceColor) }
 
     LaunchedEffect(dragging) {
         model.draggingIn = dragging
+    }
+
+    LaunchedEffect(model.reveal) {
+        if (model.reveal == book.id) {
+            val converter = Color.VectorConverter(cardColor.colorSpace)
+            animate(converter, cardColor, primarySurfaceColor) { v, _ ->
+                cardColor = v
+            }
+            delay(0.5.seconds)
+            animate(converter, cardColor, surfaceColor) { v, _ ->
+                cardColor = v
+            }
+        }
     }
 
     OutlinedCard(
@@ -332,6 +357,7 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                     }
                 )
             },
+        colors = CardDefaults.outlinedCardColors(cardColor),
         onClick = { onClicked(book) }
     ) {
         Column(
@@ -372,9 +398,8 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                     },
                 )
             }
-            Text(text = book.name, style = MaterialTheme.typography.h6)
+            Text(text = book.name, style = MaterialTheme.typography.h6, textAlign = TextAlign.Center)
             Text(text = book.author, style = MaterialTheme.typography.body2)
         }
     }
-
 }
