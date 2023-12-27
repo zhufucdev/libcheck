@@ -4,6 +4,8 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -20,10 +22,7 @@ import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.BorrowSortable
 import model.Route
-import ui.component.SortButton
-import ui.component.SortMenu
-import ui.component.SortMenuCaption
-import ui.component.SortMenuItem
+import ui.component.*
 import ui.variant
 import java.time.Instant
 import java.time.ZoneId
@@ -37,6 +36,15 @@ fun BorrowingApp(model: AppViewModel) {
     val formatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
     val coroutine = rememberCoroutineScope()
     val now = rememberNow()
+    val listState = rememberLazyListState()
+
+    LaunchedEffect(model.reveal) {
+        val reveal = model.reveal ?: return@LaunchedEffect
+        val index = model.library.borrowList.items.indexOfFirst { it.id == reveal }
+        if (index > 0) {
+            listState.animateScrollToItem(index)
+        }
+    }
 
     Column {
         Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End) {
@@ -75,12 +83,13 @@ fun BorrowingApp(model: AppViewModel) {
                 }
             }
         }
-        LazyColumn {
+        LazyColumn(state = listState) {
             model.library.borrowList.items.forEachIndexed { index, borrow ->
                 item(borrow.id) {
                     val headTooltipState = remember { PlainTooltipState() }
+                    val bgColor = rememberRevealAnimation(model, borrow.id)
                     FlowRow(
-                        modifier = Modifier.padding(horizontal = 12.dp).animateItemPlacement(),
+                        modifier = Modifier.padding(horizontal = 12.dp).animateItemPlacement().background(bgColor),
                         verticalArrangement = Arrangement.Center
                     ) {
                         PlainTooltipBox(
