@@ -1,18 +1,21 @@
 package ui.app
 
-import androidx.compose.animation.VectorConverter
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animate
-import androidx.compose.foundation.*
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.PointerMatcher
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.BookmarkAdd
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedCard
@@ -21,10 +24,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.*
+import androidx.compose.ui.layout.boundsInParent
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -36,12 +41,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import model.*
+import model.AppViewModel
+import model.Book
+import model.BookSortable
+import model.Identifier
 import ui.component.*
 import ui.variant
-import kotlin.time.Duration.Companion.seconds
 
 @Composable
 fun BooksApp(model: AppViewModel) {
@@ -58,7 +64,16 @@ fun BooksApp(model: AppViewModel) {
     var bookStock by remember { mutableStateOf("10") }
     var bookStockParsed by remember { mutableStateOf<UInt?>(10u) }
 
-    val canSave by remember { derivedStateOf { bookStockParsed != null && bookTitle.isNotBlank() } }
+    val negativeInStock by remember {
+        derivedStateOf {
+            val targetStock = bookStockParsed ?: return@derivedStateOf false
+            val id = bookId ?: return@derivedStateOf false
+            editingBook && targetStock < with(model.library) {
+                getBook(id)?.let { it.stock - it.inStock } ?: return@derivedStateOf false
+            }
+        }
+    }
+    val canSave by remember { derivedStateOf { bookStockParsed != null && bookTitle.isNotBlank() && !negativeInStock } }
 
     Scaffold(
         floatingActionButton = {
@@ -175,7 +190,7 @@ fun BooksApp(model: AppViewModel) {
                             },
                             label = { Text("Stock") },
                             modifier = Modifier.fillMaxWidth(),
-                            isError = bookStockParsed == null,
+                            isError = bookStockParsed == null || negativeInStock,
                             singleLine = true
                         )
                     }
