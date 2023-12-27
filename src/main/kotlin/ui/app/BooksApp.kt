@@ -228,7 +228,9 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
     LaunchedEffect(model.reveal) {
         val reveal = model.reveal ?: return@LaunchedEffect
         val idx = model.library.bookList.items.indexOfFirst { it.id == reveal }
-        state.animateScrollToItem(idx)
+        if (idx > 0) {
+            state.animateScrollToItem(idx)
+        }
     }
 
     Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {

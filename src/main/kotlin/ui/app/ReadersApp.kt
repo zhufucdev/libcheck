@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.PointerMatcher
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.onClick
 import androidx.compose.material.*
@@ -133,7 +134,16 @@ fun ReadersApp(model: AppViewModel) {
 private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
     val library = model.library
     val coroutine = rememberCoroutineScope()
+    val gridState = remember { LazyGridState() }
     var sorting by remember { mutableStateOf(false) }
+
+    LaunchedEffect(model.reveal) {
+        val reveal = model.reveal ?: return@LaunchedEffect
+        val idx = model.library.readerList.items.indexOfFirst { it.id == reveal }
+        if (idx > 0) {
+            gridState.animateScrollToItem(idx)
+        }
+    }
 
     Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
@@ -176,7 +186,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
             }
         }
 
-        LazyVerticalGrid(columns = GridCells.Adaptive(200.dp)) {
+        LazyVerticalGrid(columns = GridCells.Adaptive(200.dp), state = gridState) {
             library.readerList.items.forEach { reader ->
                 item(reader.id) {
                     var contextMenu by remember { mutableStateOf(false) }
