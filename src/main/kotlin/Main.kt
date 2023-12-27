@@ -9,7 +9,7 @@ import androidx.compose.ui.window.rememberWindowState
 import model.AppViewModel
 import ui.app.LibcheckApp
 import model.Library
-import ui.app.Route
+import model.Route
 import ui.calculateWindowSize
 import java.io.File
 

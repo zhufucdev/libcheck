@@ -1,5 +1,6 @@
 package model
 
+import androidx.compose.runtime.Stable
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
@@ -8,6 +9,12 @@ import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
 import java.time.Instant
 import java.util.*
+
+interface Searchable {
+    fun matches(keyword: String): Boolean
+    val name: String
+    val id: Identifier
+}
 
 @Serializable(IdentifierSerializer::class)
 data class Identifier(val uuid: UUID = UUID.randomUUID())
@@ -28,16 +35,22 @@ class IdentifierSerializer : KSerializer<Identifier> {
 
 @Serializable
 data class Book(
-    val name: String,
+    override val name: String,
     val author: String,
     val isbn: String,
-    val id: Identifier,
+    override val id: Identifier,
     val avatarUri: String,
     val stock: UInt
-)
+) : Searchable {
+    override fun matches(keyword: String) = name.contains(keyword, ignoreCase = true)
+            || author.contains(keyword, ignoreCase = true)
+            || isbn.contains(keyword, ignoreCase = true)
+}
 
 @Serializable
-class Reader(val name: String, val id: Identifier, val avatarUri: String)
+class Reader(override val name: String, override val id: Identifier, val avatarUri: String) : Searchable {
+    override fun matches(keyword: String) = name.contains(keyword, ignoreCase = true)
+}
 
 @Serializable
 data class Borrow(
@@ -49,10 +62,22 @@ data class Borrow(
     val returnTime: Long? = null
 ) {
     val expired get() = Instant.now().toEpochMilli() >= dueTime
+    fun instance(library: Library) =
+        BorrowInstanced(
+            id,
+            readerId,
+            library.getReader(readerId),
+            bookId,
+            library.getBook(bookId),
+            time,
+            dueTime,
+            returnTime
+        )
 }
 
-private class BorrowInstanced(
-    val id: Identifier,
+@Stable
+class BorrowInstanced(
+    override val id: Identifier,
     val readerId: Identifier,
     val reader: Reader?,
     val bookId: Identifier,
@@ -60,8 +85,11 @@ private class BorrowInstanced(
     val time: Long,
     val dueTime: Long,
     val returnTime: Long?
-) {
+) : Searchable {
     val original get() = Borrow(id, readerId, bookId, time, dueTime, returnTime)
+    override fun matches(keyword: String) = reader?.matches(keyword) == true || book?.matches(keyword) == true
+    override val name: String
+        get() = "${book?.name ?: "Unknown book"} lent to ${reader?.name ?: "unknown reader"}"
 }
 
 enum class SortOrder(val label: String) {
@@ -173,18 +201,7 @@ data class SortedBorrowList(
     val sortOrder: SortOrder = SortOrder.ASCENDING
 ) {
     fun sort(library: Library) {
-        val instanced = items.map {
-            BorrowInstanced(
-                it.id,
-                it.readerId,
-                library.getReader(it.readerId),
-                it.bookId,
-                library.getBook(it.bookId),
-                it.time,
-                it.dueTime,
-                it.returnTime
-            )
-        }.toMutableList()
+        val instanced = items.map { it.instance(library) }.toMutableList()
 
         when (sortedBy) {
             BorrowSortable.BOOK_NAME ->

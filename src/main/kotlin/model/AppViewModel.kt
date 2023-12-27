@@ -1,11 +1,20 @@
 package model
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.LibraryBooks
 import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.window.WindowState
 import ui.WindowSize
-import ui.app.Route
-import java.util.UUID
+
+enum class Route(val label: String, val icon: ImageVector) {
+    BOOKS("Books", Icons.Default.LibraryBooks),
+    READERS("Readers", Icons.Default.Contacts),
+    BORROWING("Borrowing", Icons.Default.Key)
+}
 
 class AppViewModel(val library: Library, val windowState: WindowState, val windowSize: WindowSize, route: MutableState<Route>) {
     var route by route
@@ -23,4 +32,5 @@ class AppViewModel(val library: Library, val windowState: WindowState, val windo
             booksInBasket.add(book.id)
         }
     }
+
 }

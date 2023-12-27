@@ -3,6 +3,11 @@ package model
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -154,6 +159,36 @@ class Library(private val workingDir: File) {
     fun sortBorrows(order: SortOrder, by: BorrowSortable) {
         borrowList = borrowList.copy(sortOrder = order, sortedBy = by)
         borrowList.sort(this)
+    }
+
+    fun search(keyword: String) : Flow<Searchable> = channelFlow {
+        if (keyword.isEmpty()) {
+            return@channelFlow
+        }
+        coroutineScope {
+            launch {
+                bookList.items.forEach {
+                    if (it.matches(keyword)) {
+                        channel.send(it)
+                    }
+                }
+            }
+            launch {
+                readerList.items.forEach {
+                    if (it.matches(keyword)) {
+                        channel.send(it)
+                    }
+                }
+            }
+            launch {
+                borrowList.items.forEach {
+                    val ins = it.instance(this@Library)
+                    if (ins.matches(keyword)) {
+                        channel.send(ins)
+                    }
+                }
+            }
+        }
     }
 
     suspend fun writeToFile() = withContext(Dispatchers.IO) {
