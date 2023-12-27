@@ -11,7 +11,7 @@ class AppViewModel(val library: Library, val windowState: WindowState, val windo
     var route by route
     var reveal by mutableStateOf<Identifier?>(null)
 
-    val booksInBasket = mutableStateListOf<Book>()
+    val booksInBasket = mutableStateListOf<Identifier>()
     var basketFabBounds by mutableStateOf(Rect.Zero)
     var draggingIn by mutableStateOf(false)
     var outDraggingBounds by mutableStateOf(Rect.Zero)
@@ -19,8 +19,8 @@ class AppViewModel(val library: Library, val windowState: WindowState, val windo
     var outDraggingTarget by mutableStateOf<Reader?>(null)
 
     fun addToBasket(book: Book) {
-        if (!booksInBasket.contains(book)) {
-            booksInBasket.add(book)
+        if (!booksInBasket.contains(book.id)) {
+            booksInBasket.add(book.id)
         }
     }
 }

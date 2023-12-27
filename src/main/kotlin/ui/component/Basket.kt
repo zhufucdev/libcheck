@@ -18,7 +18,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -39,15 +38,12 @@ import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.Book
+import model.Identifier
 import model.Reader
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
 import java.time.Instant
-import java.time.ZoneId
-import java.time.ZoneOffset
-import java.time.ZonedDateTime
 import java.time.temporal.ChronoUnit
-import java.time.temporal.TemporalUnit
 import java.util.TimeZone
 
 @Composable
@@ -115,24 +111,31 @@ fun Basket(model: AppViewModel) {
                             columns = GridCells.Fixed(3),
                             modifier = Modifier.padding(12.dp).fillMaxWidth()
                         ) {
-                            model.booksInBasket.forEach { book ->
-                                item(book.id) {
-                                    StagedBookItem(
-                                        book,
-                                        model,
-                                        onDragStart = {
-                                            basketExpanded = false
-                                            sustain = true
-                                        },
-                                        onDragStop = {
-                                            sustain = false
-                                        },
-                                        onBorrow = { reader ->
-                                            borrower = reader
-                                            borrowingOut = book
-                                            borrowing = true
-                                        }
-                                    )
+                            model.booksInBasket.forEach { id ->
+                                item(id) {
+                                    val book = remember(model.library.bookList.items) { model.library.getBook(id) }
+                                    if (book != null) {
+                                        StagedBookItem(
+                                            book,
+                                            model,
+                                            onDragStart = {
+                                                basketExpanded = false
+                                                sustain = true
+                                            },
+                                            onDragStop = {
+                                                sustain = false
+                                            },
+                                            onBorrow = { reader ->
+                                                borrower = reader
+                                                borrowingOut = book
+                                                borrowing = true
+                                            }
+                                        )
+                                    } else {
+                                        StagedBookAvatar(
+                                            book = Book("Unknown book", "", "", Identifier(), "", 0u)
+                                        )
+                                    }
                                 }
                             }
                         }
@@ -278,9 +281,12 @@ private fun StagedBookItem(
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
-
+    val outOfStock by remember(book) { derivedStateOf { with(model.library) { book.inStock <= 0u } } }
     Box(
-        modifier = Modifier.padding(6.dp).pointerInput(true) {
+        modifier = Modifier.padding(6.dp).pointerInput(outOfStock) {
+            if (outOfStock) {
+                return@pointerInput
+            }
             detectDragGestures(
                 onDragStart = {
                     dragging = true
