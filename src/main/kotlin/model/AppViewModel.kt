@@ -7,8 +7,8 @@ import ui.WindowSize
 import ui.app.Route
 import java.util.UUID
 
-class AppViewModel(val library: Library, val windowState: WindowState, val windowSize: WindowSize) {
-    var route by mutableStateOf(Route.BOOKS)
+class AppViewModel(val library: Library, val windowState: WindowState, val windowSize: WindowSize, route: MutableState<Route>) {
+    var route by route
     var reveal by mutableStateOf<Identifier?>(null)
 
     val booksInBasket = mutableStateListOf<Book>()
