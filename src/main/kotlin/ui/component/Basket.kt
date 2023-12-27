@@ -6,6 +6,7 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
@@ -22,10 +23,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Outline
-import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.asComposePath
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -42,6 +40,7 @@ import model.Identifier
 import model.Reader
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
+import org.jetbrains.skia.Surface
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.TimeZone
@@ -314,7 +313,11 @@ private fun StagedBookItem(
             )
         }
     ) {
-        StagedBookAvatar(book, Modifier.onGloballyPositioned { bounds = it.boundsInRoot() })
+        StagedBookAvatar(
+            book,
+            outOfStock,
+            Modifier.onGloballyPositioned { bounds = it.boundsInRoot() }
+        )
         if (dragging) {
             Popup {
                 StagedBookAvatar(
@@ -327,10 +330,24 @@ private fun StagedBookItem(
 }
 
 @Composable
-private fun StagedBookAvatar(book: Book, modifier: Modifier = Modifier) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-        LazyAvatar(book.avatarUri, Icons.Default.Book, Modifier.size(80.dp))
-        Text(text = book.name, style = MaterialTheme.typography.caption, textAlign = TextAlign.Center)
+private fun StagedBookAvatar(book: Book, outOfStock: Boolean = false, modifier: Modifier = Modifier) {
+    Box(contentAlignment = Alignment.Center) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
+            LazyAvatar(book.avatarUri, Icons.Default.Book, Modifier.size(80.dp))
+            Text(text = book.name, style = MaterialTheme.typography.caption, textAlign = TextAlign.Center)
+        }
+        if (outOfStock) {
+            Surface(
+                shape = RoundedCornerShape(4.dp),
+                color = MaterialTheme.colors.surface,
+                contentColor = MaterialTheme.colors.onSurface,
+            ) {
+                Text(
+                    "Out of Stock", style = MaterialTheme.typography.body1,
+                    modifier = Modifier.padding(6.dp)
+                )
+            }
+        }
     }
 }
 
