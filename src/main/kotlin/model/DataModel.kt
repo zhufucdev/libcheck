@@ -40,7 +40,7 @@ data class Book(
 class Reader(val name: String, val id: Identifier, val avatarUri: String)
 
 @Serializable
-class Borrow(
+data class Borrow(
     val id: Identifier,
     val readerId: Identifier,
     val bookId: Identifier,

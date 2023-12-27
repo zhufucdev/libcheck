@@ -10,7 +10,6 @@ import kotlinx.serialization.json.decodeFromStream
 import kotlinx.serialization.json.encodeToStream
 import java.io.File
 import java.time.Instant
-import java.util.UUID
 
 @OptIn(ExperimentalSerializationApi::class)
 class Library(private val workingDir: File) {
@@ -112,8 +111,16 @@ class Library(private val workingDir: File) {
         borrowList.items.add(Borrow(Identifier(), borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
     }
 
+    fun Borrow.returned() {
+        val index = borrowList.items.indexOf(this)
+        if (index < 0) {
+            throw NoSuchElementException()
+        }
+        borrowList.items[index] = copy(returnTime = Instant.now().toEpochMilli())
+    }
+
     val Book.inStock
-        get() = stock - borrowList.items.count { it.bookId == id && !it.returned }.toUInt()
+        get() = stock - borrowList.items.count { it.bookId == id && it.returnTime == null }.toUInt()
 
     fun addReader(reader: Reader) {
         readerList.items.add(reader)
@@ -129,7 +136,7 @@ class Library(private val workingDir: File) {
         readerList.items[index] = reader
     }
 
-    val Reader.borrows get() = borrowList.items.count { it.readerId == id && !it.returned }
+    val Reader.borrows get() = borrowList.items.count { it.readerId == id && it.returnTime == null }
 
     fun sortReaders(order: SortOrder, by: ReaderSortable) {
         readerList = readerList.copy(sortedBy = by, sortOrder = order)
