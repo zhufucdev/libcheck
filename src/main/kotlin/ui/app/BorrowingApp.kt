@@ -75,8 +75,8 @@ fun BorrowingApp(model: AppViewModel) {
             }
         }
         LazyColumn {
-            model.library.borrowList.items.forEach {
-                item(it.id) {
+            model.library.borrowList.items.forEachIndexed { index, borrow ->
+                item(borrow.id) {
                     val headTooltipState = remember { PlainTooltipState() }
                     FlowRow(
                         modifier = Modifier.padding(horizontal = 12.dp).animateItemPlacement(),
@@ -85,7 +85,7 @@ fun BorrowingApp(model: AppViewModel) {
                         PlainTooltipBox(
                             tooltipState = headTooltipState,
                             tooltip = {
-                                it.returnTime.let { rt ->
+                                borrow.returnTime.let { rt ->
                                     if (rt != null) {
                                         androidx.compose.material3.Text(
                                             "Returned at ${
@@ -98,7 +98,7 @@ fun BorrowingApp(model: AppViewModel) {
                                         androidx.compose.material3.Text(
                                             "Due in ${
                                                 formatter.format(
-                                                    Instant.ofEpochMilli(it.dueTime).atZone(ZoneId.systemDefault())
+                                                    Instant.ofEpochMilli(borrow.dueTime).atZone(ZoneId.systemDefault())
                                                 )
                                             }"
                                         )
@@ -109,8 +109,8 @@ fun BorrowingApp(model: AppViewModel) {
                                 IconButton(
                                     content = {
                                         Icon(
-                                            imageVector = if (it.returnTime == null) {
-                                                if (it.dueTime < now.toEpochMilli()) {
+                                            imageVector = if (borrow.returnTime == null) {
+                                                if (borrow.dueTime < now.toEpochMilli()) {
                                                     Icons.Default.Timer
                                                 } else {
                                                     Icons.Default.Outbound
@@ -133,12 +133,12 @@ fun BorrowingApp(model: AppViewModel) {
                         )
                         Separator()
                         Text(
-                            formatter.format(Instant.ofEpochMilli(it.time).atZone(ZoneId.systemDefault())),
+                            formatter.format(Instant.ofEpochMilli(borrow.time).atZone(ZoneId.systemDefault())),
                             style = MaterialTheme.typography.body2,
                             modifier = Modifier.align(Alignment.CenterVertically)
                         )
                         Separator()
-                        model.library.getBook(it.bookId).let { book ->
+                        model.library.getBook(borrow.bookId).let { book ->
                             if (book == null) {
                                 Icon(
                                     imageVector = Icons.Default.QuestionMark,
@@ -165,7 +165,7 @@ fun BorrowingApp(model: AppViewModel) {
                             contentDescription = "",
                             modifier = Modifier.align(Alignment.CenterVertically)
                         )
-                        model.library.getReader(it.readerId).let { reader ->
+                        model.library.getReader(borrow.readerId).let { reader ->
                             if (reader == null) {
                                 Icon(
                                     imageVector = Icons.Default.PersonSearch,
@@ -189,7 +189,7 @@ fun BorrowingApp(model: AppViewModel) {
                         }
                         Separator()
                         Spacer(Modifier.weight(1f))
-                        if (it.returnTime == null) {
+                        if (borrow.returnTime == null) {
                             PlainTooltipBox(
                                 tooltip = {
                                     androidx.compose.material3.Text("Mark as returned")
@@ -197,7 +197,7 @@ fun BorrowingApp(model: AppViewModel) {
                             ) {
                                 IconButton(
                                     onClick = {
-                                        with(model.library) { it.returned() }
+                                        with(model.library) { borrow.returned() }
                                         coroutine.launch {
                                             model.library.writeToFile()
                                         }
@@ -209,6 +209,14 @@ fun BorrowingApp(model: AppViewModel) {
                                 )
                             }
                         }
+                    }
+                }
+                item {
+                    if (index < model.library.borrowList.items.lastIndex) {
+                        Spacer(
+                            Modifier.fillParentMaxWidth().height(1.dp).padding(horizontal = 12.dp)
+                                .background(MaterialTheme.colors.onSurface.copy(alpha = 0.2f))
+                        )
                     }
                 }
             }
