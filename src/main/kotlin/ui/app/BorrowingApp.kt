@@ -1,5 +1,6 @@
 package ui.app
 
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,45 +9,126 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.PlainTooltipBox
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.material3.PlainTooltipState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.AppViewModel
+import model.BorrowSortable
+import ui.component.SortButton
+import ui.component.SortMenu
+import ui.component.SortMenuCaption
+import ui.component.SortMenuItem
 import ui.variant
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.time.Duration.Companion.seconds
 
-@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun BorrowingApp(model: AppViewModel) {
     val formatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
     val coroutine = rememberCoroutineScope()
+    val now = rememberNow()
 
-    Scaffold(
-        floatingActionButton = {
-            ExtendedFloatingActionButton(
-                text = { Text("Borrow") },
-                icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "") },
-                onClick = {}
-            )
+    Column {
+        Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End) {
+            var sorting by remember { mutableStateOf(false) }
+            Box {
+                SortButton(
+                    onClick = { sorting = true },
+                    modifier = Modifier.padding(end = 6.dp)
+                )
+                SortMenu(
+                    expanded = sorting,
+                    onDismissRequest = { sorting = false },
+                    sortOrder = model.library.borrowList.sortOrder,
+                    onSortOrderChanged = {
+                        model.library.sortBorrows(it, model.library.borrowList.sortedBy)
+                        coroutine.launch {
+                            model.library.writeToFile()
+                        }
+                    }
+                ) {
+                    SortMenuCaption("Keyword")
+                    BorrowSortable.entries.forEach {
+                        val selected = model.library.borrowList.sortedBy == it
+                        SortMenuItem(
+                            text = { Text(it.label) },
+                            selected = selected,
+                            icon = { Icon(imageVector = Icons.Default.SortByAlpha, contentDescription = "") },
+                            onClick = {
+                                model.library.sortBorrows(model.library.borrowList.sortOrder, it)
+                                coroutine.launch {
+                                    model.library.writeToFile()
+                                }
+                            }
+                        )
+                    }
+                }
+            }
         }
-    ) { p ->
-        LazyColumn(Modifier.padding(p)) {
+        LazyColumn {
             model.library.borrowList.items.forEach {
                 item(it.id) {
+                    val headTooltipState = remember { PlainTooltipState() }
                     FlowRow(
-                        modifier = Modifier.padding(horizontal = 12.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp).animateItemPlacement(),
+                        verticalArrangement = Arrangement.Center
                     ) {
-                        Icon(
-                            imageVector = if (it.returnTime == null) Icons.Default.Outbound else Icons.Default.Done,
-                            contentDescription = "",
+                        PlainTooltipBox(
+                            tooltipState = headTooltipState,
+                            tooltip = {
+                                it.returnTime.let { rt ->
+                                    if (rt != null) {
+                                        androidx.compose.material3.Text(
+                                            "Returned at ${
+                                                formatter.format(
+                                                    Instant.ofEpochMilli(rt).atZone(ZoneId.systemDefault())
+                                                )
+                                            }",
+                                        )
+                                    } else {
+                                        androidx.compose.material3.Text(
+                                            "Due in ${
+                                                formatter.format(
+                                                    Instant.ofEpochMilli(it.dueTime).atZone(ZoneId.systemDefault())
+                                                )
+                                            }"
+                                        )
+                                    }
+                                }
+                            },
+                            content = {
+                                IconButton(
+                                    content = {
+                                        Icon(
+                                            imageVector = if (it.returnTime == null) {
+                                                if (it.dueTime < now.toEpochMilli()) {
+                                                    Icons.Default.Timer
+                                                } else {
+                                                    Icons.Default.Outbound
+                                                }
+                                            } else {
+                                                Icons.Default.Done
+                                            },
+                                            contentDescription = "",
+                                        )
+                                    },
+                                    onClick = {
+                                        coroutine.launch {
+                                            headTooltipState.show()
+                                        }
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                )
+                            },
                             modifier = Modifier.align(Alignment.CenterVertically)
                         )
                         Separator()
@@ -101,36 +183,24 @@ fun BorrowingApp(model: AppViewModel) {
                         }
                         Separator()
                         Spacer(Modifier.weight(1f))
-                        it.returnTime.let { rt ->
-                            if (rt != null) {
-                                Text(
-                                    text = "Returned at ${
-                                        formatter.format(
-                                            Instant.ofEpochMilli(rt).atZone(ZoneId.systemDefault())
-                                        )
-                                    }",
-                                    style = MaterialTheme.typography.body2,
-                                    modifier = Modifier.align(Alignment.CenterVertically)
-                                )
-                            } else {
-                                PlainTooltipBox(
-                                    tooltip = {
-                                        androidx.compose.material3.Text("Mark as returned")
-                                    }
-                                ) {
-                                    IconButton(
-                                        onClick = {
-                                            with(model.library) { it.returned() }
-                                            coroutine.launch {
-                                                model.library.writeToFile()
-                                            }
-                                        },
-                                        content = {
-                                            Icon(imageVector = Icons.Default.Archive, contentDescription = "")
-                                        },
-                                        modifier = Modifier.tooltipAnchor()
-                                    )
+                        if (it.returnTime == null) {
+                            PlainTooltipBox(
+                                tooltip = {
+                                    androidx.compose.material3.Text("Mark as returned")
                                 }
+                            ) {
+                                IconButton(
+                                    onClick = {
+                                        with(model.library) { it.returned() }
+                                        coroutine.launch {
+                                            model.library.writeToFile()
+                                        }
+                                    },
+                                    content = {
+                                        Icon(imageVector = Icons.Default.Archive, contentDescription = "")
+                                    },
+                                    modifier = Modifier.tooltipAnchor()
+                                )
                             }
                         }
                     }
@@ -148,4 +218,16 @@ private fun Separator() {
             .fillMaxHeight()
             .width(2.dp)
     )
+}
+
+@Composable
+fun rememberNow(): Instant {
+    var now by remember { mutableStateOf(Instant.now()) }
+    LaunchedEffect(true) {
+        while (true) {
+            delay(0.5.seconds)
+            now = Instant.now()
+        }
+    }
+    return now
 }

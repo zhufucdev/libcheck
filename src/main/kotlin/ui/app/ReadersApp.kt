@@ -228,6 +228,9 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                         onDismissRequest = { contextMenu = false },
                                         onDelete = {
                                             model.library.deleteReader(reader)
+                                            coroutine.launch {
+                                                model.library.writeToFile()
+                                            }
                                         }
                                     )
                                 }

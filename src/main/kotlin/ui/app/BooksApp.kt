@@ -294,6 +294,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit) {
+    val coroutine = rememberCoroutineScope()
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
@@ -363,7 +364,12 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                 CommonContextMenu(
                     expanded = contextMenu,
                     onDismissRequest = { contextMenu = false },
-                    onDelete = { model.library.deleteBook(book) },
+                    onDelete = {
+                        model.library.deleteBook(book)
+                        coroutine.launch {
+                            model.library.writeToFile()
+                        }
+                    },
                 )
             }
             Text(text = book.name, style = MaterialTheme.typography.h6)
