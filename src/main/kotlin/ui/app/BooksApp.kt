@@ -338,7 +338,7 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
             .onClick(matcher = PointerMatcher.mouse(PointerButton.Secondary)) {
                 contextMenu = true
             }
-            .pointerInput(true) {
+            .pointerInput(model.basketFabBounds, bounds) {
                 detectDragGestures(
                     onDragStart = {
                         dragOff = Offset.Zero
