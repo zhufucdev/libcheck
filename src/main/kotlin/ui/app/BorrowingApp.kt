@@ -4,19 +4,22 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
+import androidx.compose.material.icons.automirrored.filled.Outbound
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.PlainTooltipBox
-import androidx.compose.material3.PlainTooltipState
+import androidx.compose.material3.TooltipBox
+import androidx.compose.material3.TooltipState
+import androidx.compose.material3.rememberTooltipState
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.AppViewModel
@@ -86,14 +89,14 @@ fun BorrowingApp(model: AppViewModel) {
         LazyColumn(state = listState) {
             model.library.borrowList.items.forEachIndexed { index, borrow ->
                 item(borrow.id) {
-                    val headTooltipState = remember { PlainTooltipState() }
+                    val headTooltipState = remember { TooltipState() }
                     val bgColor = rememberRevealAnimation(model, borrow.id)
                     FlowRow(
                         modifier = Modifier.padding(horizontal = 12.dp).animateItemPlacement().background(bgColor),
                         verticalArrangement = Arrangement.Center
                     ) {
-                        PlainTooltipBox(
-                            tooltipState = headTooltipState,
+                        TooltipBox(
+                            state = headTooltipState,
                             tooltip = {
                                 borrow.returnTime.let { rt ->
                                     if (rt != null) {
@@ -123,7 +126,7 @@ fun BorrowingApp(model: AppViewModel) {
                                                 if (borrow.dueTime < now.toEpochMilli()) {
                                                     Icons.Default.Timer
                                                 } else {
-                                                    Icons.Default.Outbound
+                                                    Icons.AutoMirrored.Filled.Outbound
                                                 }
                                             } else {
                                                 Icons.Default.Done
@@ -136,10 +139,10 @@ fun BorrowingApp(model: AppViewModel) {
                                             headTooltipState.show()
                                         }
                                     },
-                                    modifier = Modifier.tooltipAnchor()
                                 )
                             },
-                            modifier = Modifier.align(Alignment.CenterVertically)
+                            modifier = Modifier.align(Alignment.CenterVertically),
+                            positionProvider = rememberComponentRectPositionProvider()
                         )
                         Separator()
                         Text(
@@ -171,7 +174,7 @@ fun BorrowingApp(model: AppViewModel) {
                             }
                         }
                         Icon(
-                            imageVector = Icons.Default.ArrowRightAlt,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
                             contentDescription = "",
                             modifier = Modifier.align(Alignment.CenterVertically)
                         )
@@ -200,24 +203,26 @@ fun BorrowingApp(model: AppViewModel) {
                         Separator()
                         Spacer(Modifier.weight(1f))
                         if (borrow.returnTime == null) {
-                            PlainTooltipBox(
+                            TooltipBox(
+                                state = rememberTooltipState(),
                                 tooltip = {
                                     androidx.compose.material3.Text("Mark as returned")
-                                }
-                            ) {
-                                IconButton(
-                                    onClick = {
-                                        with(model.library) { borrow.returned() }
-                                        coroutine.launch {
-                                            model.library.writeToFile()
-                                        }
-                                    },
-                                    content = {
-                                        Icon(imageVector = Icons.Default.Archive, contentDescription = "")
-                                    },
-                                    modifier = Modifier.tooltipAnchor()
-                                )
-                            }
+                                },
+                                content = {
+                                    IconButton(
+                                        onClick = {
+                                            with(model.library) { borrow.returned() }
+                                            coroutine.launch {
+                                                model.library.writeToFile()
+                                            }
+                                        },
+                                        content = {
+                                            Icon(imageVector = Icons.Default.Archive, contentDescription = "")
+                                        },
+                                    )
+                                },
+                                positionProvider = rememberComponentRectPositionProvider()
+                            )
                         }
                     }
                     if (index < model.library.borrowList.items.lastIndex) {
