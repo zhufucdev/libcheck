@@ -1,9 +1,9 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 
 plugins {
-    kotlin("jvm")
-    kotlin("plugin.serialization") version "1.9.20"
-    id("org.jetbrains.compose")
+    alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.compose)
 }
 
 group = "com.zhufucdev"
@@ -23,9 +23,9 @@ dependencies {
     implementation(compose.desktop.currentOs)
     implementation(compose.materialIconsExtended)
     implementation(compose.material3)
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-    implementation("commons-io:commons-io:2.11.0")
-    implementation("com.darkrockstudios:mpfilepicker:3.1.0")
+    implementation(libs.apache.commonsio)
+    implementation(libs.kotlinx.serialzation.json)
+    implementation(libs.mpfilepicker)
 }
 
 compose.desktop {
