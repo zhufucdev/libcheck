@@ -29,6 +29,7 @@ import model.AppViewModel
 import model.BorrowSortable
 import model.Route
 import ui.LaunchReveal
+import ui.PaddingLarge
 import ui.component.*
 import ui.variant
 import java.time.Instant
@@ -47,186 +48,196 @@ fun BorrowingApp(model: AppViewModel) {
 
     LaunchReveal(model.library.borrows, model.reveal, listState)
 
-    Column {
-        Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End) {
-            var sorting by remember { mutableStateOf(false) }
-            Box {
-                SortButton(
-                    onClick = { sorting = true },
-                    modifier = Modifier.padding(end = 6.dp)
-                )
-                SortMenu(
-                    expanded = sorting,
-                    onDismissRequest = { sorting = false },
-                    sortOrder = model.library.sorter.borrowModel.order,
-                    onSortOrderChanged = {
-                        coroutine.launch {
-                            model.library.sorter.sortBorrows(it)
-                        }
-                    }
-                ) {
-                    SortMenuCaption("Keyword")
-                    BorrowSortable.entries.forEach {
-                        val selected = model.library.sorter.borrowModel.by == it
-                        SortMenuItem(
-                            text = { Text(it.label) },
-                            selected = selected,
-                            icon = { Icon(imageVector = Icons.Default.SortByAlpha, contentDescription = "") },
-                            onClick = {
-                                coroutine.launch {
-                                    model.library.sorter.sortBorrows(model.library.sorter.borrowModel.order, it)
-                                }
+    if (model.library.borrows.isEmpty()) {
+        HeadingPlaceholder(
+            imageVector = Icons.Default.VpnKeyOff,
+            title = { Text(text = "No borrow records") }
+        )
+    } else {
+        Column {
+            Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End) {
+                var sorting by remember { mutableStateOf(false) }
+                Box {
+                    SortButton(
+                        onClick = { sorting = true },
+                        modifier = Modifier.padding(end = 6.dp)
+                    )
+                    SortMenu(
+                        expanded = sorting,
+                        onDismissRequest = { sorting = false },
+                        sortOrder = model.library.sorter.borrowModel.order,
+                        onSortOrderChanged = {
+                            coroutine.launch {
+                                model.library.sorter.sortBorrows(it)
                             }
-                        )
+                        }
+                    ) {
+                        SortMenuCaption("Keyword")
+                        BorrowSortable.entries.forEach {
+                            val selected = model.library.sorter.borrowModel.by == it
+                            SortMenuItem(
+                                text = { Text(it.label) },
+                                selected = selected,
+                                icon = { Icon(imageVector = Icons.Default.SortByAlpha, contentDescription = "") },
+                                onClick = {
+                                    coroutine.launch {
+                                        model.library.sorter.sortBorrows(model.library.sorter.borrowModel.order, it)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
             }
-        }
-        LazyColumn(state = listState) {
-            model.library.borrows.forEachIndexed { index, borrow ->
-                item(borrow.id) {
-                    val headTooltipState = remember { TooltipState() }
-                    val bgColor = rememberRevealAnimation(model, borrow.id)
-                    FlowRow(
-                        modifier = Modifier.padding(horizontal = 12.dp).animateItemPlacement().background(bgColor),
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        TooltipBox(
-                            state = headTooltipState,
-                            tooltip = {
-                                borrow.returnTime.let { rt ->
-                                    if (rt != null) {
-                                        androidx.compose.material3.Text(
-                                            "Returned at ${
-                                                formatter.format(
-                                                    Instant.ofEpochMilli(rt).atZone(ZoneId.systemDefault())
-                                                )
-                                            }",
-                                        )
-                                    } else {
-                                        androidx.compose.material3.Text(
-                                            "Due in ${
-                                                formatter.format(
-                                                    Instant.ofEpochMilli(borrow.dueTime).atZone(ZoneId.systemDefault())
-                                                )
-                                            }"
-                                        )
-                                    }
-                                }
-                            },
-                            content = {
-                                IconButton(
-                                    content = {
-                                        Icon(
-                                            imageVector = if (borrow.returnTime == null) {
-                                                if (borrow.dueTime < now.toEpochMilli()) {
-                                                    Icons.Default.Timer
-                                                } else {
-                                                    Icons.AutoMirrored.Filled.Outbound
-                                                }
-                                            } else {
-                                                Icons.Default.Done
-                                            },
-                                            contentDescription = "",
-                                        )
-                                    },
-                                    onClick = {
-                                        coroutine.launch {
-                                            headTooltipState.show()
-                                        }
-                                    },
-                                )
-                            },
-                            modifier = Modifier.align(Alignment.CenterVertically),
-                            positionProvider = rememberComponentRectPositionProvider()
-                        )
-                        Separator()
-                        Text(
-                            formatter.format(Instant.ofEpochMilli(borrow.time).atZone(ZoneId.systemDefault())),
-                            style = MaterialTheme.typography.body2,
-                            modifier = Modifier.align(Alignment.CenterVertically)
-                        )
-                        Separator()
-                        val book by remember { flow { emit(model.library.getBook(borrow.bookId)) } }.collectAsState(null)
-                        if (book == null) {
-                            Icon(
-                                imageVector = Icons.Default.QuestionMark,
-                                contentDescription = "",
-                                modifier = Modifier.align(Alignment.CenterVertically)
-                            )
-                        } else {
-                            val b = book!!
-                            TextButton(
-                                onClick = {
-                                    model.reveal = b.id
-                                    model.route = Route.BOOKS
-                                },
-                                content = {
-                                    Text(
-                                        b.name,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
-                            contentDescription = "",
-                            modifier = Modifier.align(Alignment.CenterVertically)
-                        )
-                        val reader by remember {
-                            flow { emit(model.library.getReader(borrow.readerId)) }
-                        }.collectAsState(null)
-                        if (reader == null) {
-                            Icon(
-                                imageVector = Icons.Default.PersonSearch,
-                                contentDescription = "",
-                                modifier = Modifier.align(Alignment.CenterVertically)
-                            )
-                        } else {
-                            val r = reader!!
-                            TextButton(
-                                onClick = {
-                                    model.reveal = r.id
-                                    model.route = Route.READERS
-                                },
-                                content = {
-                                    Text(
-                                        r.name,
-                                        overflow = TextOverflow.Ellipsis,
-                                    )
-                                }
-                            )
-                        }
-                        Separator()
-                        Spacer(Modifier.weight(1f))
-                        if (borrow.returnTime == null) {
+            LazyColumn(state = listState) {
+                model.library.borrows.forEachIndexed { index, borrow ->
+                    item(borrow.id) {
+                        val headTooltipState = remember { TooltipState() }
+                        val bgColor = rememberRevealAnimation(model, borrow.id)
+                        FlowRow(
+                            modifier = Modifier.padding(horizontal = PaddingLarge).animateItemPlacement().background(bgColor),
+                            verticalArrangement = Arrangement.Center
+                        ) {
                             TooltipBox(
-                                state = rememberTooltipState(),
+                                state = headTooltipState,
                                 tooltip = {
-                                    androidx.compose.material3.Text("Mark as returned")
+                                    borrow.returnTime.let { rt ->
+                                        if (rt != null) {
+                                            androidx.compose.material3.Text(
+                                                "Returned at ${
+                                                    formatter.format(
+                                                        Instant.ofEpochMilli(rt).atZone(ZoneId.systemDefault())
+                                                    )
+                                                }",
+                                            )
+                                        } else {
+                                            androidx.compose.material3.Text(
+                                                "Due in ${
+                                                    formatter.format(
+                                                        Instant.ofEpochMilli(borrow.dueTime)
+                                                            .atZone(ZoneId.systemDefault())
+                                                    )
+                                                }"
+                                            )
+                                        }
+                                    }
                                 },
                                 content = {
                                     IconButton(
+                                        content = {
+                                            Icon(
+                                                imageVector = if (borrow.returnTime == null) {
+                                                    if (borrow.dueTime < now.toEpochMilli()) {
+                                                        Icons.Default.Timer
+                                                    } else {
+                                                        Icons.AutoMirrored.Filled.Outbound
+                                                    }
+                                                } else {
+                                                    Icons.Default.Done
+                                                },
+                                                contentDescription = "",
+                                            )
+                                        },
                                         onClick = {
                                             coroutine.launch {
-                                                with(model.library) { borrow.setReturned() }
+                                                headTooltipState.show()
                                             }
-                                        },
-                                        content = {
-                                            Icon(imageVector = Icons.Default.Archive, contentDescription = "")
                                         },
                                     )
                                 },
+                                modifier = Modifier.align(Alignment.CenterVertically),
                                 positionProvider = rememberComponentRectPositionProvider()
                             )
+                            Separator()
+                            Text(
+                                formatter.format(Instant.ofEpochMilli(borrow.time).atZone(ZoneId.systemDefault())),
+                                style = MaterialTheme.typography.body2,
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                            Separator()
+                            val book by remember { flow { emit(model.library.getBook(borrow.bookId)) } }.collectAsState(
+                                null
+                            )
+                            if (book == null) {
+                                Icon(
+                                    imageVector = Icons.Default.QuestionMark,
+                                    contentDescription = "",
+                                    modifier = Modifier.align(Alignment.CenterVertically)
+                                )
+                            } else {
+                                val b = book!!
+                                TextButton(
+                                    onClick = {
+                                        model.reveal = b.id
+                                        model.route = Route.BOOKS
+                                    },
+                                    content = {
+                                        Text(
+                                            b.name,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                )
+                            }
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
+                                contentDescription = "",
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                            val reader by remember {
+                                flow { emit(model.library.getReader(borrow.readerId)) }
+                            }.collectAsState(null)
+                            if (reader == null) {
+                                Icon(
+                                    imageVector = Icons.Default.PersonSearch,
+                                    contentDescription = "",
+                                    modifier = Modifier.align(Alignment.CenterVertically)
+                                )
+                            } else {
+                                val r = reader!!
+                                TextButton(
+                                    onClick = {
+                                        model.reveal = r.id
+                                        model.route = Route.READERS
+                                    },
+                                    content = {
+                                        Text(
+                                            r.name,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                    }
+                                )
+                            }
+                            Separator()
+                            Spacer(Modifier.weight(1f))
+                            if (borrow.returnTime == null) {
+                                TooltipBox(
+                                    state = rememberTooltipState(),
+                                    tooltip = {
+                                        androidx.compose.material3.Text("Mark as returned")
+                                    },
+                                    content = {
+                                        IconButton(
+                                            onClick = {
+                                                coroutine.launch {
+                                                    with(model.library) { borrow.setReturned() }
+                                                }
+                                            },
+                                            content = {
+                                                Icon(imageVector = Icons.Default.Archive, contentDescription = "")
+                                            },
+                                        )
+                                    },
+                                    positionProvider = rememberComponentRectPositionProvider()
+                                )
+                            }
                         }
-                    }
-                    if (index < model.library.borrows.lastIndex) {
-                        Spacer(
-                            Modifier.fillParentMaxWidth().height(1.dp).padding(horizontal = 12.dp)
-                                .background(MaterialTheme.colors.onSurface.copy(alpha = 0.2f))
-                        )
+                        if (index < model.library.borrows.lastIndex) {
+                            Spacer(
+                                Modifier.fillParentMaxWidth().height(1.dp).padding(horizontal = PaddingLarge)
+                                    .background(MaterialTheme.colors.onSurface.copy(alpha = 0.2f))
+                            )
+                        }
                     }
                 }
             }

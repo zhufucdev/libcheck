@@ -19,7 +19,6 @@ import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.SortByAlpha
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -49,6 +48,7 @@ import model.Book
 import model.BookSortable
 import model.Identifier
 import ui.LaunchReveal
+import ui.PaddingLarge
 import ui.component.*
 import ui.variant
 
@@ -82,16 +82,16 @@ fun BooksApp(model: AppViewModel) {
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
                 Basket(model)
-                Spacer(Modifier.width(12.dp))
+                Spacer(Modifier.width(PaddingLarge))
                 ExtendedFloatingActionButton(
-                    text = { Text("New Book") },
+                    text = { Text("New book") },
                     icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "") },
                     onClick = { addingBook = true }
                 )
             }
         }
     ) {
-        Box(Modifier.padding(it)) {
+        Box(Modifier.padding(it).fillMaxSize()) {
             BookList(model) { book ->
                 bookId = book.id
                 bookUri = book.avatarUri
@@ -125,7 +125,7 @@ fun BooksApp(model: AppViewModel) {
                                 style = MaterialTheme.typography.h5.copy(color = MaterialTheme.colors.onSurface),
                             )
                         }
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(PaddingLarge))
                         AvatarInput(
                             uri = bookUri,
                             onUriChange = { bookUri = it },
@@ -244,66 +244,74 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
 
     LaunchReveal(model.library.books, model.reveal, state)
 
-    Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {
-        Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-            SortMenu(
-                expanded = sorting,
-                offset = sortButtonPos,
-                onDismissRequest = { sorting = false },
-                sortOrder = library.sorter.bookModel.order,
-                onSortOrderChanged = {
-                    coroutine.launch {
-                        library.sorter.sortBooks(it)
-                    }
-                }
-            ) {
-                SortMenuCaption("Keyword")
-                BookSortable.entries.forEach {
-                    val selected = library.sorter.bookModel.by == it
-                    SortMenuItem(
-                        text = { Text(it.label) },
-                        icon = {
-                            Icon(
-                                imageVector = if (!selected) Icons.Default.SortByAlpha else Icons.Default.Done,
-                                contentDescription = ""
-                            )
-                        },
-                        selected = selected,
-                        onClick = {
-                            coroutine.launch {
-                                library.sorter.sortBooks(by = it)
-                            }
+    if (library.books.isEmpty()) {
+        HeadingPlaceholder(
+            imageVector = Icons.Default.Book,
+            title = { Text(text = "No books available") },
+            description = { Text(text = "Click on the new book button to get started") }
+        )
+    } else {
+        Column(Modifier.padding(horizontal = PaddingLarge).padding(top = PaddingLarge)) {
+            Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
+                SortMenu(
+                    expanded = sorting,
+                    offset = sortButtonPos,
+                    onDismissRequest = { sorting = false },
+                    sortOrder = library.sorter.bookModel.order,
+                    onSortOrderChanged = {
+                        coroutine.launch {
+                            library.sorter.sortBooks(it)
                         }
-                    )
-                }
-            }
-            SortButton(
-                onClick = {
-                    sorting = true
-                },
-                modifier = Modifier.onGloballyPositioned {
-                    sortButtonPos = it.positionInParent().let { w ->
-                        DpOffset(w.x.dp, (w.y - it.boundsInParent().height).dp)
+                    }
+                ) {
+                    SortMenuCaption("Keyword")
+                    BookSortable.entries.forEach {
+                        val selected = library.sorter.bookModel.by == it
+                        SortMenuItem(
+                            text = { Text(it.label) },
+                            icon = {
+                                Icon(
+                                    imageVector = if (!selected) Icons.Default.SortByAlpha else Icons.Default.Done,
+                                    contentDescription = ""
+                                )
+                            },
+                            selected = selected,
+                            onClick = {
+                                coroutine.launch {
+                                    library.sorter.sortBooks(by = it)
+                                }
+                            }
+                        )
                     }
                 }
-            )
-        }
+                SortButton(
+                    onClick = {
+                        sorting = true
+                    },
+                    modifier = Modifier.onGloballyPositioned {
+                        sortButtonPos = it.positionInParent().let { w ->
+                            DpOffset(w.x.dp, (w.y - it.boundsInParent().height).dp)
+                        }
+                    }
+                )
+            }
 
-        LazyVerticalGrid(columns = GridCells.Adaptive(240.dp), state = state) {
-            library.books.forEach { book ->
-                item(book.id) {
-                    Box(modifier = Modifier.animateItemPlacement()) {
-                        BookCard(model, book) { onBookClicked(it) }
-                        Text(
-                            text = with(library) { book.getStock().toString() },
-                            style = MaterialTheme.typography.button.copy(color = MaterialTheme.colors.onPrimary),
-                            modifier = Modifier.background(
-                                color = MaterialTheme.colors.primarySurface,
-                                shape = CircleShape
+            LazyVerticalGrid(columns = GridCells.Adaptive(240.dp), state = state) {
+                library.books.forEach { book ->
+                    item(book.id) {
+                        Box(modifier = Modifier.animateItemPlacement()) {
+                            BookCard(model, book) { onBookClicked(it) }
+                            Text(
+                                text = with(library) { book.getStock().toString() },
+                                style = MaterialTheme.typography.button.copy(color = MaterialTheme.colors.onPrimary),
+                                modifier = Modifier.background(
+                                    color = MaterialTheme.colors.primarySurface,
+                                    shape = CircleShape
+                                )
+                                    .padding(10.dp)
+                                    .align(Alignment.TopEnd)
                             )
-                                .padding(10.dp)
-                                .align(Alignment.TopEnd)
-                        )
+                        }
                     }
                 }
             }
@@ -358,7 +366,7 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(12.dp).fillMaxSize()
+            modifier = Modifier.padding(PaddingLarge).fillMaxSize()
         ) {
             Box {
                 LazyAvatar(
