@@ -10,7 +10,7 @@ group = "com.zhufucdev"
 version = "1.0-SNAPSHOT"
 
 repositories {
-    mavenCentral()
+    maven("https://maven.aliyun.com/repository/public/")
     maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     google()
 }
