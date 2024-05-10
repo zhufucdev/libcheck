@@ -14,6 +14,7 @@ import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -227,7 +228,7 @@ private fun BorrowDialog(
                     ) {
                         LazyAvatar(borrowingOut.avatarUri, Icons.Default.Book, Modifier.size(80.dp))
                         Icon(
-                            imageVector = Icons.Default.ArrowRightAlt,
+                            imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
                             contentDescription = "",
                             modifier = Modifier.size(48.dp).padding(horizontal = PaddingLarge)
                         )
