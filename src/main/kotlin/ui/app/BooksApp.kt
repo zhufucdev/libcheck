@@ -216,12 +216,12 @@ fun BooksApp(model: AppViewModel) {
                             coroutine.launch {
                                 if (addingBook) {
                                     model.library.addBook(book)
-                                } else {
+                                } else if (editingBook) {
                                     model.library.updateBook(book)
                                 }
+                                addingBook = false
+                                editingBook = false
                             }
-                            addingBook = false
-                            editingBook = false
                         },
                         enabled = canSave,
                         modifier = Modifier.padding(6.dp)

@@ -111,12 +111,12 @@ fun ReadersApp(model: AppViewModel) {
                             coroutine.launch {
                                 if (addingReader) {
                                     model.library.addReader(Reader(readerName, Identifier(), readerUri))
-                                } else {
+                                } else if (editingReader) {
                                     model.library.updateReader(Reader(readerName, readerId!!, readerUri))
                                 }
+                                addingReader = false
+                                editingReader = false
                             }
-                            addingReader = false
-                            editingReader = false
                         },
                         enabled = canSave,
                         modifier = Modifier.padding(6.dp)
