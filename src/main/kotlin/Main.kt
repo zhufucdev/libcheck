@@ -8,7 +8,7 @@ import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import model.AppViewModel
 import ui.app.LibcheckApp
-import model.Library
+import model.LocalMachineLibrary
 import model.Route
 import ui.calculateWindowSize
 import java.io.File
@@ -20,7 +20,7 @@ fun App(windowState: WindowState) {
         derivedStateOf { calculateWindowSize(windowState.size) }
     }
     val library = remember {
-        Library(File("libcheck").absoluteFile)
+        LocalMachineLibrary(File("libcheck").absoluteFile)
     }
     val route = remember {
         mutableStateOf(Route.BOOKS)

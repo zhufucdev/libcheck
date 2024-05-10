@@ -33,6 +33,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.Book
@@ -40,7 +41,6 @@ import model.Identifier
 import model.Reader
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
-import org.jetbrains.skia.Surface
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.TimeZone
@@ -112,7 +112,7 @@ fun Basket(model: AppViewModel) {
                         ) {
                             model.booksInBasket.forEach { id ->
                                 item(id) {
-                                    val book = remember(model.library.bookList.items) { model.library.getBook(id) }
+                                    val book = remember(model.library.books) { model.library.getBook(id) }
                                     if (book != null) {
                                         StagedBookItem(
                                             book,
@@ -182,9 +182,8 @@ fun Basket(model: AppViewModel) {
             borrowingOut = borrowingOut!!,
             borrower = borrower!!,
             onBorrow = {
-                model.library.borrow(borrower!!, borrowingOut!!, it)
                 coroutine.launch {
-                    model.library.writeToFile()
+                    model.library.addBorrow(borrower!!, borrowingOut!!, it)
                 }
                 borrowing = false
             }
@@ -280,7 +279,7 @@ private fun StagedBookItem(
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
-    val outOfStock by remember(book) { derivedStateOf { with(model.library) { book.inStock <= 0u } } }
+    val outOfStock by remember(book) { derivedStateOf { with(model.library) { book.getStock() } <= 0u } }
     Box(
         modifier = Modifier.padding(6.dp).pointerInput(outOfStock) {
             if (outOfStock) {

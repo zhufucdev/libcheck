@@ -21,6 +21,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.BorrowSortable
@@ -43,7 +44,7 @@ fun BorrowingApp(model: AppViewModel) {
 
     LaunchedEffect(model.reveal) {
         val reveal = model.reveal ?: return@LaunchedEffect
-        val index = model.library.borrowList.items.indexOfFirst { it.id == reveal }
+        val index = model.library.borrows.indexOfFirst { it.id == reveal }
         if (index > 0) {
             listState.animateScrollToItem(index)
         }
@@ -60,25 +61,23 @@ fun BorrowingApp(model: AppViewModel) {
                 SortMenu(
                     expanded = sorting,
                     onDismissRequest = { sorting = false },
-                    sortOrder = model.library.borrowList.sortOrder,
+                    sortOrder = model.library.sorter.borrowModel.order,
                     onSortOrderChanged = {
-                        model.library.sortBorrows(it, model.library.borrowList.sortedBy)
                         coroutine.launch {
-                            model.library.writeToFile()
+                            model.library.sorter.sortBorrows(it)
                         }
                     }
                 ) {
                     SortMenuCaption("Keyword")
                     BorrowSortable.entries.forEach {
-                        val selected = model.library.borrowList.sortedBy == it
+                        val selected = model.library.sorter.borrowModel.by == it
                         SortMenuItem(
                             text = { Text(it.label) },
                             selected = selected,
                             icon = { Icon(imageVector = Icons.Default.SortByAlpha, contentDescription = "") },
                             onClick = {
-                                model.library.sortBorrows(model.library.borrowList.sortOrder, it)
                                 coroutine.launch {
-                                    model.library.writeToFile()
+                                    model.library.sorter.sortBorrows(model.library.sorter.borrowModel.order, it)
                                 }
                             }
                         )
@@ -87,7 +86,7 @@ fun BorrowingApp(model: AppViewModel) {
             }
         }
         LazyColumn(state = listState) {
-            model.library.borrowList.items.forEachIndexed { index, borrow ->
+            model.library.borrows.forEachIndexed { index, borrow ->
                 item(borrow.id) {
                     val headTooltipState = remember { TooltipState() }
                     val bgColor = rememberRevealAnimation(model, borrow.id)
@@ -151,54 +150,56 @@ fun BorrowingApp(model: AppViewModel) {
                             modifier = Modifier.align(Alignment.CenterVertically)
                         )
                         Separator()
-                        model.library.getBook(borrow.bookId).let { book ->
-                            if (book == null) {
-                                Icon(
-                                    imageVector = Icons.Default.QuestionMark,
-                                    contentDescription = "",
-                                    modifier = Modifier.align(Alignment.CenterVertically)
-                                )
-                            } else {
-                                TextButton(
-                                    onClick = {
-                                        model.reveal = book.id
-                                        model.route = Route.BOOKS
-                                    },
-                                    content = {
-                                        Text(
-                                            book.name,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                                )
-                            }
+                        val book by remember { flow { emit(model.library.getBook(borrow.bookId)) } }.collectAsState(null)
+                        if (book == null) {
+                            Icon(
+                                imageVector = Icons.Default.QuestionMark,
+                                contentDescription = "",
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                        } else {
+                            val b = book!!
+                            TextButton(
+                                onClick = {
+                                    model.reveal = b.id
+                                    model.route = Route.BOOKS
+                                },
+                                content = {
+                                    Text(
+                                        b.name,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            )
                         }
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
                             contentDescription = "",
                             modifier = Modifier.align(Alignment.CenterVertically)
                         )
-                        model.library.getReader(borrow.readerId).let { reader ->
-                            if (reader == null) {
-                                Icon(
-                                    imageVector = Icons.Default.PersonSearch,
-                                    contentDescription = "",
-                                    modifier = Modifier.align(Alignment.CenterVertically)
-                                )
-                            } else {
-                                TextButton(
-                                    onClick = {
-                                        model.reveal = reader.id
-                                        model.route = Route.READERS
-                                    },
-                                    content = {
-                                        Text(
-                                            reader.name,
-                                            overflow = TextOverflow.Ellipsis,
-                                        )
-                                    }
-                                )
-                            }
+                        val reader by remember {
+                            flow { emit(model.library.getReader(borrow.readerId)) }
+                        }.collectAsState(null)
+                        if (reader == null) {
+                            Icon(
+                                imageVector = Icons.Default.PersonSearch,
+                                contentDescription = "",
+                                modifier = Modifier.align(Alignment.CenterVertically)
+                            )
+                        } else {
+                            val r = reader!!
+                            TextButton(
+                                onClick = {
+                                    model.reveal = r.id
+                                    model.route = Route.READERS
+                                },
+                                content = {
+                                    Text(
+                                        r.name,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
+                            )
                         }
                         Separator()
                         Spacer(Modifier.weight(1f))
@@ -211,9 +212,8 @@ fun BorrowingApp(model: AppViewModel) {
                                 content = {
                                     IconButton(
                                         onClick = {
-                                            with(model.library) { borrow.returned() }
                                             coroutine.launch {
-                                                model.library.writeToFile()
+                                                with(model.library) { borrow.setReturned() }
                                             }
                                         },
                                         content = {
@@ -225,7 +225,7 @@ fun BorrowingApp(model: AppViewModel) {
                             )
                         }
                     }
-                    if (index < model.library.borrowList.items.lastIndex) {
+                    if (index < model.library.borrows.lastIndex) {
                         Spacer(
                             Modifier.fillParentMaxWidth().height(1.dp).padding(horizontal = 12.dp)
                                 .background(MaterialTheme.colors.onSurface.copy(alpha = 0.2f))

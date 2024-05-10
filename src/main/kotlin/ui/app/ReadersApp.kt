@@ -108,13 +108,12 @@ fun ReadersApp(model: AppViewModel) {
                     TextButton(
                         content = { Text("Save") },
                         onClick = {
-                            if (addingReader) {
-                                model.library.addReader(Reader(readerName, Identifier(), readerUri))
-                            } else {
-                                model.library.updateReader(Reader(readerName, readerId!!, readerUri))
-                            }
                             coroutine.launch {
-                                model.library.writeToFile()
+                                if (addingReader) {
+                                    model.library.addReader(Reader(readerName, Identifier(), readerUri))
+                                } else {
+                                    model.library.updateReader(Reader(readerName, readerId!!, readerUri))
+                                }
                             }
                             addingReader = false
                             editingReader = false
@@ -139,7 +138,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
 
     LaunchedEffect(model.reveal) {
         val reveal = model.reveal ?: return@LaunchedEffect
-        val idx = model.library.readerList.items.indexOfFirst { it.id == reveal }
+        val idx = model.library.readers.indexOfFirst { it.id == reveal }
         if (idx > 0) {
             gridState.animateScrollToItem(idx)
         }
@@ -154,17 +153,16 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                 SortMenu(
                     expanded = sorting,
                     onDismissRequest = { sorting = false },
-                    sortOrder = library.readerList.sortOrder,
+                    sortOrder = library.sorter.readerModel.order,
                     onSortOrderChanged = {
-                        library.sortReaders(it, library.readerList.sortedBy)
                         coroutine.launch {
-                            library.writeToFile()
+                            library.sorter.sortReaders(it)
                         }
                     }
                 ) {
                     SortMenuCaption("Keyword")
                     ReaderSortable.entries.forEach {
-                        val selected = library.readerList.sortedBy == it
+                        val selected = library.sorter.readerModel.by == it
                         SortMenuItem(
                             text = { Text(it.label) },
                             icon = {
@@ -175,9 +173,8 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                             },
                             selected = selected,
                             onClick = {
-                                library.sortReaders(library.readerList.sortOrder, it)
                                 coroutine.launch {
-                                    library.writeToFile()
+                                    library.sorter.sortReaders(by = it)
                                 }
                             }
                         )
@@ -187,7 +184,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
         }
 
         LazyVerticalGrid(columns = GridCells.Adaptive(200.dp), state = gridState) {
-            library.readerList.items.forEach { reader ->
+            library.readers.forEach { reader ->
                 item(reader.id) {
                     var contextMenu by remember { mutableStateOf(false) }
                     var bounds by remember { mutableStateOf(Rect.Zero) }
@@ -239,9 +236,8 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                         expanded = contextMenu,
                                         onDismissRequest = { contextMenu = false },
                                         onDelete = {
-                                            model.library.deleteReader(reader)
                                             coroutine.launch {
-                                                model.library.writeToFile()
+                                                model.library.deleteReader(reader)
                                             }
                                         }
                                     )
@@ -249,11 +245,11 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                 Text(text = reader.name, style = MaterialTheme.typography.h6)
                                 Text(
                                     text = with(library) {
-                                        val b = reader.borrows
+                                        val b = reader.getBorrows().size
                                         if (b > 1) {
-                                            "${reader.borrows} borrows"
+                                            "$b borrows"
                                         } else {
-                                            "${reader.borrows} borrow"
+                                            "$b borrow"
                                         }
                                     },
                                     style = MaterialTheme.typography.caption

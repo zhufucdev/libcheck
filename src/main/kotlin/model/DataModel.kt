@@ -62,7 +62,7 @@ data class Borrow(
     val returnTime: Long? = null
 ) {
     val expired get() = Instant.now().toEpochMilli() >= dueTime
-    fun instance(library: Library) =
+    suspend fun instance(library: Library) =
         BorrowInstanced(
             id,
             readerId,
@@ -118,7 +118,7 @@ data class SortedBookList(
     val sortedBy: BookSortable = BookSortable.NAME,
     val sortOrder: SortOrder = SortOrder.ASCENDING
 ) {
-    fun sort(library: Library) {
+    suspend fun sort(library: Library) {
         when (sortedBy) {
             BookSortable.NAME ->
                 if (sortOrder == SortOrder.ASCENDING) {
@@ -156,17 +156,19 @@ data class SortedBookList(
                 }
 
             BookSortable.IN_STOCK -> {
-                val inStock = items.associateWith {
-                    with(library) { it.inStock }
+                val stockOf = items.associateWith {
+                    with(library) { it.getStock() }
                 }
                 if (sortOrder == SortOrder.ASCENDING) {
-                    items.sortBy { inStock[it] }
+                    items.sortBy { stockOf[it] }
                 } else {
-                    items.sortByDescending { inStock[it] }
+                    items.sortByDescending { stockOf[it] }
                 }
             }
         }
     }
+
+    val model: SortModel<BookSortable> get() = SortModel(sortOrder, sortedBy)
 }
 
 @Serializable
@@ -192,6 +194,8 @@ data class SortedReaderList(
                 }
         }
     }
+
+    val model: SortModel<ReaderSortable> get() = SortModel(sortOrder, sortedBy)
 }
 
 @Serializable
@@ -200,7 +204,7 @@ data class SortedBorrowList(
     val sortedBy: BorrowSortable = BorrowSortable.BOOK_NAME,
     val sortOrder: SortOrder = SortOrder.ASCENDING
 ) {
-    fun sort(library: Library) {
+    suspend fun sort(library: Library) {
         val instanced = items.map { it.instance(library) }.toMutableList()
 
         when (sortedBy) {
@@ -258,4 +262,6 @@ data class SortedBorrowList(
             items[index] = borrowInstanced.original
         }
     }
+
+    val model: SortModel<BorrowSortable> get() = SortModel(sortOrder, sortedBy)
 }

@@ -69,7 +69,7 @@ fun BooksApp(model: AppViewModel) {
             val targetStock = bookStockParsed ?: return@derivedStateOf false
             val id = bookId ?: return@derivedStateOf false
             editingBook && targetStock < with(model.library) {
-                getBook(id)?.let { it.stock - it.inStock } ?: return@derivedStateOf false
+                getBook(id)?.let { it.stock - it.getStock() } ?: return@derivedStateOf false
             }
         }
     }
@@ -210,13 +210,12 @@ fun BooksApp(model: AppViewModel) {
                                 bookStockParsed!!
                             )
 
-                            if (addingBook) {
-                                model.library.addBook(book)
-                            } else {
-                                model.library.updateBook(book)
-                            }
                             coroutine.launch {
-                                model.library.writeToFile()
+                                if (addingBook) {
+                                    model.library.addBook(book)
+                                } else {
+                                    model.library.updateBook(book)
+                                }
                             }
                             addingBook = false
                             editingBook = false
@@ -242,7 +241,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
 
     LaunchedEffect(model.reveal) {
         val reveal = model.reveal ?: return@LaunchedEffect
-        val idx = model.library.bookList.items.indexOfFirst { it.id == reveal }
+        val idx = model.library.books.indexOfFirst { it.id == reveal }
         if (idx > 0) {
             state.animateScrollToItem(idx)
         }
@@ -254,17 +253,16 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
                 expanded = sorting,
                 offset = sortButtonPos,
                 onDismissRequest = { sorting = false },
-                sortOrder = library.bookList.sortOrder,
+                sortOrder = library.sorter.bookModel.order,
                 onSortOrderChanged = {
-                    library.sortBooks(it, library.bookList.sortedBy)
                     coroutine.launch {
-                        library.writeToFile()
+                        library.sorter.sortBooks(it)
                     }
                 }
             ) {
                 SortMenuCaption("Keyword")
                 BookSortable.entries.forEach {
-                    val selected = library.bookList.sortedBy == it
+                    val selected = library.sorter.bookModel.by == it
                     SortMenuItem(
                         text = { Text(it.label) },
                         icon = {
@@ -275,9 +273,8 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
                         },
                         selected = selected,
                         onClick = {
-                            library.sortBooks(library.bookList.sortOrder, it)
                             coroutine.launch {
-                                library.writeToFile()
+                                library.sorter.sortBooks(by = it)
                             }
                         }
                     )
@@ -296,12 +293,12 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
         }
 
         LazyVerticalGrid(columns = GridCells.Adaptive(240.dp), state = state) {
-            library.bookList.items.forEach { book ->
+            library.books.forEach { book ->
                 item(book.id) {
                     Box(modifier = Modifier.animateItemPlacement()) {
                         BookCard(model, book) { onBookClicked(it) }
                         Text(
-                            text = with(library) { book.inStock.toString() },
+                            text = with(library) { book.getStock().toString() },
                             style = MaterialTheme.typography.button.copy(color = MaterialTheme.colors.onPrimary),
                             modifier = Modifier.background(
                                 color = MaterialTheme.colors.primarySurface,
@@ -317,7 +314,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit) {
     val coroutine = rememberCoroutineScope()
@@ -393,9 +390,8 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                     expanded = contextMenu,
                     onDismissRequest = { contextMenu = false },
                     onDelete = {
-                        model.library.deleteBook(book)
                         coroutine.launch {
-                            model.library.writeToFile()
+                            model.library.deleteBook(book)
                         }
                     },
                 )

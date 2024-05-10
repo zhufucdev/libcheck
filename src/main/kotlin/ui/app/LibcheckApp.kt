@@ -34,8 +34,7 @@ fun LibcheckApp(model: AppViewModel) {
     val searchResult = remember { mutableStateListOf<Searchable>() }
 
     LaunchedEffect(model.library) {
-        delay(0.5.seconds)
-        model.library.initialize()
+        model.library.connect()
     }
 
     LaunchedEffect(searchQuery) {
@@ -77,15 +76,23 @@ fun LibcheckApp(model: AppViewModel) {
                     modifier = Modifier.widthIn(min = 500.dp).align(Alignment.CenterHorizontally)
                 )
                 AnimatedVisibility(
-                    visible = !model.library.initialized || model.library.saving,
+                    visible = model.library.state !is LibraryState.Idle,
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    if (model.library.loadProgress <= 0) {
+                    val progress by remember {
+                        derivedStateOf {
+                            when (val curr = model.library.state) {
+                                is LibraryState.HasProgress -> curr.progress
+                                else -> 0f
+                            }
+                        }
+                    }
+                    if (progress <= 0) {
                         LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
                     } else {
                         LinearProgressIndicator(
-                            progress = model.library.loadProgress,
+                            progress = progress,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -104,7 +111,7 @@ fun LibcheckApp(model: AppViewModel) {
     ) {
         Box(Modifier.padding(it)) {
             AnimatedVisibility(
-                visible = model.library.initialized,
+                visible = model.library.state !is LibraryState.Initializing,
                 enter = fadeIn() + slideIn { IntOffset(0, it.height / 3) },
                 exit = fadeOut()
             ) {
@@ -120,7 +127,7 @@ fun LibcheckApp(model: AppViewModel) {
                 }
             }
             AnimatedVisibility(
-                visible = !model.library.initialized,
+                visible = model.library.state is LibraryState.Initializing,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
