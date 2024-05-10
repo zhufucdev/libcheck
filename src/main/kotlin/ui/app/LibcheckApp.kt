@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package ui.app
 
 import androidx.compose.animation.AnimatedVisibility

@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package ui.app
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -46,6 +48,7 @@ import model.AppViewModel
 import model.Book
 import model.BookSortable
 import model.Identifier
+import ui.LaunchReveal
 import ui.component.*
 import ui.variant
 
@@ -239,13 +242,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
     var sortButtonPos by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
     val coroutine = rememberCoroutineScope()
 
-    LaunchedEffect(model.reveal) {
-        val reveal = model.reveal ?: return@LaunchedEffect
-        val idx = model.library.books.indexOfFirst { it.id == reveal }
-        if (idx > 0) {
-            state.animateScrollToItem(idx)
-        }
-    }
+    LaunchReveal(model.library.books, model.reveal, state)
 
     Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {

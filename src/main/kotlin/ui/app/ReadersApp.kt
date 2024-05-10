@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package ui.app
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -29,6 +31,7 @@ import model.AppViewModel
 import model.Identifier
 import model.Reader
 import model.ReaderSortable
+import ui.LaunchReveal
 import ui.component.*
 
 @Composable
@@ -128,7 +131,7 @@ fun ReadersApp(model: AppViewModel) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
     val library = model.library
@@ -136,13 +139,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
     val gridState = remember { LazyGridState() }
     var sorting by remember { mutableStateOf(false) }
 
-    LaunchedEffect(model.reveal) {
-        val reveal = model.reveal ?: return@LaunchedEffect
-        val idx = model.library.readers.indexOfFirst { it.id == reveal }
-        if (idx > 0) {
-            gridState.animateScrollToItem(idx)
-        }
-    }
+    LaunchReveal(model.library.readers, model.reveal, gridState)
 
     Column(Modifier.padding(horizontal = 12.dp).padding(top = 12.dp)) {
         Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {

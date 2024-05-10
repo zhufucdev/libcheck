@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package ui.app
 
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -26,6 +28,7 @@ import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.BorrowSortable
 import model.Route
+import ui.LaunchReveal
 import ui.component.*
 import ui.variant
 import java.time.Instant
@@ -42,13 +45,7 @@ fun BorrowingApp(model: AppViewModel) {
     val now = rememberNow()
     val listState = rememberLazyListState()
 
-    LaunchedEffect(model.reveal) {
-        val reveal = model.reveal ?: return@LaunchedEffect
-        val index = model.library.borrows.indexOfFirst { it.id == reveal }
-        if (index > 0) {
-            listState.animateScrollToItem(index)
-        }
-    }
+    LaunchReveal(model.library.borrows, model.reveal, listState)
 
     Column {
         Row(Modifier.fillMaxWidth().padding(top = 6.dp), horizontalArrangement = Arrangement.End) {

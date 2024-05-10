@@ -10,10 +10,13 @@ import kotlinx.serialization.encoding.Encoder
 import java.time.Instant
 import java.util.*
 
-interface Searchable {
+interface Identifiable {
+    val id: Identifier
+}
+
+interface Searchable : Identifiable {
     fun matches(keyword: String): Boolean
     val name: String
-    val id: Identifier
 }
 
 @Serializable(IdentifierSerializer::class)
@@ -21,6 +24,7 @@ data class Identifier(val uuid: UUID = UUID.randomUUID())
 
 class IdentifierSerializer : KSerializer<Identifier> {
     private val serializer = String.serializer()
+
     override val descriptor: SerialDescriptor = serializer.descriptor
 
     override fun serialize(encoder: Encoder, value: Identifier) {
@@ -54,13 +58,13 @@ class Reader(override val name: String, override val id: Identifier, val avatarU
 
 @Serializable
 data class Borrow(
-    val id: Identifier,
+    override val id: Identifier,
     val readerId: Identifier,
     val bookId: Identifier,
     val time: Long,
     val dueTime: Long,
     val returnTime: Long? = null
-) {
+): Identifiable {
     val expired get() = Instant.now().toEpochMilli() >= dueTime
     suspend fun instance(library: Library) =
         BorrowInstanced(
