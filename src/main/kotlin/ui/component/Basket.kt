@@ -1,6 +1,6 @@
 package ui.component
 
-import androidx.compose.animation.*
+import androidx.compose.animation.VectorConverter
 import androidx.compose.animation.core.animate
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
@@ -23,7 +23,10 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.*
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Outline
+import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
@@ -33,7 +36,6 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.Book
@@ -41,9 +43,10 @@ import model.Identifier
 import model.Reader
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
+import ui.PaddingLarge
 import java.time.Instant
 import java.time.temporal.ChronoUnit
-import java.util.TimeZone
+import java.util.*
 
 @Composable
 fun Basket(model: AppViewModel) {
@@ -108,7 +111,7 @@ fun Basket(model: AppViewModel) {
                     Column {
                         LazyVerticalGrid(
                             columns = GridCells.Fixed(3),
-                            modifier = Modifier.padding(12.dp).fillMaxWidth()
+                            modifier = Modifier.padding(PaddingLarge).fillMaxWidth()
                         ) {
                             model.booksInBasket.forEach { id ->
                                 item(id) {
@@ -216,7 +219,7 @@ private fun BorrowDialog(
                         Spacer(Modifier.width(6.dp))
                         Text("Borrowing a book", style = MaterialTheme.typography.h5)
                     }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(PaddingLarge))
                     Row(
                         horizontalArrangement = Arrangement.Center,
                         verticalAlignment = Alignment.CenterVertically,
@@ -226,11 +229,11 @@ private fun BorrowDialog(
                         Icon(
                             imageVector = Icons.Default.ArrowRightAlt,
                             contentDescription = "",
-                            modifier = Modifier.size(48.dp).padding(horizontal = 12.dp)
+                            modifier = Modifier.size(48.dp).padding(horizontal = PaddingLarge)
                         )
                         LazyAvatar(borrower.avatarUri, Icons.Default.Person, Modifier.size(80.dp))
                     }
-                    Spacer(Modifier.height(12.dp))
+                    Spacer(Modifier.height(PaddingLarge))
 
                     when (step) {
                         0 -> TimePicker(timePickerState)

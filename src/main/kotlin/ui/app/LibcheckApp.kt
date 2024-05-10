@@ -10,23 +10,20 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.*
-import androidx.compose.material.Icon
-import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.PermanentDrawerSheet
+import androidx.compose.material3.SearchBar
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.delay
 import model.*
+import ui.PaddingLarge
 import ui.WindowSize
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -151,7 +148,7 @@ private fun InitializationPlaceholder() {
             contentDescription = "",
             modifier = Modifier.size(64.dp)
         )
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(PaddingLarge))
         Text(
             text = "Loading library",
             style = MaterialTheme.typography.h5
@@ -161,7 +158,7 @@ private fun InitializationPlaceholder() {
 
 @Composable
 private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit) {
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(PaddingLarge))
     Route.entries.forEach {
         NavigationDrawerItem(
             label = { Text(it.label) },
@@ -200,7 +197,7 @@ fun SearchResult(result: Searchable, model: AppViewModel, onClick: () -> Unit) {
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(12.dp)
+            modifier = Modifier.padding(PaddingLarge)
         ) {
             Icon(
                 imageVector = when (result) {

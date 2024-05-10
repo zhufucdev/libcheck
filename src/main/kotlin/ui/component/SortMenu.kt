@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import model.SortOrder
+import ui.PaddingLarge
 import ui.variant
 
 @Composable
@@ -54,7 +55,7 @@ fun SortMenuCaption(text: String) {
     Text(
         text = text,
         style = MaterialTheme.typography.caption.copy(color = MaterialTheme.colors.primary),
-        modifier = Modifier.padding(12.dp)
+        modifier = Modifier.padding(PaddingLarge)
     )
 }
 
@@ -70,7 +71,7 @@ fun SortMenuItem(text: @Composable () -> Unit, icon: @Composable () -> Unit, sel
     ) {
         CompositionLocalProvider(LocalContentColor provides if (selected) MaterialTheme.colors.onPrimary else LocalContentColor.current) {
             Row(
-                modifier = Modifier.padding(12.dp).fillMaxWidth(),
+                modifier = Modifier.padding(PaddingLarge).fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 icon()
