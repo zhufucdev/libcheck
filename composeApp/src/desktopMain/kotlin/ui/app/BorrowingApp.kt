@@ -1,4 +1,5 @@
 @file:Suppress("FunctionName")
+@file:OptIn(ExperimentalResourceApi::class)
 
 package ui.app
 
@@ -28,6 +29,9 @@ import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.BorrowSortable
 import model.Route
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.stringResource
+import resources.*
 import ui.LaunchReveal
 import ui.PaddingLarge
 import ui.component.*
@@ -51,7 +55,7 @@ fun BorrowingApp(model: AppViewModel) {
     if (model.library.borrows.isEmpty()) {
         HeadingPlaceholder(
             imageVector = Icons.Default.VpnKeyOff,
-            title = { Text(text = "No borrow records") }
+            title = { Text(text = stringResource(Res.string.no_borrow_records_para)) }
         )
     } else {
         Column {
@@ -72,7 +76,7 @@ fun BorrowingApp(model: AppViewModel) {
                             }
                         }
                     ) {
-                        SortMenuCaption("Keyword")
+                        SortMenuCaption(stringResource(Res.string.keyword_para))
                         BorrowSortable.entries.forEach {
                             val selected = model.library.sorter.borrowModel.by == it
                             SortMenuItem(
@@ -95,31 +99,32 @@ fun BorrowingApp(model: AppViewModel) {
                         val headTooltipState = remember { TooltipState() }
                         val bgColor = rememberRevealAnimation(model, borrow.id)
                         FlowRow(
-                            modifier = Modifier.padding(horizontal = PaddingLarge).animateItemPlacement().background(bgColor),
+                            modifier = Modifier.padding(horizontal = PaddingLarge).animateItemPlacement()
+                                .background(bgColor),
                             verticalArrangement = Arrangement.Center
                         ) {
                             TooltipBox(
                                 state = headTooltipState,
                                 tooltip = {
                                     borrow.returnTime.let { rt ->
-                                        if (rt != null) {
-                                            androidx.compose.material3.Text(
-                                                "Returned at ${
+                                        androidx.compose.material3.Text(
+                                            if (rt != null) {
+                                                stringResource(
+                                                    Res.string.returned_at_para,
                                                     formatter.format(
                                                         Instant.ofEpochMilli(rt).atZone(ZoneId.systemDefault())
                                                     )
-                                                }",
-                                            )
-                                        } else {
-                                            androidx.compose.material3.Text(
-                                                "Due in ${
+                                                )
+                                            } else {
+                                                stringResource(
+                                                    Res.string.due_in,
                                                     formatter.format(
                                                         Instant.ofEpochMilli(borrow.dueTime)
                                                             .atZone(ZoneId.systemDefault())
                                                     )
-                                                }"
-                                            )
-                                        }
+                                                )
+                                            }
+                                        )
                                     }
                                 },
                                 content = {
@@ -214,7 +219,7 @@ fun BorrowingApp(model: AppViewModel) {
                                 TooltipBox(
                                     state = rememberTooltipState(),
                                     tooltip = {
-                                        androidx.compose.material3.Text("Mark as returned")
+                                        androidx.compose.material3.Text(stringResource(Res.string.mark_as_returned_para))
                                     },
                                     content = {
                                         IconButton(

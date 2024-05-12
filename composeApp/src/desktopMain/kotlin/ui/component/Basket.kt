@@ -1,4 +1,5 @@
 @file:Suppress("FunctionName")
+@file:OptIn(ExperimentalResourceApi::class)
 
 package ui.component
 
@@ -49,8 +50,14 @@ import model.AppViewModel
 import model.Book
 import model.Identifier
 import model.Reader
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
+import resources.Res
+import resources.borrowing_a_book_para
+import resources.ok_caption
+import resources.out_of_stock_header
 import ui.PaddingLarge
 import ui.PaddingMedium
 import ui.PaddingSmall
@@ -236,7 +243,7 @@ private fun BorrowDialog(
                             modifier = Modifier.size(24.dp)
                         )
                         Spacer(Modifier.width(PaddingMedium))
-                        Text("Borrowing a book", style = MaterialTheme.typography.h5)
+                        Text(stringResource(Res.string.borrowing_a_book_para), style = MaterialTheme.typography.h5)
                     }
                     Spacer(Modifier.height(PaddingLarge))
                     Row(
@@ -281,7 +288,7 @@ private fun BorrowDialog(
         buttons = {
             Row(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.End) {
                 TextButton(
-                    content = { Text("Save") },
+                    content = { Text(stringResource(Res.string.ok_caption)) },
                     onClick = {
                         onBorrow(
                             Instant.ofEpochMilli(datePickerState.selectedDateMillis!!)
@@ -388,7 +395,7 @@ private fun StagedBookAvatar(book: Book, outOfStock: Boolean = false, modifier: 
                 contentColor = MaterialTheme.colors.onSurface,
             ) {
                 Text(
-                    "Out of Stock", style = MaterialTheme.typography.body1,
+                    stringResource(Res.string.out_of_stock_header), style = MaterialTheme.typography.body1,
                     modifier = Modifier.padding(6.dp)
                 )
             }

@@ -7,7 +7,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.stringResource
+import resources.Res
+import resources.delete_para
 
+@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun CommonContextMenu(expanded: Boolean, onDismissRequest: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     DropdownMenu(
@@ -15,7 +20,7 @@ fun CommonContextMenu(expanded: Boolean, onDismissRequest: () -> Unit, onDelete:
         onDismissRequest = onDismissRequest,
         content = {
             SortMenuItem(
-                text = { Text("Delete") },
+                text = { Text(stringResource(Res.string.delete_para)) },
                 icon = { Icon(imageVector = Icons.Default.Delete, contentDescription = "") },
                 selected = false,
                 onClick = onDelete,

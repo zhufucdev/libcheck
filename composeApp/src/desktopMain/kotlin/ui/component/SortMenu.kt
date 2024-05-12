@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalResourceApi::class)
+
 package ui.component
 
 import androidx.compose.foundation.background
@@ -15,6 +17,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import model.SortOrder
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.stringResource
+import resources.Res
+import resources.ascending_para
+import resources.descending_para
+import resources.order_para
 import ui.PaddingLarge
 import ui.variant
 
@@ -29,9 +37,9 @@ fun SortMenu(
 ) {
     DropdownMenu(expanded = expanded, onDismissRequest = onDismissRequest, offset = offset) {
         Column {
-            SortMenuCaption("Order")
+            SortMenuCaption(stringResource(Res.string.order_para))
             SortMenuItem(
-                text = { Text("Ascending") },
+                text = { Text(stringResource(Res.string.ascending_para)) },
                 icon = { Icon(imageVector = Icons.Default.ArrowDownward, contentDescription = "") },
                 selected = sortOrder == SortOrder.ASCENDING,
                 onClick = {
@@ -39,7 +47,7 @@ fun SortMenu(
                 }
             )
             SortMenuItem(
-                text = { Text("Descending") },
+                text = { Text(stringResource(Res.string.descending_para)) },
                 icon = { Icon(imageVector = Icons.Default.ArrowUpward, contentDescription = "") },
                 selected = sortOrder == SortOrder.DESCENDING,
                 onClick = { onSortOrderChanged(SortOrder.DESCENDING) }

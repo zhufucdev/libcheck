@@ -1,4 +1,5 @@
 @file:Suppress("FunctionName")
+@file:OptIn(ExperimentalResourceApi::class)
 
 package ui.app
 
@@ -47,6 +48,9 @@ import model.AppViewModel
 import model.Book
 import model.BookSortable
 import model.Identifier
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.stringResource
+import resources.*
 import ui.LaunchReveal
 import ui.PaddingLarge
 import ui.component.*
@@ -84,7 +88,7 @@ fun BooksApp(model: AppViewModel) {
                 Basket(model)
                 Spacer(Modifier.width(PaddingLarge))
                 ExtendedFloatingActionButton(
-                    text = { Text("New book") },
+                    text = { Text(stringResource(Res.string.new_book_para)) },
                     icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "") },
                     onClick = { addingBook = true }
                 )
@@ -121,7 +125,9 @@ fun BooksApp(model: AppViewModel) {
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (addingBook) "Adding a book" else "Editing a book",
+                                text = stringResource(
+                                    if (addingBook) Res.string.adding_a_book_para else Res.string.editing_a_book_para
+                                ),
                                 style = MaterialTheme.typography.h5.copy(color = MaterialTheme.colors.onSurface),
                             )
                         }
@@ -129,26 +135,26 @@ fun BooksApp(model: AppViewModel) {
                         AvatarInput(
                             uri = bookUri,
                             onUriChange = { bookUri = it },
-                            label = { Text("Cover") },
+                            label = { Text(stringResource(Res.string.cover_para)) },
                             Icons.Default.Book
                         )
                         OutlinedTextField(
                             value = bookTitle,
                             onValueChange = { bookTitle = it },
-                            label = { Text("Title") },
+                            label = { Text(stringResource(Res.string.title_para)) },
                             modifier = Modifier.fillMaxWidth(),
                             singleLine = true
                         )
                         OutlinedTextField(
                             value = bookAuthor,
                             onValueChange = { bookAuthor = it },
-                            label = { Text("Author") },
+                            label = { Text(stringResource(Res.string.auther_para)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                         OutlinedTextField(
                             value = bookIsbn,
                             onValueChange = { bookIsbn = it },
-                            label = { Text("ISBN") },
+                            label = { Text(stringResource(Res.string.isbn_caption)) },
                             modifier = Modifier.fillMaxWidth(),
                             visualTransformation = {
                                 TransformedText(
@@ -191,7 +197,7 @@ fun BooksApp(model: AppViewModel) {
                                 bookStockParsed = it.toUIntOrNull()
                                 bookStock = it
                             },
-                            label = { Text("Stock") },
+                            label = { Text(stringResource(Res.string.stock_para)) },
                             modifier = Modifier.fillMaxWidth(),
                             isError = bookStockParsed == null || negativeInStock,
                             singleLine = true
@@ -202,7 +208,7 @@ fun BooksApp(model: AppViewModel) {
             buttons = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(
-                        content = { Text("Save") },
+                        content = { Text(stringResource(Res.string.ok_caption)) },
                         onClick = {
                             val book = Book(
                                 bookTitle,
@@ -247,8 +253,8 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
     if (library.books.isEmpty()) {
         HeadingPlaceholder(
             imageVector = Icons.Default.Book,
-            title = { Text(text = "No books available") },
-            description = { Text(text = "Click on the new book button to get started") }
+            title = { Text(text = stringResource(Res.string.no_readers_available_para)) },
+            description = { Text(text = stringResource(Res.string.no_readers_available_des)) }
         )
     } else {
         Column(Modifier.padding(horizontal = PaddingLarge).padding(top = PaddingLarge)) {
@@ -264,7 +270,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
                         }
                     }
                 ) {
-                    SortMenuCaption("Keyword")
+                    SortMenuCaption(stringResource(Res.string.keyword_para))
                     BookSortable.entries.forEach {
                         val selected = library.sorter.bookModel.by == it
                         SortMenuItem(

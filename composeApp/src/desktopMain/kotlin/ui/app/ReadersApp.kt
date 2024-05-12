@@ -1,4 +1,5 @@
 @file:Suppress("FunctionName")
+@file:OptIn(ExperimentalResourceApi::class)
 
 package ui.app
 
@@ -27,6 +28,10 @@ import model.AppViewModel
 import model.Identifier
 import model.Reader
 import model.ReaderSortable
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringResource
+import resources.*
 import ui.LaunchReveal
 import ui.PaddingLarge
 import ui.component.*
@@ -48,7 +53,7 @@ fun ReadersApp(model: AppViewModel) {
                 Basket(model)
                 Spacer(Modifier.width(PaddingLarge))
                 ExtendedFloatingActionButton(
-                    text = { Text("New reader") },
+                    text = { Text(stringResource(Res.string.new_reader_para)) },
                     icon = { Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "") },
                     onClick = { addingReader = true }
                 )
@@ -78,7 +83,7 @@ fun ReadersApp(model: AppViewModel) {
                             )
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
-                                text = if (addingReader) "Adding a reader" else "Editing a reader",
+                                text = stringResource(if (addingReader) Res.string.adding_a_reader_para else Res.string.editing_a_reader_para),
                                 style = MaterialTheme.typography.h5.copy(color = MaterialTheme.colors.onSurface),
                             )
                         }
@@ -88,12 +93,12 @@ fun ReadersApp(model: AppViewModel) {
                             uri = readerUri,
                             onUriChange = { readerUri = it },
                             defaultImageVector = Icons.Default.Person,
-                            label = { Text("Avatar") }
+                            label = { Text(stringResource(Res.string.avatar_para)) }
                         )
                         OutlinedTextField(
                             value = readerName,
                             onValueChange = { readerName = it },
-                            label = { Text("Name") },
+                            label = { Text(stringResource(Res.string.name_para)) },
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -106,7 +111,7 @@ fun ReadersApp(model: AppViewModel) {
             buttons = {
                 Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
                     TextButton(
-                        content = { Text("Save") },
+                        content = { Text(stringResource(Res.string.ok_caption)) },
                         onClick = {
                             coroutine.launch {
                                 if (addingReader) {
@@ -141,8 +146,8 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
     if (library.readers.isEmpty()) {
         HeadingPlaceholder(
             imageVector = Icons.Default.Contacts,
-            title = { Text(text = "No readers available") },
-            description = { Text(text = "Create new readers by clicking on the right bottom button") }
+            title = { Text(text = stringResource(Res.string.no_readers_available_para)) },
+            description = { Text(text = stringResource(Res.string.no_readers_available_des)) }
         )
     } else {
         Column(Modifier.padding(horizontal = PaddingLarge).padding(top = PaddingLarge)) {
@@ -161,7 +166,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                             }
                         }
                     ) {
-                        SortMenuCaption("Keyword")
+                        SortMenuCaption(stringResource(Res.string.keyword_para))
                         ReaderSortable.entries.forEach {
                             val selected = library.sorter.readerModel.by == it
                             SortMenuItem(
@@ -247,11 +252,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                     Text(
                                         text = with(library) {
                                             val b = reader.getBorrows().size
-                                            if (b > 1) {
-                                                "$b borrows"
-                                            } else {
-                                                "$b borrow"
-                                            }
+                                            pluralStringResource(Res.plurals.borrows_span, b, b)
                                         },
                                         style = MaterialTheme.typography.caption
                                     )

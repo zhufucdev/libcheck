@@ -1,3 +1,40 @@
 <resources>
     <string name="libcheck_header">LibCheck</string>
+    <string name="new_book_para">New book</string>
+    <string name="adding_a_book_para">Adding a book</string>
+    <string name="editing_a_book_para">Editing a book</string>
+    <string name="cover_para">Cover</string>
+    <string name="title_para">Title</string>
+    <string name="auther_para">Author</string>
+    <string name="isbn_caption">ISBN</string>
+    <string name="stock_para">Stock</string>
+    <string name="ok_caption">OK</string>
+    <string name="no_books_available_para">No books available</string>
+    <string name="no_books_available_des">Click on the new book button to get started</string>
+    <string name="keyword_para">Keyword</string>
+    <string name="no_borrow_records_para">No borrow records</string>
+    <string name="returned_at_para">Returned at %s</string>
+    <string name="due_in">Due in %s</string>
+    <string name="mark_as_returned_para">Mark as returned</string>
+    <string name="loading_library_para">Loading library</string>
+    <string name="new_reader_para">New reader</string>
+    <string name="adding_a_reader_para">Adding a reader</string>
+    <string name="editing_a_reader_para">Editing a reader</string>
+    <string name="avatar_para">Avatar</string>
+    <string name="name_para">Name</string>
+    <string name="no_readers_available_para">No readers available</string>
+    <string name="no_readers_available_des">Create new readers by clicking on the right bottom button</string>
+    <plurals name="borrows_span">
+        <item quantity="one">%1$d borrow</item>
+        <item quantity="other">%1$d borrows</item>
+    </plurals>
+    <string name="borrowing_a_book_para">Borrowing a book</string>
+    <string name="unknown_book_para">Unknown book</string>
+    <string name="clear_basket_para">Clear basket</string>
+    <string name="drag_here_to_stage_para">Drag some books here to stage for borrowing</string>
+    <string name="out_of_stock_header">Out of Stock</string>
+    <string name="delete_para">Delete</string>
+    <string name="order_para">Order</string>
+    <string name="ascending_para">Ascending</string>
+    <string name="descending_para">Descending</string>
 </resources>
