@@ -12,8 +12,10 @@ import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.Icon
 import androidx.compose.material.LocalContentColor
@@ -58,10 +60,7 @@ import resources.Res
 import resources.borrowing_a_book_para
 import resources.ok_caption
 import resources.out_of_stock_header
-import ui.PaddingLarge
-import ui.PaddingMedium
-import ui.PaddingSmall
-import ui.toTimeString
+import ui.*
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -245,42 +244,55 @@ private fun BorrowDialog(
                         Spacer(Modifier.width(PaddingMedium))
                         Text(stringResource(Res.string.borrowing_a_book_para), style = MaterialTheme.typography.h5)
                     }
-                    Spacer(Modifier.height(PaddingLarge))
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        BookAvatar(uri = borrowingOut.avatarUri, modifier = Modifier.size(120.dp))
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
-                            contentDescription = "",
-                            modifier = Modifier.size(48.dp).padding(horizontal = PaddingLarge)
-                        )
-                        LazyAvatar(
-                            uri = borrower.avatarUri,
-                            defaultImageVector = Icons.Default.Person,
-                            modifier = Modifier.size(80.dp).clip(CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                    }
-                    Spacer(Modifier.height(PaddingLarge))
-                    Field(
-                        icon = { Icon(imageVector = Icons.Default.Timer, contentDescription = "") },
-                        onEditClick = { editor = Editor.Time }
-                    ) {
-                        Text(text = timePickerState.toTimeString())
-                    }
+                    Column(Modifier.verticalScroll(rememberScrollState())) {
+                        Spacer(Modifier.height(PaddingLarge))
+                        Row(
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            BookAvatar(uri = borrowingOut.avatarUri, modifier = Modifier.size(120.dp))
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
+                                contentDescription = "",
+                                modifier = Modifier.size(48.dp).padding(horizontal = PaddingLarge)
+                            )
+                            LazyAvatar(
+                                uri = borrower.avatarUri,
+                                defaultImageVector = Icons.Default.Person,
+                                modifier = Modifier.size(80.dp).clip(CircleShape),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                        Spacer(Modifier.height(PaddingLarge))
+                        Field(
+                            icon = { Icon(imageVector = Icons.Default.Timer, contentDescription = "") },
+                            onEditClick = { editor = Editor.Time }
+                        ) {
+                            Text(timePickerState.toTimeString())
+                        }
 
-                    AnimatedVisibility(
-                        visible = editor == Editor.Time,
-                        enter = expandVertically(),
-                        exit = shrinkVertically()
-                    ) {
-                        TimePicker(timePickerState)
-                    }
-                    AnimatedVisibility(editor == Editor.Date) {
-                        DatePicker(datePickerState)
+                        AnimatedVisibility(
+                            visible = editor == Editor.Time,
+                            enter = expandVertically(),
+                            exit = shrinkVertically()
+                        ) {
+                            TimePicker(timePickerState)
+                        }
+
+                        Field(
+                            icon = { Icon(imageVector = Icons.Default.DateRange, contentDescription = "") },
+                            onEditClick = { editor = Editor.Date }
+                        ) {
+                            Text(datePickerState.toDateString())
+                        }
+                        AnimatedVisibility(
+                            visible = editor == Editor.Date,
+                            enter = expandVertically(),
+                            exit = shrinkVertically()
+                        ) {
+                            DatePicker(datePickerState)
+                        }
                     }
                 }
             }
@@ -312,9 +324,12 @@ private fun Field(
 ) {
     Row(verticalAlignment = Alignment.CenterVertically) {
         icon()
-        content()
+        Spacer(Modifier.width(PaddingSmall))
+        CompositionLocalProvider(androidx.compose.material.LocalTextStyle provides MaterialTheme.typography.body1) {
+            content()
+        }
         Spacer(Modifier.weight(1f))
-        OutlinedIconButton(onClick = onEditClick) {
+        androidx.compose.material3.IconButton(onClick = onEditClick) {
             Icon(imageVector = Icons.Default.Edit, contentDescription = "")
         }
     }
