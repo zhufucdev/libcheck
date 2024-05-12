@@ -23,7 +23,7 @@ import java.net.URI
 private val cache = mutableMapOf<String, ImageBitmap>()
 
 @Composable
-fun AsyncImage(uri: String, modifier: Modifier = Modifier) {
+fun AsyncImage(uri: String, contentScale: ContentScale = ContentScale.Fit, modifier: Modifier = Modifier) {
     var image by remember { mutableStateOf<ImageBitmap?>(null) }
     var error by remember { mutableStateOf(false) }
 
@@ -60,7 +60,7 @@ fun AsyncImage(uri: String, modifier: Modifier = Modifier) {
                 Image(
                     bitmap = it,
                     contentDescription = "",
-                    contentScale = ContentScale.Fit,
+                    contentScale = contentScale,
                     modifier = modifier
                 )
             }

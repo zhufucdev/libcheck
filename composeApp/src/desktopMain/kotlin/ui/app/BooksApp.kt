@@ -369,12 +369,14 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
             modifier = Modifier.padding(PaddingLarge).fillMaxSize()
         ) {
             Box {
-                LazyAvatar(
+                BookAvatar(
                     uri = book.avatarUri,
-                    defaultImageVector = Icons.Default.Book,
-                    modifier = Modifier.size(120.dp).onGloballyPositioned {
-                        bounds = it.boundsInRoot()
-                    }
+                    modifier =
+                    Modifier
+                        .size(120.dp)
+                        .onGloballyPositioned {
+                            bounds = it.boundsInRoot()
+                        }
                 )
 
                 if (dragging) {

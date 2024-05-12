@@ -8,6 +8,6 @@ apache-commonsio = { group = "commons-io", name = "commons-io", version = "2.11.
 mpfilepicker = { group = "com.darkrockstudios", name = "mpfilepicker", version = "3.1.0" }
 
 [plugins]
-kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

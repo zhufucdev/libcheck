@@ -11,6 +11,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 
@@ -53,11 +54,12 @@ fun AvatarInput(uri: String, onUriChange: (String) -> Unit, label: @Composable (
 }
 
 @Composable
-fun LazyAvatar(uri: String, defaultImageVector: ImageVector, modifier: Modifier = Modifier) {
+fun LazyAvatar(uri: String, defaultImageVector: ImageVector, contentScale: ContentScale = ContentScale.Fit, modifier: Modifier = Modifier) {
     if (uri.isNotBlank()) {
         AsyncImage(
             uri,
-            modifier = modifier
+            modifier = modifier,
+            contentScale = contentScale
         )
     } else {
         Icon(

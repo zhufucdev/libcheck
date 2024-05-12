@@ -1,11 +1,17 @@
+@file:Suppress("FunctionName")
+
 package ui.component
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.VectorConverter
 import androidx.compose.animation.core.animate
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.Icon
@@ -29,6 +35,7 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -45,6 +52,9 @@ import model.Reader
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
 import ui.PaddingLarge
+import ui.PaddingMedium
+import ui.PaddingSmall
+import ui.toTimeString
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -195,6 +205,10 @@ fun Basket(model: AppViewModel) {
     }
 }
 
+private enum class Editor {
+    Time, Date
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BorrowDialog(
@@ -203,7 +217,7 @@ private fun BorrowDialog(
     borrower: Reader,
     onBorrow: (Instant) -> Unit
 ) {
-    var step by remember { mutableIntStateOf(0) }
+    var editor by remember { mutableStateOf<Editor?>(null) }
     val timePickerState = rememberTimePickerState()
     val datePickerState = rememberDatePickerState(Instant.now().toEpochMilli())
 
@@ -214,10 +228,14 @@ private fun BorrowDialog(
                 Column {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = 6.dp)
+                        modifier = Modifier.padding(horizontal = PaddingSmall, vertical = PaddingMedium)
                     ) {
-                        Icon(imageVector = Icons.Default.Key, contentDescription = "", modifier = Modifier.size(24.dp))
-                        Spacer(Modifier.width(6.dp))
+                        Icon(
+                            imageVector = Icons.Default.AddCard,
+                            contentDescription = "",
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Spacer(Modifier.width(PaddingMedium))
                         Text("Borrowing a book", style = MaterialTheme.typography.h5)
                     }
                     Spacer(Modifier.height(PaddingLarge))
@@ -226,19 +244,36 @@ private fun BorrowDialog(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        LazyAvatar(borrowingOut.avatarUri, Icons.Default.Book, Modifier.size(80.dp))
+                        BookAvatar(uri = borrowingOut.avatarUri, modifier = Modifier.size(120.dp))
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
                             contentDescription = "",
                             modifier = Modifier.size(48.dp).padding(horizontal = PaddingLarge)
                         )
-                        LazyAvatar(borrower.avatarUri, Icons.Default.Person, Modifier.size(80.dp))
+                        LazyAvatar(
+                            uri = borrower.avatarUri,
+                            defaultImageVector = Icons.Default.Person,
+                            modifier = Modifier.size(80.dp).clip(CircleShape),
+                            contentScale = ContentScale.Crop
+                        )
                     }
                     Spacer(Modifier.height(PaddingLarge))
+                    Field(
+                        icon = { Icon(imageVector = Icons.Default.Timer, contentDescription = "") },
+                        onEditClick = { editor = Editor.Time }
+                    ) {
+                        Text(text = timePickerState.toTimeString())
+                    }
 
-                    when (step) {
-                        0 -> TimePicker(timePickerState)
-                        1 -> DatePicker(datePickerState)
+                    AnimatedVisibility(
+                        visible = editor == Editor.Time,
+                        enter = expandVertically(),
+                        exit = shrinkVertically()
+                    ) {
+                        TimePicker(timePickerState)
+                    }
+                    AnimatedVisibility(editor == Editor.Date) {
+                        DatePicker(datePickerState)
                     }
                 }
             }
@@ -246,29 +281,36 @@ private fun BorrowDialog(
         buttons = {
             Row(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.End) {
                 TextButton(
-                    content = { Text("Back") },
-                    onClick = { step-- },
-                    enabled = step > 0,
-                )
-                TextButton(
-                    content = { Text(if (step < 2) "Next" else "Save") },
+                    content = { Text("Save") },
                     onClick = {
-                        if (step < 2) {
-                            step++
-                        } else {
-                            onBorrow(
-                                Instant.ofEpochMilli(datePickerState.selectedDateMillis!!)
-                                    .plus(timePickerState.hour.toLong(), ChronoUnit.HOURS)
-                                    .plus(timePickerState.minute.toLong(), ChronoUnit.MINUTES)
-                                    .plus(-TimeZone.getDefault().rawOffset.toLong(), ChronoUnit.MILLIS)
-                            )
-                        }
+                        onBorrow(
+                            Instant.ofEpochMilli(datePickerState.selectedDateMillis!!)
+                                .plus(timePickerState.hour.toLong(), ChronoUnit.HOURS)
+                                .plus(timePickerState.minute.toLong(), ChronoUnit.MINUTES)
+                                .plus(-TimeZone.getDefault().rawOffset.toLong(), ChronoUnit.MILLIS)
+                        )
                     },
                 )
                 Spacer(Modifier.width(6.dp))
             }
         }
     )
+}
+
+@Composable
+private fun Field(
+    icon: @Composable () -> Unit,
+    onEditClick: () -> Unit,
+    content: @Composable () -> Unit
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        icon()
+        content()
+        Spacer(Modifier.weight(1f))
+        OutlinedIconButton(onClick = onEditClick) {
+            Icon(imageVector = Icons.Default.Edit, contentDescription = "")
+        }
+    }
 }
 
 @Composable
@@ -336,7 +378,7 @@ private fun StagedBookItem(
 private fun StagedBookAvatar(book: Book, outOfStock: Boolean = false, modifier: Modifier = Modifier) {
     Box(contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-            LazyAvatar(book.avatarUri, Icons.Default.Book, Modifier.size(80.dp))
+            LazyAvatar(book.avatarUri, Icons.Default.Book, modifier = Modifier.size(80.dp))
             Text(text = book.name, style = MaterialTheme.typography.caption, textAlign = TextAlign.Center)
         }
         if (outOfStock) {

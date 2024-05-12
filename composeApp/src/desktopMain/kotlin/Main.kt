@@ -7,9 +7,13 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import model.AppViewModel
-import ui.app.LibcheckApp
 import model.LocalMachineLibrary
 import model.Route
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.stringResource
+import resources.Res
+import resources.libcheck_header
+import ui.app.LibcheckApp
 import ui.calculateWindowSize
 import java.io.File
 
@@ -41,12 +45,13 @@ fun App(windowState: WindowState) {
     }
 }
 
+@OptIn(ExperimentalResourceApi::class)
 fun main() = application {
     val state = rememberWindowState(width = 1200.dp, height = 800.dp)
     Window(
         onCloseRequest = ::exitApplication,
         state = state,
-        title = "Lib Check"
+        title = stringResource(Res.string.libcheck_header)
     ) {
         App(state)
     }

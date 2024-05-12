@@ -44,9 +44,9 @@ class LocalMachineLibrary(private val workingDir: File) : Library {
 
     override val sorter: LibrarySorter by lazy {
         object : LibrarySorter {
-            override val bookModel: SortModel<BookSortable> by mutableStateOf(bookList.model)
-            override val readerModel: SortModel<ReaderSortable> by mutableStateOf(readerList.model)
-            override val borrowModel: SortModel<BorrowSortable> by mutableStateOf(borrowList.model)
+            override var bookModel: SortModel<BookSortable> by mutableStateOf(bookList.model)
+            override var readerModel: SortModel<ReaderSortable> by mutableStateOf(readerList.model)
+            override var borrowModel: SortModel<BorrowSortable> by mutableStateOf(borrowList.model)
 
             override suspend fun sortBooks(order: SortOrder?, by: BookSortable?) {
                 bookList = bookList.copy(
@@ -54,6 +54,7 @@ class LocalMachineLibrary(private val workingDir: File) : Library {
                     sortedBy = by ?: bookList.sortedBy
                 )
                 bookList.sort(this@LocalMachineLibrary)
+                bookModel = SortModel(bookList.sortOrder, bookList.sortedBy)
                 saveBooks()
             }
 
@@ -63,6 +64,7 @@ class LocalMachineLibrary(private val workingDir: File) : Library {
                     sortOrder = order ?: readerList.sortOrder
                 )
                 readerList.sort()
+                readerModel = SortModel(readerList.sortOrder, readerList.sortedBy)
                 saveReaders()
             }
 
@@ -72,6 +74,7 @@ class LocalMachineLibrary(private val workingDir: File) : Library {
                     sortedBy = by ?: borrowList.sortedBy
                 )
                 borrowList.sort(this@LocalMachineLibrary)
+                borrowModel = SortModel(borrowList.sortOrder, borrowList.sortedBy)
                 saveBorrows()
             }
         }
