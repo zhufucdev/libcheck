@@ -13,8 +13,8 @@
     <string name="no_books_available_des">Click on the new book button to get started</string>
     <string name="keyword_para">Keyword</string>
     <string name="no_borrow_records_para">No borrow records</string>
-    <string name="returned_at_para">Returned at %s</string>
-    <string name="due_in">Due in %s</string>
+    <string name="returned_at_para">Returned at %1$s</string>
+    <string name="due_in">Due in %1$s</string>
     <string name="mark_as_returned_para">Mark as returned</string>
     <string name="loading_library_para">Loading library</string>
     <string name="new_reader_para">New reader</string>
