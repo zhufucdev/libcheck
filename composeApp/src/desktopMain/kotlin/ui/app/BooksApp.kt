@@ -311,7 +311,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
                                 text = with(library) { book.getStock().toString() },
                                 style = MaterialTheme.typography.button.copy(color = MaterialTheme.colors.onPrimary),
                                 modifier = Modifier.background(
-                                    color = MaterialTheme.colors.primarySurface,
+                                    color = MaterialTheme.colors.primary,
                                     shape = CircleShape
                                 )
                                     .padding(10.dp)

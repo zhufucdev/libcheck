@@ -28,6 +28,7 @@ kotlin {
             implementation(compose.desktop.currentOs)
             implementation(libs.apache.commonsio)
             implementation(libs.mpfilepicker)
+            implementation(libs.nativeparameteraccess)
         }
     }
 }

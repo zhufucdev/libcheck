@@ -6,6 +6,7 @@ kotlin = "1.9.23"
 kotlinx-serialzation-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.6.0" }
 apache-commonsio = { group = "commons-io", name = "commons-io", version = "2.11.0" }
 mpfilepicker = { group = "com.darkrockstudios", name = "mpfilepicker", version = "3.1.0" }
+nativeparameteraccess = { group = "com.github.tkuenneth", name = "nativeparameterstoreaccess", version = "0.1.2" }
 
 [plugins]
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }

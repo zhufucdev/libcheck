@@ -1,5 +1,9 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material.MaterialTheme
+import androidx.compose.material.darkColors
+import androidx.compose.material.lightColors
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -15,6 +19,7 @@ import resources.Res
 import resources.libcheck_header
 import ui.app.LibcheckApp
 import ui.calculateWindowSize
+import ui.rememberDarkModeEnabled
 import java.io.File
 
 @Composable
@@ -29,6 +34,8 @@ fun App(windowState: WindowState) {
     val route = remember {
         mutableStateOf(Route.BOOKS)
     }
+    val darkMode = rememberDarkModeEnabled()
+
     val model by remember(windowState) {
         derivedStateOf {
             AppViewModel(
@@ -40,8 +47,10 @@ fun App(windowState: WindowState) {
         }
     }
 
-    MaterialTheme {
-        LibcheckApp(model)
+    MaterialTheme(colors = if (darkMode) darkColors() else lightColors()) {
+        androidx.compose.material3.MaterialTheme(colorScheme = if (darkMode) darkColorScheme() else lightColorScheme()) {
+            LibcheckApp(model)
+        }
     }
 }
 
