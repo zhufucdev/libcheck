@@ -10,6 +10,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -124,9 +125,23 @@ fun LibcheckApp(model: AppViewModel) {
                 if (model.windowSize >= WindowSize.WIDE) {
                     Row {
                         PermanentDrawerSheet {
-                            NavigationDrawerItems(model.route) { model.route = it }
+                            NavigationDrawerItems(model.route) { next -> model.route = next }
                         }
-                        MainContent(model)
+                        Box {
+                            MainContent(model)
+                            Box(
+                                Modifier.size(20.dp)
+                                    .background(androidx.compose.material3.MaterialTheme.colorScheme.surface)
+                            ) {
+                                Box(
+                                    Modifier.matchParentSize()
+                                        .background(
+                                            color = MaterialTheme.colors.background,
+                                            shape = RoundedCornerShape(topStart = 20.dp)
+                                        )
+                                )
+                            }
+                        }
                     }
                 } else {
                     MainContent(model)
@@ -165,7 +180,7 @@ private fun InitializationPlaceholder() {
 
 @Composable
 private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit) {
-    Spacer(modifier = Modifier.height(PaddingLarge))
+    Spacer(Modifier.height(PaddingLarge))
     Route.entries.forEach {
         NavigationDrawerItem(
             label = { Text(it.label) },
