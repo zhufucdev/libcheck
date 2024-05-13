@@ -6,6 +6,7 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -23,6 +24,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import model.*
 import ui.PaddingLarge
+import ui.PaddingMedium
 import ui.WindowSize
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -46,7 +48,10 @@ fun LibcheckApp(model: AppViewModel) {
 
     Scaffold(
         topBar = {
-            Column(Modifier.fillMaxWidth()) {
+            Column(
+                Modifier.fillMaxWidth()
+                    .background(androidx.compose.material3.MaterialTheme.colorScheme.surface)
+            ) {
                 SearchBar(
                     query = searchQuery,
                     active = isSearching,
@@ -72,7 +77,9 @@ fun LibcheckApp(model: AppViewModel) {
                     },
                     leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = "") },
                     onSearch = {},
-                    modifier = Modifier.widthIn(min = 500.dp).align(Alignment.CenterHorizontally)
+                    modifier = Modifier.widthIn(min = 500.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .padding(bottom = PaddingMedium)
                 )
                 AnimatedVisibility(
                     visible = model.library.state !is LibraryState.Idle,
