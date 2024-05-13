@@ -8,15 +8,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.IconButton
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Text
+import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
 import androidx.compose.material.icons.automirrored.filled.Outbound
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.TooltipBox
-import androidx.compose.material3.TooltipState
-import androidx.compose.material3.rememberTooltipState
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -106,7 +107,8 @@ fun BorrowingApp(model: AppViewModel) {
                             TooltipBox(
                                 state = headTooltipState,
                                 tooltip = {
-                                    borrow.returnTime.let { rt ->
+                                    PlainTooltip {
+                                        val rt = borrow.returnTime
                                         androidx.compose.material3.Text(
                                             if (rt != null) {
                                                 stringResource(
@@ -219,7 +221,9 @@ fun BorrowingApp(model: AppViewModel) {
                                 TooltipBox(
                                     state = rememberTooltipState(),
                                     tooltip = {
-                                        androidx.compose.material3.Text(stringResource(Res.string.mark_as_returned_para))
+                                        PlainTooltip {
+                                            androidx.compose.material3.Text(stringResource(Res.string.mark_as_returned_para))
+                                        }
                                     },
                                     content = {
                                         IconButton(

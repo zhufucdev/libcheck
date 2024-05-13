@@ -18,7 +18,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.*
 import androidx.compose.material.Icon
-import androidx.compose.material.LocalContentColor
 import androidx.compose.material.MaterialTheme
 import androidx.compose.material.Text
 import androidx.compose.material.TextButton
@@ -56,10 +55,7 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
-import resources.Res
-import resources.borrowing_a_book_para
-import resources.ok_caption
-import resources.out_of_stock_header
+import resources.*
 import ui.*
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -169,11 +165,9 @@ fun Basket(model: AppViewModel) {
                                         model.booksInBasket.clear()
                                     },
                                     content = {
-                                        CompositionLocalProvider(LocalContentColor provides MaterialTheme.colors.onPrimary) {
-                                            Icon(imageVector = Icons.Default.DeleteForever, contentDescription = "")
-                                            Spacer(modifier = Modifier.width(2.dp))
-                                            Text("Clear Basket")
-                                        }
+                                        Icon(imageVector = Icons.Default.DeleteForever, contentDescription = "")
+                                        Spacer(modifier = Modifier.width(2.dp))
+                                        Text(stringResource(Res.string.clear_basket_para))
                                     }
                                 )
                             }
@@ -187,7 +181,7 @@ fun Basket(model: AppViewModel) {
                                     contentDescription = "",
                                     modifier = Modifier.size(36.dp)
                                 )
-                                Text("Drag some books here to stage for borrowing", textAlign = TextAlign.Center)
+                                Text(stringResource(Res.string.drag_here_to_stage_para), textAlign = TextAlign.Center)
                             }
                         }
                     }
