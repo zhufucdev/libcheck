@@ -245,8 +245,8 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
     if (library.books.isEmpty()) {
         HeadingPlaceholder(
             imageVector = Icons.Default.Book,
-            title = { Text(text = stringResource(Res.string.no_readers_available_para)) },
-            description = { Text(text = stringResource(Res.string.no_readers_available_des)) }
+            title = { Text(text = stringResource(Res.string.no_books_available_para)) },
+            description = { Text(text = stringResource(Res.string.no_books_available_des)) }
         )
     } else {
         Column(Modifier.padding(horizontal = PaddingLarge).padding(top = PaddingLarge)) {
