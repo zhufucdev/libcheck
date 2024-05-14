@@ -20,7 +20,6 @@ import resources.libcheck_header
 import ui.app.LibcheckApp
 import ui.calculateWindowSize
 import ui.rememberDarkModeEnabled
-import java.io.File
 
 @Composable
 @Preview
@@ -29,7 +28,7 @@ fun App(windowState: WindowState) {
         derivedStateOf { calculateWindowSize(windowState.size) }
     }
     val library = remember {
-        LocalMachineLibrary(File("libcheck").absoluteFile)
+        LocalMachineLibrary()
     }
     val route = remember {
         mutableStateOf(Route.BOOKS)

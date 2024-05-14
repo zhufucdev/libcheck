@@ -2,6 +2,7 @@ package model
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import currentOS
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -16,7 +17,8 @@ import java.io.File
 import java.time.Instant
 
 @OptIn(ExperimentalSerializationApi::class)
-class LocalMachineLibrary(private val workingDir: File) : Library {
+class LocalMachineLibrary : Library {
+    private val workingDir: File get() = currentOS.dataDir
     private val booksFile get() = File(workingDir, "books.json")
     private val readerFile get() = File(workingDir, "readers.json")
     private val borrowFile get() = File(workingDir, "borrow.json")

@@ -14,7 +14,7 @@ private fun getUserHome() = System.getProperty("user.home")
 class MacOS : OS {
     override fun isDarkModeEnabled() = MacOSDefaults.getDefaultsEntry("AppleInterfaceStyle") == "Dark"
     override val dataDir: File by lazy {
-        Paths.get(getUserHome(), "Library", "Application Support", "NUISTin").toFile()
+        Paths.get(getUserHome(), "Library", "Application Support", "libcheck").toFile()
     }
 }
 
@@ -24,7 +24,7 @@ class Windows : OS {
         "AppsUseLightTheme"
     ) == 0x0
 
-    override val dataDir: File by lazy { Paths.get(System.getenv("APPDATA"), "NUISTin").toFile() }
+    override val dataDir: File by lazy { Paths.get(System.getenv("APPDATA"), "libcheck").toFile() }
 }
 
 class Linux : OS {
@@ -32,12 +32,12 @@ class Linux : OS {
         Dconf.HAS_DCONF
                 && Dconf.getDconfEntry("/org/gnome/desktop/interface/gtk-theme").lowercase().contains("dark")
 
-    override val dataDir: File by lazy { File(getUserHome(), ".nuistin") }
+    override val dataDir: File by lazy { File(getUserHome(), ".libcheck") }
 }
 
 class OtherOS : OS {
     override fun isDarkModeEnabled() = false
-    override val dataDir: File by lazy { File(getUserHome(), "nuistin") }
+    override val dataDir: File by lazy { File(getUserHome(), "libcheck") }
 }
 
 val currentOS: OS by lazy {
