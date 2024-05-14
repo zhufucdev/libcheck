@@ -141,7 +141,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
     val gridState = remember { LazyGridState() }
     var sorting by remember { mutableStateOf(false) }
 
-    LaunchReveal(model.library.readers, model.reveal, gridState)
+    LaunchReveal(library.readers, model.reveal, gridState)
 
     if (library.readers.isEmpty()) {
         HeadingPlaceholder(

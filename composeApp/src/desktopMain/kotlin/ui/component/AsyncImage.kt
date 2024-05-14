@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package ui.component
 
 import androidx.compose.animation.core.*
@@ -24,12 +26,11 @@ private val cache = mutableMapOf<String, ImageBitmap>()
 
 @Composable
 fun AsyncImage(uri: String, contentScale: ContentScale = ContentScale.Fit, modifier: Modifier = Modifier) {
-    var image by remember { mutableStateOf<ImageBitmap?>(null) }
+    var image by remember { mutableStateOf(cache[uri]) }
     var error by remember { mutableStateOf(false) }
 
     LaunchedEffect(uri) {
-        val cached = cache[uri]
-        if (cached == null) {
+        if (image == null) {
             withContext(Dispatchers.IO) {
                 try {
                     image = null
@@ -41,8 +42,6 @@ fun AsyncImage(uri: String, contentScale: ContentScale = ContentScale.Fit, modif
                     error = true
                 }
             }
-        } else {
-            image = cached
         }
     }
 

@@ -248,7 +248,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
     var sortButtonPos by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
     val coroutine = rememberCoroutineScope()
 
-    LaunchReveal(model.library.books, model.reveal, state)
+    LaunchReveal(library.books, model.reveal, state)
 
     if (library.books.isEmpty()) {
         HeadingPlaceholder(

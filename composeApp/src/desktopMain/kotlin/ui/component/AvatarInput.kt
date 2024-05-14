@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package ui.component
 
 import androidx.compose.foundation.layout.*
@@ -16,7 +18,12 @@ import androidx.compose.ui.unit.dp
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 
 @Composable
-fun AvatarInput(uri: String, onUriChange: (String) -> Unit, label: @Composable () -> Unit, defaultImageVector: ImageVector) {
+fun AvatarInput(
+    uri: String,
+    onUriChange: (String) -> Unit,
+    label: @Composable () -> Unit,
+    defaultImageVector: ImageVector
+) {
     var showFilePicker by remember { mutableStateOf(false) }
 
     FilePicker(
@@ -54,7 +61,12 @@ fun AvatarInput(uri: String, onUriChange: (String) -> Unit, label: @Composable (
 }
 
 @Composable
-fun LazyAvatar(uri: String, defaultImageVector: ImageVector, contentScale: ContentScale = ContentScale.Fit, modifier: Modifier = Modifier) {
+fun LazyAvatar(
+    uri: String,
+    defaultImageVector: ImageVector,
+    contentScale: ContentScale = ContentScale.Fit,
+    modifier: Modifier = Modifier
+) {
     if (uri.isNotBlank()) {
         AsyncImage(
             uri,
