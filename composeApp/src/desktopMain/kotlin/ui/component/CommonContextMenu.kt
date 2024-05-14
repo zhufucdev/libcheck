@@ -1,10 +1,13 @@
+@file:Suppress("FunctionName")
+
 package ui.component
 
-import androidx.compose.material.DropdownMenu
-import androidx.compose.material.Icon
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -19,10 +22,9 @@ fun CommonContextMenu(expanded: Boolean, onDismissRequest: () -> Unit, onDelete:
         expanded = expanded,
         onDismissRequest = onDismissRequest,
         content = {
-            SortMenuItem(
+            DropdownMenuItem(
                 text = { Text(stringResource(Res.string.delete_para)) },
-                icon = { Icon(imageVector = Icons.Default.Delete, contentDescription = "") },
-                selected = false,
+                leadingIcon = { Icon(imageVector = Icons.Default.Delete, contentDescription = "") },
                 onClick = onDelete,
                 modifier = modifier
             )
