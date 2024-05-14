@@ -36,15 +36,12 @@ fun App(windowState: WindowState) {
     }
     val darkMode = rememberDarkModeEnabled()
 
-    val model by remember(windowState) {
-        derivedStateOf {
-            AppViewModel(
-                library,
-                windowState,
-                windowSize,
-                route
-            )
-        }
+    val model = remember {
+        AppViewModel(
+            library,
+            windowSize,
+            route
+        )
     }
 
     MaterialTheme(colors = if (darkMode) darkColors() else lightColors()) {
