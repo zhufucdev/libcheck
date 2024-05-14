@@ -9,7 +9,7 @@ interface OS {
     val dataDir: File
 }
 
-private fun getUserHome() = System.getProperty("user.home")
+fun getUserHome() = System.getProperty("user.home")
 
 class MacOS : OS {
     override fun isDarkModeEnabled() = MacOSDefaults.getDefaultsEntry("AppleInterfaceStyle") == "Dark"

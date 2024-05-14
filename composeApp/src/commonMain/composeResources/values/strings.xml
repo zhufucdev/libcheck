@@ -37,4 +37,13 @@
     <string name="order_para">Order</string>
     <string name="ascending_para">Ascending</string>
     <string name="descending_para">Descending</string>
+    <string name="select_file_para">Select file</string>
+    <string name="tier_para">Tier</string>
+    <string-array name="reader_tiers_para">
+        <item>Unspecified</item>
+        <item>Starter</item>
+        <item>Sliver</item>
+        <item>Chromium</item>
+        <item>Platinum</item>
+    </string-array>
 </resources>

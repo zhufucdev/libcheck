@@ -1,6 +1,7 @@
 package model
 
 import androidx.compose.runtime.Stable
+import com.sqlmaster.proto.LibraryOuterClass
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
@@ -52,7 +53,13 @@ data class Book(
 }
 
 @Serializable
-class Reader(override val name: String, override val id: Identifier, val avatarUri: String) : Searchable {
+class Reader(
+    override val name: String,
+    override val id: Identifier,
+    val avatarUri: String,
+    val tier: LibraryOuterClass.ReaderTier,
+    val creditability: Float = 0f,
+) : Searchable {
     override fun matches(keyword: String) = name.contains(keyword, ignoreCase = true)
 }
 
@@ -64,7 +71,7 @@ data class Borrow(
     val time: Long,
     val dueTime: Long,
     val returnTime: Long? = null
-): Identifiable {
+) : Identifiable {
     val expired get() = Instant.now().toEpochMilli() >= dueTime
     suspend fun instance(library: Library) =
         BorrowInstanced(

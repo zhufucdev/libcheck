@@ -10,8 +10,8 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import library.LocalMachineLibrary
 import model.AppViewModel
-import model.LocalMachineLibrary
 import model.Route
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource

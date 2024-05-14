@@ -1,5 +1,5 @@
 @file:Suppress("FunctionName")
-@file:OptIn(ExperimentalResourceApi::class)
+@file:OptIn(ExperimentalResourceApi::class, ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 
 package ui.app
 
@@ -21,6 +21,7 @@ import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
+import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
 import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.Identifier
@@ -33,6 +34,7 @@ import resources.*
 import ui.LaunchReveal
 import ui.PaddingLarge
 import ui.component.*
+import ui.stringRes
 
 @Composable
 fun ReadersApp(model: AppViewModel) {
@@ -41,7 +43,9 @@ fun ReadersApp(model: AppViewModel) {
     var editingReader by remember { mutableStateOf(false) }
     var readerUri by remember { mutableStateOf("") }
     var readerName by remember { mutableStateOf("") }
+    var readerTier by remember { mutableStateOf(ReaderTier.TIER_STARTER) }
     var readerId by remember { mutableStateOf<Identifier?>(null) }
+    var tierMenuExpanded by remember { mutableStateOf(false) }
 
     val canSave by remember { derivedStateOf { readerName.isNotBlank() } }
 
@@ -63,6 +67,7 @@ fun ReadersApp(model: AppViewModel) {
                 readerId = reader.id
                 readerName = reader.name
                 readerUri = reader.avatarUri
+                readerTier = reader.tier
                 editingReader = true
             }
         }
@@ -101,6 +106,35 @@ fun ReadersApp(model: AppViewModel) {
                         label = { Text(stringResource(Res.string.name_para)) },
                         modifier = Modifier.fillMaxWidth()
                     )
+                    Spacer(Modifier.height(PaddingLarge))
+
+                    ExposedDropdownMenuBox(
+                        expanded = tierMenuExpanded,
+                        onExpandedChange = { tierMenuExpanded = it },
+                    ) {
+                        ExposedDropdownTextField(
+                            value = readerTier.stringRes(),
+                            label = { Text(stringResource(Res.string.tier_para)) },
+                            modifier = Modifier.menuAnchor().fillMaxWidth()
+                        )
+                        ExposedDropdownMenu(
+                            expanded = tierMenuExpanded,
+                            onDismissRequest = { tierMenuExpanded = false },
+                        ) {
+                            ReaderTier.entries.forEach { tier ->
+                                if (tier.ordinal >= ReaderTier.TIER_PLATINUM.ordinal) {
+                                    return@forEach
+                                }
+                                DropdownMenuItem(
+                                    text = { Text(tier.stringRes()) },
+                                    onClick = {
+                                        readerTier = tier
+                                        tierMenuExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
                 }
             },
             onDismissRequest = {
@@ -113,9 +147,23 @@ fun ReadersApp(model: AppViewModel) {
                     onClick = {
                         coroutine.launch {
                             if (addingReader) {
-                                model.library.addReader(Reader(readerName, Identifier(), readerUri))
+                                model.library.addReader(
+                                    Reader(
+                                        readerName,
+                                        Identifier(),
+                                        readerUri,
+                                        readerTier
+                                    )
+                                )
                             } else if (editingReader) {
-                                model.library.updateReader(Reader(readerName, readerId!!, readerUri))
+                                model.library.updateReader(
+                                    Reader(
+                                        readerName,
+                                        readerId!!,
+                                        readerUri,
+                                        readerTier
+                                    )
+                                )
                             }
                             addingReader = false
                             editingReader = false

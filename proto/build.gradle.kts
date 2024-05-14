@@ -17,9 +17,11 @@ dependencies {
     testImplementation("org.junit.jupiter:junit-jupiter")
     implementation(libs.protobuf.java)
     implementation(libs.grpc.stub)
+    apiElements(libs.grpc.protobuf)
     implementation(libs.grpc.protobuf)
     if (JavaVersion.current().isJava9Compatible) {
         // Workaround for @javax.annotation.Generated
+        apiElements(libs.javax.annotation)
         implementation(libs.javax.annotation)
     }
 }
