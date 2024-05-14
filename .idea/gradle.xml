@@ -9,6 +9,7 @@
           <set>
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/composeApp" />
+            <option value="$PROJECT_DIR$/proto" />
           </set>
         </option>
       </GradleProjectSettings>

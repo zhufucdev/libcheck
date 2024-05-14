@@ -1,0 +1,6 @@
+[submodule "proto/src/main/protobuf"]
+	path = proto/src/main/protobuf
+	url = https://gitee.com/sqlmaster/proto.git
+[submodule "proto/src/main/proto"]
+	path = proto/src/main/proto
+	url = https://gitee.com/sqlmaster/proto.git

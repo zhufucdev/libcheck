@@ -6,7 +6,7 @@ plugins {
     alias(libs.plugins.compose)
 }
 
-group = "com.zhufucdev"
+group = "com.sqlmasters"
 version = "1.0-SNAPSHOT"
 
 kotlin {
@@ -24,11 +24,13 @@ kotlin {
             implementation(compose.materialIconsExtended)
             implementation(libs.kotlinx.serialzation.json)
         }
+
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs)
             implementation(libs.apache.commonsio)
             implementation(libs.mpfilepicker)
             implementation(libs.nativeparameteraccess)
+            implementation(project(":proto"))
         }
     }
 }
