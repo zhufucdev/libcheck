@@ -18,7 +18,7 @@ fun rememberRevealAnimation(
 ): Color {
     val primarySurfaceColor = MaterialTheme.colorScheme.primaryContainer
 
-    var cardColor by remember { mutableStateOf(surfaceColor) }
+    var cardColor by remember(surfaceColor) { mutableStateOf(surfaceColor) }
 
     LaunchedEffect(model.reveal) {
         if (model.reveal == current) {
