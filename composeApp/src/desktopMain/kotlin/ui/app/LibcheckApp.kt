@@ -181,13 +181,15 @@ private fun InitializationPlaceholder() {
 @Composable
 private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit) {
     Spacer(Modifier.height(PaddingLarge))
-    Route.entries.forEach {
-        NavigationDrawerItem(
-            label = { Text(it.label) },
-            onClick = { onNavigation(it) },
-            icon = { Icon(imageVector = it.icon, contentDescription = "") },
-            selected = current == it
-        )
+    Column(Modifier.padding(horizontal = PaddingMedium)) {
+        Route.entries.forEach {
+            NavigationDrawerItem(
+                label = { Text(it.label) },
+                onClick = { onNavigation(it) },
+                icon = { Icon(imageVector = it.icon, contentDescription = "") },
+                selected = current == it
+            )
+        }
     }
 }
 
