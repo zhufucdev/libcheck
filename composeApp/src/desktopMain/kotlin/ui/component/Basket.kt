@@ -241,8 +241,9 @@ private fun BorrowDialog(
                         contentDescription = "",
                         modifier = Modifier.size(48.dp).padding(horizontal = PaddingLarge)
                     )
-                    BookAvatar(
+                    LazyAvatar(
                         uri = borrower.avatarUri,
+                        defaultImageVector = Icons.Default.Person,
                         modifier = Modifier.size(80.dp).clip(CircleShape),
                     )
                 }
@@ -323,7 +324,8 @@ private fun StagedBookItem(
     val density = LocalDensity.current
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
-    var bounds by remember { mutableStateOf(Rect.Zero) }
+    var bookBounds by remember { mutableStateOf(Rect.Zero) }
+    var dragBounds by remember { mutableStateOf(Rect.Zero) }
     val outOfStock by remember(book) { derivedStateOf { with(model.library) { book.getStock() } <= 0u } }
     Box(
         modifier = Modifier.padding(6.dp).pointerInput(outOfStock) {
@@ -334,15 +336,14 @@ private fun StagedBookItem(
                 onDragStart = {
                     dragging = true
                     onDragStart()
+                    dragBounds = Rect(it + bookBounds.topLeft, Size(1f, 1f))
                 },
                 onDrag = { _, o ->
                     dragOff += o
-                    model.outDraggingBounds = bounds.translate(dragOff)
+                    model.outDraggingBounds = dragBounds.translate(dragOff)
                 },
                 onDragEnd = {
-                    model.outDraggingTarget?.apply {
-                        onBorrow(this)
-                    }
+                    model.outDraggingTarget?.let { onBorrow(it) }
                     dragOff = Offset.Zero
                     model.outDraggingBounds = Rect.Zero
                     dragging = false
@@ -360,7 +361,7 @@ private fun StagedBookItem(
         StagedBookAvatar(
             book,
             outOfStock,
-            Modifier.onGloballyPositioned { bounds = it.boundsInRoot() }
+            Modifier.onGloballyPositioned { bookBounds = it.boundsInRoot() }
         )
         if (dragging) {
             Popup {
