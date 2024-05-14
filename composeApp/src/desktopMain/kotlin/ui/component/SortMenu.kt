@@ -5,13 +5,12 @@ package ui.component
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowDownward
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material.icons.filled.SortByAlpha
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.DpOffset
@@ -24,7 +23,6 @@ import resources.ascending_para
 import resources.descending_para
 import resources.order_para
 import ui.PaddingLarge
-import ui.variant
 
 @Composable
 fun SortMenu(
@@ -62,7 +60,8 @@ fun SortMenu(
 fun SortMenuCaption(text: String) {
     Text(
         text = text,
-        style = MaterialTheme.typography.caption.copy(color = MaterialTheme.colors.primary),
+        style = MaterialTheme.typography.labelMedium,
+        color = MaterialTheme.colorScheme.primary,
         modifier = Modifier.padding(PaddingLarge)
     )
 }
@@ -78,20 +77,18 @@ fun SortMenuItem(
     Box(
         modifier = Modifier.clickable { onClick() }
             .then(
-                if (selected) Modifier.background(color = MaterialTheme.colors.primary.variant)
+                if (selected) Modifier.background(color = MaterialTheme.colorScheme.surfaceVariant)
                 else Modifier
             )
             .then(modifier),
     ) {
-        CompositionLocalProvider(LocalContentColor provides if (selected) MaterialTheme.colors.onPrimary else LocalContentColor.current) {
-            Row(
-                modifier = Modifier.padding(PaddingLarge).fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                icon()
-                Spacer(modifier = Modifier.width(4.dp))
-                text()
-            }
+        Row(
+            modifier = Modifier.padding(PaddingLarge).fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            icon()
+            Spacer(modifier = Modifier.width(4.dp))
+            text()
         }
     }
 }

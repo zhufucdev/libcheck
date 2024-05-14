@@ -10,14 +10,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.*
+import androidx.compose.material.Icon
+import androidx.compose.material.LinearProgressIndicator
+import androidx.compose.material.MaterialTheme
+import androidx.compose.material.Scaffold
+import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.NavigationDrawerItem
-import androidx.compose.material3.PermanentDrawerSheet
-import androidx.compose.material3.SearchBar
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -108,7 +108,7 @@ fun LibcheckApp(model: AppViewModel) {
         },
         bottomBar = {
             if (model.windowSize < WindowSize.WIDE) {
-                BottomNavigation {
+                NavigationBar {
                     BottomNavigationItems(model.route) {
                         model.route = it
                     }
@@ -127,21 +127,7 @@ fun LibcheckApp(model: AppViewModel) {
                         PermanentDrawerSheet {
                             NavigationDrawerItems(model.route) { next -> model.route = next }
                         }
-                        Box {
-                            MainContent(model)
-                            Box(
-                                Modifier.size(20.dp)
-                                    .background(androidx.compose.material3.MaterialTheme.colorScheme.surface)
-                            ) {
-                                Box(
-                                    Modifier.matchParentSize()
-                                        .background(
-                                            color = MaterialTheme.colors.background,
-                                            shape = RoundedCornerShape(topStart = 20.dp)
-                                        )
-                                )
-                            }
-                        }
+                        MainContent(model)
                     }
                 } else {
                     MainContent(model)
@@ -196,7 +182,7 @@ private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit)
 @Composable
 private fun RowScope.BottomNavigationItems(current: Route, onNavigation: (Route) -> Unit) {
     Route.entries.forEach {
-        BottomNavigationItem(
+        NavigationBarItem(
             selected = current == it,
             onClick = { onNavigation(it) },
             icon = { Icon(it.icon, "") },

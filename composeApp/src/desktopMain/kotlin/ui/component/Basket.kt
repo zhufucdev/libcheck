@@ -16,11 +16,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.*
-import androidx.compose.material.Icon
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Text
-import androidx.compose.material.TextButton
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowRightAlt
 import androidx.compose.material.icons.filled.*
@@ -37,7 +32,6 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.asComposePath
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -56,7 +50,10 @@ import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.skia.Path
 import org.jetbrains.skia.PathDirection
 import resources.*
-import ui.*
+import ui.PaddingLarge
+import ui.PaddingSmall
+import ui.toDateString
+import ui.toTimeString
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 import java.util.*
@@ -66,8 +63,8 @@ fun Basket(model: AppViewModel) {
     val coroutine = rememberCoroutineScope()
     var basketExpanded by remember { mutableStateOf(false) }
     var revealPercentage by remember { mutableStateOf(0f) }
-    val primaryColor = MaterialTheme.colors.primary
-    val secondaryColor = MaterialTheme.colors.secondary
+    val secondaryColor = FloatingActionButtonDefaults.containerColor
+    val primaryColor = MaterialTheme.colorScheme.primary
     var fabColor by remember { mutableStateOf(secondaryColor) }
     var borrowing by remember { mutableStateOf(false) }
     var borrower by remember { mutableStateOf<Reader?>(null) }
@@ -101,11 +98,9 @@ fun Basket(model: AppViewModel) {
 
     Box {
         FloatingActionButton(
-            onClick = {
-                basketExpanded = true
-            },
+            onClick = { basketExpanded = true },
             content = { Icon(Icons.Default.ShoppingBasket, "") },
-            backgroundColor = fabColor,
+            containerColor = fabColor,
             modifier = Modifier.onGloballyPositioned {
                 model.basketFabBounds = it.boundsInRoot()
             }
@@ -118,44 +113,44 @@ fun Basket(model: AppViewModel) {
             ) {
                 Card(
                     modifier = Modifier.size(400.dp).circularReveal(revealPercentage),
-                    backgroundColor = MaterialTheme.colors.primarySurface,
-                    elevation = 12.dp
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer),
+                    elevation = CardDefaults.cardElevation(12.dp)
                 ) {
-                    Column {
-                        LazyVerticalGrid(
-                            columns = GridCells.Fixed(3),
-                            modifier = Modifier.padding(PaddingLarge).fillMaxWidth()
-                        ) {
-                            model.booksInBasket.forEach { id ->
-                                item(id) {
-                                    val book = remember(model.library.books) { model.library.getBook(id) }
-                                    if (book != null) {
-                                        StagedBookItem(
-                                            book,
-                                            model,
-                                            onDragStart = {
-                                                basketExpanded = false
-                                                sustain = true
-                                            },
-                                            onDragStop = {
-                                                sustain = false
-                                            },
-                                            onBorrow = { reader ->
-                                                borrower = reader
-                                                borrowingOut = book
-                                                borrowing = true
-                                            }
-                                        )
-                                    } else {
-                                        StagedBookAvatar(
-                                            book = Book("Unknown book", "", "", Identifier(), "", 0u)
-                                        )
+                    if (!model.booksInBasket.isEmpty()) {
+                        Column {
+                            LazyVerticalGrid(
+                                columns = GridCells.Fixed(3),
+                                modifier = Modifier.padding(PaddingLarge).fillMaxWidth()
+                            ) {
+                                model.booksInBasket.forEach { id ->
+                                    item(id) {
+                                        val book = remember(model.library.books) { model.library.getBook(id) }
+                                        if (book != null) {
+                                            StagedBookItem(
+                                                book,
+                                                model,
+                                                onDragStart = {
+                                                    basketExpanded = false
+                                                    sustain = true
+                                                },
+                                                onDragStop = {
+                                                    sustain = false
+                                                },
+                                                onBorrow = { reader ->
+                                                    borrower = reader
+                                                    borrowingOut = book
+                                                    borrowing = true
+                                                }
+                                            )
+                                        } else {
+                                            StagedBookAvatar(
+                                                book = Book("Unknown book", "", "", Identifier(), "", 0u)
+                                            )
+                                        }
                                     }
                                 }
                             }
-                        }
-                        Spacer(Modifier.weight(1f))
-                        if (!model.booksInBasket.isEmpty()) {
+                            Spacer(Modifier.weight(1f))
                             Row(
                                 horizontalArrangement = Arrangement.End,
                                 modifier = Modifier.padding(6.dp).fillMaxWidth()
@@ -172,9 +167,8 @@ fun Basket(model: AppViewModel) {
                                 )
                             }
                         }
-                    }
-                    if (model.booksInBasket.isEmpty()) {
-                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(36.dp)) {
+                    } else {
+                        Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(36.dp).fillMaxSize()) {
                             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                 Icon(
                                     imageVector = Icons.Default.ShoppingBasket,
@@ -223,89 +217,78 @@ private fun BorrowDialog(
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.AddCard,
+                contentDescription = "",
+                modifier = Modifier.size(24.dp)
+            )
+        },
+        title = {
+            Text(stringResource(Res.string.borrowing_a_book_para), style = MaterialTheme.typography.titleLarge)
+        },
         text = {
-            CompositionLocalProvider(LocalContentAlpha provides 1f) {
-                Column {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(horizontal = PaddingSmall, vertical = PaddingMedium)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.AddCard,
-                            contentDescription = "",
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(Modifier.width(PaddingMedium))
-                        Text(stringResource(Res.string.borrowing_a_book_para), style = MaterialTheme.typography.h5)
-                    }
-                    Column(Modifier.verticalScroll(rememberScrollState())) {
-                        Spacer(Modifier.height(PaddingLarge))
-                        Row(
-                            horizontalArrangement = Arrangement.Center,
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            BookAvatar(uri = borrowingOut.avatarUri, modifier = Modifier.size(120.dp))
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
-                                contentDescription = "",
-                                modifier = Modifier.size(48.dp).padding(horizontal = PaddingLarge)
-                            )
-                            LazyAvatar(
-                                uri = borrower.avatarUri,
-                                defaultImageVector = Icons.Default.Person,
-                                modifier = Modifier.size(80.dp).clip(CircleShape),
-                                contentScale = ContentScale.Crop
-                            )
-                        }
-                        Spacer(Modifier.height(PaddingLarge))
-                        Field(
-                            icon = { Icon(imageVector = Icons.Default.Timer, contentDescription = "") },
-                            onEditClick = { editor = Editor.Time }
-                        ) {
-                            Text(timePickerState.toTimeString())
-                        }
+            Column(Modifier.verticalScroll(rememberScrollState())) {
+                Spacer(Modifier.height(PaddingLarge))
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    BookAvatar(uri = borrowingOut.avatarUri, modifier = Modifier.size(120.dp))
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
+                        contentDescription = "",
+                        modifier = Modifier.size(48.dp).padding(horizontal = PaddingLarge)
+                    )
+                    BookAvatar(
+                        uri = borrower.avatarUri,
+                        modifier = Modifier.size(80.dp).clip(CircleShape),
+                    )
+                }
+                Spacer(Modifier.height(PaddingLarge))
+                Field(
+                    icon = { Icon(imageVector = Icons.Default.Timer, contentDescription = "") },
+                    onEditClick = { editor = Editor.Time }
+                ) {
+                    Text(timePickerState.toTimeString())
+                }
 
-                        AnimatedVisibility(
-                            visible = editor == Editor.Time,
-                            enter = expandVertically(),
-                            exit = shrinkVertically()
-                        ) {
-                            TimePicker(timePickerState)
-                        }
+                AnimatedVisibility(
+                    visible = editor == Editor.Time,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    TimePicker(timePickerState)
+                }
 
-                        Field(
-                            icon = { Icon(imageVector = Icons.Default.DateRange, contentDescription = "") },
-                            onEditClick = { editor = Editor.Date }
-                        ) {
-                            Text(datePickerState.toDateString())
-                        }
-                        AnimatedVisibility(
-                            visible = editor == Editor.Date,
-                            enter = expandVertically(),
-                            exit = shrinkVertically()
-                        ) {
-                            DatePicker(datePickerState)
-                        }
-                    }
+                Field(
+                    icon = { Icon(imageVector = Icons.Default.DateRange, contentDescription = "") },
+                    onEditClick = { editor = Editor.Date }
+                ) {
+                    Text(datePickerState.toDateString())
+                }
+                AnimatedVisibility(
+                    visible = editor == Editor.Date,
+                    enter = expandVertically(),
+                    exit = shrinkVertically()
+                ) {
+                    DatePicker(datePickerState)
                 }
             }
         },
-        buttons = {
-            Row(modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp), horizontalArrangement = Arrangement.End) {
-                TextButton(
-                    content = { Text(stringResource(Res.string.ok_caption)) },
-                    onClick = {
-                        onBorrow(
-                            Instant.ofEpochMilli(datePickerState.selectedDateMillis!!)
-                                .plus(timePickerState.hour.toLong(), ChronoUnit.HOURS)
-                                .plus(timePickerState.minute.toLong(), ChronoUnit.MINUTES)
-                                .plus(-TimeZone.getDefault().rawOffset.toLong(), ChronoUnit.MILLIS)
-                        )
-                    },
-                )
-                Spacer(Modifier.width(6.dp))
-            }
+        confirmButton = {
+            TextButton(
+                content = { Text(stringResource(Res.string.ok_caption)) },
+                onClick = {
+                    onBorrow(
+                        Instant.ofEpochMilli(datePickerState.selectedDateMillis!!)
+                            .plus(timePickerState.hour.toLong(), ChronoUnit.HOURS)
+                            .plus(timePickerState.minute.toLong(), ChronoUnit.MINUTES)
+                            .plus(-TimeZone.getDefault().rawOffset.toLong(), ChronoUnit.MILLIS)
+                    )
+                },
+            )
         }
     )
 }
@@ -319,7 +302,7 @@ private fun Field(
     Row(verticalAlignment = Alignment.CenterVertically) {
         icon()
         Spacer(Modifier.width(PaddingSmall))
-        CompositionLocalProvider(androidx.compose.material.LocalTextStyle provides MaterialTheme.typography.body1) {
+        CompositionLocalProvider(androidx.compose.material.LocalTextStyle provides MaterialTheme.typography.bodyMedium) {
             content()
         }
         Spacer(Modifier.weight(1f))
@@ -394,17 +377,18 @@ private fun StagedBookItem(
 private fun StagedBookAvatar(book: Book, outOfStock: Boolean = false, modifier: Modifier = Modifier) {
     Box(contentAlignment = Alignment.Center) {
         Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
-            LazyAvatar(book.avatarUri, Icons.Default.Book, modifier = Modifier.size(80.dp))
-            Text(text = book.name, style = MaterialTheme.typography.caption, textAlign = TextAlign.Center)
+            BookAvatar(book.avatarUri, modifier = Modifier.size(80.dp))
+            Text(text = book.name, style = MaterialTheme.typography.labelMedium, textAlign = TextAlign.Center)
         }
         if (outOfStock) {
             Surface(
                 shape = RoundedCornerShape(4.dp),
-                color = MaterialTheme.colors.surface,
-                contentColor = MaterialTheme.colors.onSurface,
+                color = MaterialTheme.colorScheme.surface,
+                contentColor = MaterialTheme.colorScheme.onSurface,
             ) {
                 Text(
-                    stringResource(Res.string.out_of_stock_header), style = MaterialTheme.typography.body1,
+                    text = stringResource(Res.string.out_of_stock_header),
+                    style = MaterialTheme.typography.bodyMedium,
                     modifier = Modifier.padding(6.dp)
                 )
             }

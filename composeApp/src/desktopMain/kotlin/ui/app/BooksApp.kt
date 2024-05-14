@@ -1,5 +1,5 @@
 @file:Suppress("FunctionName")
-@file:OptIn(ExperimentalResourceApi::class)
+@file:OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class)
 
 package ui.app
 
@@ -13,14 +13,12 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.BookmarkAdd
 import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.SortByAlpha
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,7 +57,7 @@ import ui.variant
 @Composable
 fun BooksApp(model: AppViewModel) {
     val coroutine = rememberCoroutineScope()
-    val textColor = MaterialTheme.colors.onSurface
+    val textColor = MaterialTheme.colorScheme.onSurface
 
     var addingBook by remember { mutableStateOf(false) }
     var editingBook by remember { mutableStateOf(false) }
@@ -114,126 +112,120 @@ fun BooksApp(model: AppViewModel) {
                 addingBook = false
                 editingBook = false
             },
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.BookmarkAdd,
+                    contentDescription = "",
+                    modifier = Modifier.size(24.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = stringResource(
+                        if (addingBook) Res.string.adding_a_book_para else Res.string.editing_a_book_para
+                    ),
+                )
+            },
             text = {
-                CompositionLocalProvider(LocalContentAlpha provides 1f) {
-                    Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.BookmarkAdd,
-                                contentDescription = "",
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = stringResource(
-                                    if (addingBook) Res.string.adding_a_book_para else Res.string.editing_a_book_para
-                                ),
-                                style = MaterialTheme.typography.h5.copy(color = MaterialTheme.colors.onSurface),
+                Column {
+                    AvatarInput(
+                        uri = bookUri,
+                        onUriChange = { bookUri = it },
+                        label = { Text(stringResource(Res.string.cover_para)) },
+                        Icons.Default.Book
+                    )
+                    OutlinedTextField(
+                        value = bookTitle,
+                        onValueChange = { bookTitle = it },
+                        label = { Text(stringResource(Res.string.title_para)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true
+                    )
+                    OutlinedTextField(
+                        value = bookAuthor,
+                        onValueChange = { bookAuthor = it },
+                        label = { Text(stringResource(Res.string.auther_para)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = bookIsbn,
+                        onValueChange = { bookIsbn = it },
+                        label = { Text(stringResource(Res.string.isbn_caption)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        visualTransformation = {
+                            TransformedText(
+                                buildAnnotatedString {
+                                    append(
+                                        AnnotatedString(
+                                            bookIsbn,
+                                            SpanStyle(
+                                                color = textColor,
+                                                fontFamily = FontFamily.Monospace
+                                            )
+                                        )
+                                    )
+                                    val placeholder = "000-0-00-000000-0"
+                                    append(
+                                        AnnotatedString(
+                                            placeholder.substring(bookIsbn.length until placeholder.length),
+                                            SpanStyle(
+                                                color = textColor.variant,
+                                                fontFamily = FontFamily.Monospace
+                                            )
+                                        )
+                                    )
+                                },
+                                object : OffsetMapping {
+                                    override fun originalToTransformed(offset: Int): Int {
+                                        return offset
+                                    }
+
+                                    override fun transformedToOriginal(offset: Int): Int {
+                                        return minOf(offset, bookIsbn.length)
+                                    }
+                                }
                             )
                         }
-                        Spacer(modifier = Modifier.height(PaddingLarge))
-                        AvatarInput(
-                            uri = bookUri,
-                            onUriChange = { bookUri = it },
-                            label = { Text(stringResource(Res.string.cover_para)) },
-                            Icons.Default.Book
-                        )
-                        OutlinedTextField(
-                            value = bookTitle,
-                            onValueChange = { bookTitle = it },
-                            label = { Text(stringResource(Res.string.title_para)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            singleLine = true
-                        )
-                        OutlinedTextField(
-                            value = bookAuthor,
-                            onValueChange = { bookAuthor = it },
-                            label = { Text(stringResource(Res.string.auther_para)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = bookIsbn,
-                            onValueChange = { bookIsbn = it },
-                            label = { Text(stringResource(Res.string.isbn_caption)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            visualTransformation = {
-                                TransformedText(
-                                    buildAnnotatedString {
-                                        append(
-                                            AnnotatedString(
-                                                bookIsbn,
-                                                SpanStyle(
-                                                    color = textColor,
-                                                    fontFamily = FontFamily.Monospace
-                                                )
-                                            )
-                                        )
-                                        val placeholder = "000-0-00-000000-0"
-                                        append(
-                                            AnnotatedString(
-                                                placeholder.substring(bookIsbn.length until placeholder.length),
-                                                SpanStyle(
-                                                    color = textColor.variant,
-                                                    fontFamily = FontFamily.Monospace
-                                                )
-                                            )
-                                        )
-                                    },
-                                    object : OffsetMapping {
-                                        override fun originalToTransformed(offset: Int): Int {
-                                            return offset
-                                        }
-
-                                        override fun transformedToOriginal(offset: Int): Int {
-                                            return minOf(offset, bookIsbn.length)
-                                        }
-                                    }
-                                )
-                            }
-                        )
-                        OutlinedTextField(
-                            value = bookStock,
-                            onValueChange = {
-                                bookStockParsed = it.toUIntOrNull()
-                                bookStock = it
-                            },
-                            label = { Text(stringResource(Res.string.stock_para)) },
-                            modifier = Modifier.fillMaxWidth(),
-                            isError = bookStockParsed == null || negativeInStock,
-                            singleLine = true
-                        )
-                    }
+                    )
+                    OutlinedTextField(
+                        value = bookStock,
+                        onValueChange = {
+                            bookStockParsed = it.toUIntOrNull()
+                            bookStock = it
+                        },
+                        label = { Text(stringResource(Res.string.stock_para)) },
+                        modifier = Modifier.fillMaxWidth(),
+                        isError = bookStockParsed == null || negativeInStock,
+                        singleLine = true
+                    )
                 }
             },
-            buttons = {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(
-                        content = { Text(stringResource(Res.string.ok_caption)) },
-                        onClick = {
-                            val book = Book(
-                                bookTitle,
-                                bookAuthor,
-                                bookIsbn,
-                                if (editingBook) bookId!! else Identifier(),
-                                bookUri,
-                                bookStockParsed!!
-                            )
+            confirmButton = {
+                TextButton(
+                    content = { Text(stringResource(Res.string.ok_caption)) },
+                    onClick = {
+                        val book = Book(
+                            bookTitle,
+                            bookAuthor,
+                            bookIsbn,
+                            if (editingBook) bookId!! else Identifier(),
+                            bookUri,
+                            bookStockParsed!!
+                        )
 
-                            coroutine.launch {
-                                if (addingBook) {
-                                    model.library.addBook(book)
-                                } else if (editingBook) {
-                                    model.library.updateBook(book)
-                                }
-                                addingBook = false
-                                editingBook = false
+                        coroutine.launch {
+                            if (addingBook) {
+                                model.library.addBook(book)
+                            } else if (editingBook) {
+                                model.library.updateBook(book)
                             }
-                        },
-                        enabled = canSave,
-                        modifier = Modifier.padding(6.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                }
+                            addingBook = false
+                            editingBook = false
+                        }
+                    },
+                    enabled = canSave,
+                    modifier = Modifier.padding(6.dp)
+                )
             }
         )
     }
@@ -309,11 +301,14 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
                             BookCard(model, book) { onBookClicked(it) }
                             Text(
                                 text = with(library) { book.getStock().toString() },
-                                style = MaterialTheme.typography.button.copy(color = MaterialTheme.colors.onPrimary),
-                                modifier = Modifier.background(
-                                    color = MaterialTheme.colors.primary,
-                                    shape = CircleShape
-                                )
+                                style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onPrimary),
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .size(44.dp)
+                                    .background(
+                                        color = MaterialTheme.colorScheme.primary,
+                                        shape = CircleShape
+                                    )
                                     .padding(10.dp)
                                     .align(Alignment.TopEnd)
                             )
@@ -340,7 +335,8 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
         model.draggingIn = dragging
     }
 
-    OutlinedCard(
+    Card(
+        colors = CardDefaults.cardColors(cardColor),
         modifier = Modifier.padding(6.dp)
             .fillMaxSize()
             .onClick(matcher = PointerMatcher.mouse(PointerButton.Secondary)) {
@@ -367,7 +363,6 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                     }
                 )
             },
-        colors = CardDefaults.outlinedCardColors(cardColor),
         onClick = { onClicked(book) }
     ) {
         Column(
@@ -387,9 +382,8 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
 
                 if (dragging) {
                     Popup {
-                        LazyAvatar(
+                        BookAvatar(
                             uri = book.avatarUri,
-                            defaultImageVector = Icons.Default.Book,
                             modifier = with(density) {
                                 Modifier.size(120.dp).offset(
                                     dragOff.x.toDp(), dragOff.y.toDp()
@@ -409,8 +403,8 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                     },
                 )
             }
-            Text(text = book.name, style = MaterialTheme.typography.h6, textAlign = TextAlign.Center)
-            Text(text = book.author, style = MaterialTheme.typography.body2)
+            Text(text = book.name, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+            Text(text = book.author, style = MaterialTheme.typography.bodySmall)
         }
     }
 }

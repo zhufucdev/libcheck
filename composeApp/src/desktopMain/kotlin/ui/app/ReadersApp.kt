@@ -10,11 +10,9 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.onClick
-import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.OutlinedCard
+import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,62 +70,60 @@ fun ReadersApp(model: AppViewModel) {
 
     if (addingReader || editingReader) {
         AlertDialog(
+            icon = {
+                Icon(
+                    imageVector = Icons.Default.PersonAdd,
+                    contentDescription = "",
+                    modifier = Modifier.size(24.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = stringResource(if (addingReader) Res.string.adding_a_reader_para else Res.string.editing_a_reader_para),
+                )
+            },
             text = {
-                CompositionLocalProvider(LocalContentAlpha provides 1f) {
-                    Column(modifier = Modifier.fillMaxWidth()) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.PersonAdd,
-                                contentDescription = "",
-                                modifier = Modifier.size(24.dp)
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = stringResource(if (addingReader) Res.string.adding_a_reader_para else Res.string.editing_a_reader_para),
-                                style = MaterialTheme.typography.h5.copy(color = MaterialTheme.colors.onSurface),
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.height(PaddingLarge))
-                        AvatarInput(
-                            uri = readerUri,
-                            onUriChange = { readerUri = it },
-                            defaultImageVector = Icons.Default.Person,
-                            label = { Text(stringResource(Res.string.avatar_para)) }
-                        )
-                        OutlinedTextField(
-                            value = readerName,
-                            onValueChange = { readerName = it },
-                            label = { Text(stringResource(Res.string.name_para)) },
-                            modifier = Modifier.fillMaxWidth()
-                        )
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Spacer(modifier = Modifier.width(6.dp))
                     }
+
+                    Spacer(modifier = Modifier.height(PaddingLarge))
+                    AvatarInput(
+                        uri = readerUri,
+                        onUriChange = { readerUri = it },
+                        defaultImageVector = Icons.Default.Person,
+                        label = { Text(stringResource(Res.string.avatar_para)) }
+                    )
+                    OutlinedTextField(
+                        value = readerName,
+                        onValueChange = { readerName = it },
+                        label = { Text(stringResource(Res.string.name_para)) },
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
             },
             onDismissRequest = {
                 addingReader = false
                 editingReader = false
             },
-            buttons = {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
-                    TextButton(
-                        content = { Text(stringResource(Res.string.ok_caption)) },
-                        onClick = {
-                            coroutine.launch {
-                                if (addingReader) {
-                                    model.library.addReader(Reader(readerName, Identifier(), readerUri))
-                                } else if (editingReader) {
-                                    model.library.updateReader(Reader(readerName, readerId!!, readerUri))
-                                }
-                                addingReader = false
-                                editingReader = false
+            confirmButton = {
+                TextButton(
+                    content = { Text(stringResource(Res.string.ok_caption)) },
+                    onClick = {
+                        coroutine.launch {
+                            if (addingReader) {
+                                model.library.addReader(Reader(readerName, Identifier(), readerUri))
+                            } else if (editingReader) {
+                                model.library.updateReader(Reader(readerName, readerId!!, readerUri))
                             }
-                        },
-                        enabled = canSave,
-                        modifier = Modifier.padding(6.dp)
-                    )
-                    Spacer(Modifier.width(6.dp))
-                }
+                            addingReader = false
+                            editingReader = false
+                        }
+                    },
+                    enabled = canSave,
+                    modifier = Modifier.padding(6.dp)
+                )
             }
         )
     }
@@ -216,13 +212,13 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                         Box(
                             Modifier.padding(6.dp).animateItemPlacement()
                                 .onGloballyPositioned { bounds = it.boundsInRoot() }) {
-                            OutlinedCard(
+                            Card(
                                 onClick = { onReaderClick(reader) },
                                 colors = if (draggingIn) CardDefaults.outlinedCardColors(
-                                    MaterialTheme.colors.primary.copy(
+                                    MaterialTheme.colorScheme.primary.copy(
                                         alpha = 0.1f
                                     )
-                                ) else CardDefaults.outlinedCardColors(cardColor),
+                                ) else CardDefaults.cardColors(containerColor = cardColor),
                                 modifier = Modifier.onClick(matcher = PointerMatcher.mouse(PointerButton.Secondary)) {
                                     contextMenu = true
                                 },
@@ -248,13 +244,13 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                             }
                                         )
                                     }
-                                    Text(text = reader.name, style = MaterialTheme.typography.h6)
+                                    Text(text = reader.name, style = MaterialTheme.typography.titleMedium)
                                     Text(
                                         text = with(library) {
                                             val b = reader.getBorrows().size
                                             pluralStringResource(Res.plurals.borrows_span, b, b)
                                         },
-                                        style = MaterialTheme.typography.caption
+                                        style = MaterialTheme.typography.bodyMedium
                                     )
                                 }
                             }
