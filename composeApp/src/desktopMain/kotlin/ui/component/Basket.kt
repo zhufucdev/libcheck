@@ -65,7 +65,7 @@ fun Basket(model: AppViewModel) {
     var revealPercentage by remember { mutableStateOf(0f) }
     val secondaryColor = FloatingActionButtonDefaults.containerColor
     val primaryColor = MaterialTheme.colorScheme.primary
-    var fabColor by remember { mutableStateOf(secondaryColor) }
+    var fabColor by remember(secondaryColor) { mutableStateOf(secondaryColor) }
     var borrowing by remember { mutableStateOf(false) }
     var borrower by remember { mutableStateOf<Reader?>(null) }
     var borrowingOut by remember { mutableStateOf<Book?>(null) }
