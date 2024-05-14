@@ -7,7 +7,6 @@ import androidx.compose.material.icons.filled.Key
 import androidx.compose.runtime.*
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.vector.ImageVector
-import ui.WindowSize
 
 enum class Route(val label: String, val icon: ImageVector) {
     BOOKS("Books", Icons.AutoMirrored.Filled.LibraryBooks),
@@ -15,7 +14,7 @@ enum class Route(val label: String, val icon: ImageVector) {
     BORROWING("Borrowing", Icons.Default.Key)
 }
 
-class AppViewModel(val library: Library, val windowSize: WindowSize, route: MutableState<Route>) {
+class AppViewModel(val library: Library, route: MutableState<Route>) {
     var route by route
     var reveal by mutableStateOf<Identifier?>(null)
 

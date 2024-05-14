@@ -30,7 +30,7 @@ import ui.WindowSize
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LibcheckApp(model: AppViewModel) {
+fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     val searchResult = remember { mutableStateListOf<Searchable>() }
@@ -107,7 +107,7 @@ fun LibcheckApp(model: AppViewModel) {
             }
         },
         bottomBar = {
-            if (model.windowSize < WindowSize.WIDE) {
+            if (windowSize < WindowSize.WIDE) {
                 NavigationBar {
                     BottomNavigationItems(model.route) {
                         model.route = it
@@ -122,7 +122,7 @@ fun LibcheckApp(model: AppViewModel) {
                 enter = fadeIn() + slideIn { IntOffset(0, it.height / 3) },
                 exit = fadeOut()
             ) {
-                if (model.windowSize >= WindowSize.WIDE) {
+                if (windowSize >= WindowSize.WIDE) {
                     Row {
                         PermanentDrawerSheet {
                             NavigationDrawerItems(model.route) { next -> model.route = next }

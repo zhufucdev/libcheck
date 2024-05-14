@@ -36,16 +36,12 @@ fun App(windowState: WindowState) {
     val darkMode = rememberDarkModeEnabled()
 
     val model = remember {
-        AppViewModel(
-            library,
-            windowSize,
-            route
-        )
+        AppViewModel(library, route)
     }
 
     MaterialTheme(colors = if (darkMode) darkColors() else lightColors()) {
         androidx.compose.material3.MaterialTheme(colorScheme = if (darkMode) darkColorScheme() else lightColorScheme()) {
-            LibcheckApp(model)
+            LibcheckApp(model, windowSize)
         }
     }
 }
