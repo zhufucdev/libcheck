@@ -3,11 +3,17 @@ package library
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import com.sqlmaster.proto.AuthenticationGrpcKt
+import com.sqlmaster.proto.LibraryGrpcKt
+import io.grpc.ManagedChannel
 import kotlinx.coroutines.flow.Flow
 import model.*
 import java.time.Instant
 
-class RemoteLibrary() : Library {
+class RemoteLibrary(channel: ManagedChannel, private val password: String) : Library {
+    private val libraryChannel = LibraryGrpcKt.LibraryCoroutineStub(channel)
+    private val authenticationChannel = AuthenticationGrpcKt.AuthenticationCoroutineStub(channel)
+
     override var state: LibraryState by mutableStateOf(LibraryState.Initializing(0f))
     override val sorter: LibrarySorter
         get() = TODO("Not yet implemented")
@@ -32,7 +38,7 @@ class RemoteLibrary() : Library {
     }
 
     override suspend fun connect() {
-        TODO("Not yet implemented")
+
     }
 
     override suspend fun addBook(book: Book) {

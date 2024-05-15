@@ -3,20 +3,27 @@ compose = "1.6.10-beta01"
 kotlin = "1.9.23"
 grpc = "1.63.0"
 protobuf = "4.26.1"
+grpc-kotlin = "1.4.1"
 
 [libraries]
+kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.1" }
 kotlinx-serialzation-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.6.0" }
 apache-commonsio = { group = "commons-io", name = "commons-io", version = "2.11.0" }
 mpfilepicker = { group = "com.darkrockstudios", name = "mpfilepicker", version = "3.1.0" }
 nativeparameteraccess = { group = "com.github.tkuenneth", name = "nativeparameterstoreaccess", version = "0.1.2" }
 protobuf-java = { group = "com.google.protobuf", name = "protobuf-java", version.ref = "protobuf" }
 protobuf-protoc = { group = "com.google.protobuf", name = "protoc", version.ref = "protobuf" }
+protobuf-kotlin = { group = "com.google.protobuf", name = "protobuf-kotlin", version.ref = "protobuf" }
 grpc-stub = { group = "io.grpc", name = "grpc-stub", version.ref = "grpc" }
 grpc-protobuf = { group = "io.grpc", name = "grpc-protobuf", version.ref = "grpc" }
-grpc-protoc-gen = { group = "io.grpc", name = "protoc-gen-grpc-java", version.ref = "grpc" }
+grpc-protoc-gen-java = { group = "io.grpc", name = "protoc-gen-grpc-java", version.ref = "grpc" }
+grpc-protoc-gen-kotlin = { group = "io.grpc", name = "protoc-gen-grpc-kotlin", version.ref = "grpc-kotlin" }
+grpc-netty = { group = "io.grpc", name = "grpc-netty", version.ref = "grpc" }
+grpc-kotlin-stub = { group = "io.grpc", name = "grpc-kotlin-stub", version.ref = "grpc-kotlin" }
 javax-annotation = { group = "javax.annotation", name = "javax.annotation-api", version = "1.3.2" }
 
 [plugins]
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 compose = { id = "org.jetbrains.compose", version.ref = "compose" }
 kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }

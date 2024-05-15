@@ -10,6 +10,7 @@
             <option value="$PROJECT_DIR$" />
             <option value="$PROJECT_DIR$/composeApp" />
             <option value="$PROJECT_DIR$/proto" />
+            <option value="$PROJECT_DIR$/stub-jvm" />
           </set>
         </option>
       </GradleProjectSettings>

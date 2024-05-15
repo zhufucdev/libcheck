@@ -17,3 +17,4 @@ dependencyResolutionManagement {
 rootProject.name = "libcheck"
 include(":composeApp")
 include(":proto")
+include(":stub-jvm")
