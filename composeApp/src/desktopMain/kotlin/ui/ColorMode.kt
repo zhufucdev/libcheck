@@ -6,7 +6,7 @@ import kotlinx.coroutines.delay
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
-fun rememberDarkModeEnabled(): Boolean {
+fun rememberSystemDarkMode(): Boolean {
     var enabled by remember { mutableStateOf(currentPlatform.isDarkModeEnabled()) }
     LaunchedEffect(true) {
         while (true) {
