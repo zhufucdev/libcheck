@@ -2,11 +2,13 @@ package model
 
 import androidx.compose.runtime.Stable
 import kotlinx.coroutines.flow.Flow
+import kotlinx.serialization.Serializable
+import java.io.Closeable
 import java.time.Instant
 
-interface Library {
+interface Library : Closeable {
     val state: LibraryState
-    val sorter: LibrarySorter
+    val sorter: LibrarySortingModel
     suspend fun Borrow.setReturned()
     fun Book.getStock(): UInt
     val readers: List<Reader>
@@ -43,9 +45,10 @@ sealed interface LibraryState {
     data class Synchronizing(override val progress: Float, val upload: Boolean) : LibraryState, HasProgress
 }
 
+@Serializable
 data class SortModel<T>(val order: SortOrder, val by: T)
 
-interface LibrarySorter {
+interface LibrarySortingModel {
     val bookModel: SortModel<BookSortable>
     val readerModel: SortModel<ReaderSortable>
     val borrowModel: SortModel<BorrowSortable>

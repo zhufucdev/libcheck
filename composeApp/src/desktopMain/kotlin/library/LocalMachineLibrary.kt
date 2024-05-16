@@ -2,12 +2,8 @@ package library
 
 import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
-import currentOS
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
@@ -18,8 +14,7 @@ import java.io.File
 import java.time.Instant
 
 @OptIn(ExperimentalSerializationApi::class)
-class LocalMachineLibrary : Library {
-    private val workingDir: File get() = currentOS.dataDir
+class LocalMachineLibrary(private val workingDir: File, private val configurations: Configurations) : Library {
     private val booksFile get() = File(workingDir, "books.json")
     private val readerFile get() = File(workingDir, "readers.json")
     private val borrowFile get() = File(workingDir, "borrow.json")
@@ -45,8 +40,8 @@ class LocalMachineLibrary : Library {
         }
     }
 
-    override val sorter: LibrarySorter by lazy {
-        object : LibrarySorter {
+    override val sorter: LibrarySortingModel by lazy {
+        object : LibrarySortingModel {
             override var bookModel: SortModel<BookSortable> by mutableStateOf(bookList.model)
             override var readerModel: SortModel<ReaderSortable> by mutableStateOf(readerList.model)
             override var borrowModel: SortModel<BorrowSortable> by mutableStateOf(borrowList.model)
@@ -137,6 +132,7 @@ class LocalMachineLibrary : Library {
 
     override suspend fun addBook(book: Book) {
         bookList.items.add(book)
+        bookList.sort(this)
         saveBooks()
     }
 
@@ -146,6 +142,7 @@ class LocalMachineLibrary : Library {
             throw NoSuchElementException(book.name)
         }
         bookList.items[index] = book
+        bookList.sort(this)
         saveBooks()
     }
 
@@ -162,6 +159,7 @@ class LocalMachineLibrary : Library {
 
     override suspend fun addBorrow(borrower: Reader, book: Book, due: Instant) {
         borrowList.items.add(Borrow(Identifier(), borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
+        borrowList.sort(this)
         saveBorrows()
     }
 
@@ -171,6 +169,7 @@ class LocalMachineLibrary : Library {
             throw NoSuchElementException()
         }
         borrowList.items[index] = copy(returnTime = Instant.now().toEpochMilli())
+        borrowList.sort(this@LocalMachineLibrary)
         saveBorrows()
     }
 
@@ -179,6 +178,7 @@ class LocalMachineLibrary : Library {
 
     override suspend fun addReader(reader: Reader) {
         readerList.items.add(reader)
+        readerList.sort()
         saveReaders()
     }
 
@@ -205,34 +205,15 @@ class LocalMachineLibrary : Library {
         saveReaders()
     }
 
-    override fun search(query: String): Flow<Searchable> = channelFlow {
-        if (query.isEmpty()) {
-            return@channelFlow
+    override fun search(query: String): Flow<Searchable> = searchFlow(query)
+
+    override fun close() {
+        if (mSaving) {
+            throw IllegalStateException("cannot close while saving")
         }
-        coroutineScope {
-            launch {
-                bookList.items.forEach {
-                    if (it.matches(query)) {
-                        channel.send(it)
-                    }
-                }
-            }
-            launch {
-                readerList.items.forEach {
-                    if (it.matches(query)) {
-                        channel.send(it)
-                    }
-                }
-            }
-            launch {
-                borrowList.items.forEach {
-                    val ins = it.instance(this@LocalMachineLibrary)
-                    if (ins.matches(query)) {
-                        channel.send(ins)
-                    }
-                }
-            }
-        }
+        bookList.items.clear()
+        readerList.items.clear()
+        borrowList.items.clear()
     }
 
     private suspend fun saveBooks() = withContext(Dispatchers.IO) {

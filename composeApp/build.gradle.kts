@@ -31,6 +31,7 @@ kotlin {
             implementation(libs.apache.commonsio)
             implementation(libs.mpfilepicker)
             implementation(libs.nativeparameteraccess)
+            implementation(libs.javakeyring)
 
             implementation(libs.protobuf.java)
             implementation(libs.protobuf.kotlin)

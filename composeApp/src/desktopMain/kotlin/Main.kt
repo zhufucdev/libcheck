@@ -8,10 +8,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.WindowState
-import androidx.compose.ui.window.application
+import androidx.compose.ui.window.awaitApplication
 import androidx.compose.ui.window.rememberWindowState
-import library.LocalMachineLibrary
+import kotlinx.coroutines.runBlocking
 import model.AppViewModel
+import model.Configurations
+import model.LocalMachineConfigurationViewModel
 import model.Route
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
@@ -23,12 +25,12 @@ import ui.rememberDarkModeEnabled
 
 @Composable
 @Preview
-fun App(windowState: WindowState) {
+fun App(windowState: WindowState, configurations: Configurations) {
     val windowSize by remember(windowState) {
         derivedStateOf { calculateWindowSize(windowState.size) }
     }
-    val library = remember {
-        LocalMachineLibrary()
+    val library by remember(configurations) {
+        derivedStateOf { configurations.dataSource.initialize(configurations) }
     }
     val route = remember {
         mutableStateOf(Route.BOOKS)
@@ -47,13 +49,16 @@ fun App(windowState: WindowState) {
 }
 
 @OptIn(ExperimentalResourceApi::class)
-fun main() = application {
-    val state = rememberWindowState(width = 1200.dp, height = 800.dp)
-    Window(
-        onCloseRequest = ::exitApplication,
-        state = state,
-        title = stringResource(Res.string.libcheck_header)
-    ) {
-        App(state)
+fun main() = runBlocking {
+    val config = LocalMachineConfigurationViewModel(currentPlatform.dataDir)
+    awaitApplication {
+        val state = rememberWindowState(width = 1200.dp, height = 800.dp)
+        Window(
+            onCloseRequest = ::exitApplication,
+            state = state,
+            title = stringResource(Res.string.libcheck_header)
+        ) {
+            App(state, config)
+        }
     }
 }

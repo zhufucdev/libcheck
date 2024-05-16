@@ -21,6 +21,7 @@ grpc-protoc-gen-kotlin = { group = "io.grpc", name = "protoc-gen-grpc-kotlin", v
 grpc-netty = { group = "io.grpc", name = "grpc-netty", version.ref = "grpc" }
 grpc-kotlin-stub = { group = "io.grpc", name = "grpc-kotlin-stub", version.ref = "grpc-kotlin" }
 javax-annotation = { group = "javax.annotation", name = "javax.annotation-api", version = "1.3.2" }
+javakeyring = { group = "com.github.javakeyring", name = "java-keyring", version = "1.0.4" }
 
 [plugins]
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }

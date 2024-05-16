@@ -21,7 +21,14 @@ interface Searchable : Identifiable {
 }
 
 @Serializable(IdentifierSerializer::class)
-data class Identifier(val uuid: UUID = UUID.randomUUID())
+data class Identifier(val uuid: UUID = UUID.randomUUID()) {
+    override fun toString(): String {
+        return uuid.toString()
+    }
+    companion object {
+        fun parse(str: String) = Identifier(UUID.fromString(str))
+    }
+}
 
 class IdentifierSerializer : KSerializer<Identifier> {
     private val serializer = String.serializer()
