@@ -6,15 +6,10 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideIn
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.Icon
 import androidx.compose.material.LinearProgressIndicator
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.Scaffold
-import androidx.compose.material.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -51,7 +46,6 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         topBar = {
             Column(
                 Modifier.fillMaxWidth()
-                    .background(androidx.compose.material3.MaterialTheme.colorScheme.surface)
             ) {
                 SearchBar(
                     query = searchQuery,
@@ -159,7 +153,7 @@ private fun InitializationPlaceholder() {
         Spacer(Modifier.height(PaddingLarge))
         Text(
             text = "Loading library",
-            style = MaterialTheme.typography.h5
+            style = MaterialTheme.typography.bodyLarge
         )
     }
 }

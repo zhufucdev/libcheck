@@ -1,7 +1,5 @@
 import androidx.compose.desktop.ui.tooling.preview.Preview
-import androidx.compose.material.MaterialTheme
-import androidx.compose.material.darkColors
-import androidx.compose.material.lightColors
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
@@ -41,10 +39,8 @@ fun App(windowState: WindowState, configurations: Configurations) {
         AppViewModel(library, route)
     }
 
-    MaterialTheme(colors = if (darkMode) darkColors() else lightColors()) {
-        androidx.compose.material3.MaterialTheme(colorScheme = if (darkMode) darkColorScheme() else lightColorScheme()) {
-            LibcheckApp(model, windowSize)
-        }
+    MaterialTheme(colorScheme = if (darkMode) darkColorScheme() else lightColorScheme()) {
+        LibcheckApp(model, windowSize)
     }
 }
 
