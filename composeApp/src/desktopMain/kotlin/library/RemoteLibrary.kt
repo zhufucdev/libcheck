@@ -20,7 +20,7 @@ import java.time.Instant
 class RemoteLibrary(
     private val channel: ManagedChannel,
     password: String,
-    private val configurations: Configurations
+    private val configurations: Configurations,
 ) : Library {
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
@@ -33,23 +33,35 @@ class RemoteLibrary(
 
     override val sorter: LibrarySortingModel by lazy {
         object : LibrarySortingModel {
-            override val bookModel: SortModel<BookSortable>
-                get() = TODO("Not yet implemented")
-            override val readerModel: SortModel<ReaderSortable>
-                get() = TODO("Not yet implemented")
-            override val borrowModel: SortModel<BorrowSortable>
-                get() = TODO("Not yet implemented")
+            override val bookModel: SortModel<BookSortable> by mutableStateOf(configurations.sortModels.books)
+            override val readerModel: SortModel<ReaderSortable> by mutableStateOf(configurations.sortModels.readers)
+            override val borrowModel: SortModel<BorrowSortable> by mutableStateOf(configurations.sortModels.borrows)
 
             override suspend fun sortBooks(order: SortOrder?, by: BookSortable?) {
-                TODO("Not yet implemented")
+                SortedBookList(
+                    books,
+                    sortedBy = by ?: bookModel.by,
+                    sortOrder = order ?: bookModel.order
+                ).sort(this@RemoteLibrary)
+                configurations.save()
             }
 
             override suspend fun sortReaders(order: SortOrder?, by: ReaderSortable?) {
-                TODO("Not yet implemented")
+                SortedReaderList(
+                    readers,
+                    sortedBy = by ?: readerModel.by,
+                    sortOrder = order ?: readerModel.order
+                ).sort()
+                configurations.save()
             }
 
             override suspend fun sortBorrows(order: SortOrder?, by: BorrowSortable?) {
-                TODO("Not yet implemented")
+                SortedBorrowList(
+                    borrows,
+                    sortedBy = by ?: borrowModel.by,
+                    sortOrder = order ?: borrowModel.order
+                ).sort(this@RemoteLibrary)
+                configurations.save()
             }
         }
     }
@@ -199,6 +211,9 @@ class RemoteLibrary(
     override fun search(query: String) = searchFlow(query)
 
     override fun close() {
+        readers.clear()
+        books.clear()
+        borrows.clear()
         coroutineScope.cancel()
         channel.shutdown()
     }

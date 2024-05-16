@@ -136,7 +136,7 @@ data class SortedBookList(
     val sortedBy: BookSortable = BookSortable.NAME,
     val sortOrder: SortOrder = SortOrder.ASCENDING
 ) {
-    suspend fun sort(library: Library) {
+    fun sort(library: Library) {
         when (sortedBy) {
             BookSortable.NAME ->
                 if (sortOrder == SortOrder.ASCENDING) {

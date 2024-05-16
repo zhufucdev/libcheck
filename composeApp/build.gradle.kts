@@ -28,6 +28,7 @@ kotlin {
         desktopMain.dependencies {
             implementation(project(":stub-jvm"))
             implementation(compose.desktop.currentOs)
+            implementation(libs.kotlin.reflect)
             implementation(libs.apache.commonsio)
             implementation(libs.mpfilepicker)
             implementation(libs.nativeparameteraccess)

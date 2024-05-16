@@ -6,14 +6,15 @@ import kotlinx.serialization.Serializable
 import library.LocalMachineLibrary
 import library.RemoteLibrary
 import java.io.File
+import kotlin.reflect.KClass
 
-@Serializable
 sealed class DataSource {
     abstract fun initialize(context: Configurations): Library
 
     @Serializable
-    data class Local(val rootPath: String) : DataSource() {
-        override fun initialize(context: Configurations): Library = LocalMachineLibrary(File(rootPath), context)
+    data class Local(val rootPath: String? = null) : DataSource() {
+        override fun initialize(context: Configurations): Library =
+            LocalMachineLibrary(File(rootPath ?: context.defaultRootPath), context)
     }
 
     @Serializable
@@ -57,6 +58,15 @@ sealed class DataSource {
     }
 }
 
+enum class DataSourceType(val clazz: KClass<out DataSource>) {
+    Local(DataSource.Local::class), Remote(DataSource.Remote::class);
+
+    companion object {
+        fun of(clazz: KClass<out DataSource>): DataSourceType = entries.first { it.clazz == clazz }
+    }
+}
+
+
 enum class ColorMode {
     System, Dark, Light
 }
@@ -69,9 +79,12 @@ data class SortModelSnapshot(
 )
 
 interface Configurations {
-    var dataSource: DataSource
+    var sources: Map<DataSourceType, DataSource>
+    var currentSourceType: DataSourceType
     var colorMode: ColorMode
     var sortModels: SortModelSnapshot
+
+    val defaultRootPath: String
 
     suspend fun save()
 }

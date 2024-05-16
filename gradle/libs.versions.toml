@@ -8,6 +8,7 @@ grpc-kotlin = "1.4.1"
 [libraries]
 kotlinx-coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version = "1.8.1" }
 kotlinx-serialzation-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version = "1.6.0" }
+kotlin-reflect = { group = "org.jetbrains.kotlin", name = "kotlin-reflect", version.ref = "kotlin" }
 apache-commonsio = { group = "commons-io", name = "commons-io", version = "2.11.0" }
 mpfilepicker = { group = "com.darkrockstudios", name = "mpfilepicker", version = "3.1.0" }
 nativeparameteraccess = { group = "com.github.tkuenneth", name = "nativeparameterstoreaccess", version = "0.1.2" }

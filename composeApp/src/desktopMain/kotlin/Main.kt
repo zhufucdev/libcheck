@@ -9,17 +9,14 @@ import androidx.compose.ui.window.WindowState
 import androidx.compose.ui.window.awaitApplication
 import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.runBlocking
-import model.AppViewModel
-import model.Configurations
-import model.LocalMachineConfigurationViewModel
-import model.Route
+import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.libcheck_header
 import ui.app.LibcheckApp
 import ui.calculateWindowSize
-import ui.rememberDarkModeEnabled
+import ui.rememberSystemDarkMode
 
 @Composable
 @Preview
@@ -28,12 +25,26 @@ fun App(windowState: WindowState, configurations: Configurations) {
         derivedStateOf { calculateWindowSize(windowState.size) }
     }
     val library by remember(configurations) {
-        derivedStateOf { configurations.dataSource.initialize(configurations) }
+        derivedStateOf {
+            configurations
+                .sources[configurations.currentSourceType]!!
+                .initialize(configurations)
+        }
     }
     val route = remember {
         mutableStateOf(Route.BOOKS)
     }
-    val darkMode = rememberDarkModeEnabled()
+
+    val systemInDarkMode = rememberSystemDarkMode()
+    val darkMode by remember(configurations.colorMode) {
+        derivedStateOf {
+            when (configurations.colorMode) {
+                ColorMode.System -> systemInDarkMode
+                ColorMode.Dark -> true
+                ColorMode.Light -> false
+            }
+        }
+    }
 
     val model = remember {
         AppViewModel(library, route)
