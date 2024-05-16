@@ -15,17 +15,16 @@ interface EncryptDecrypt {
 }
 
 private const val ITERATION_COUNT = 20
-private const val SALT_SIZE = 16
 
 class AesCipher(passphrase: String) : EncryptDecrypt {
     private val cipher = Cipher.getInstance("PBEWithMD5AndDES")
     private val key =
-        SecretKeyFactory.getInstance("PEBWithMD5AndDES")
+        SecretKeyFactory.getInstance("PBEWithMD5AndDES")
             .generateSecret(PBEKeySpec(passphrase.toCharArray()))
     private val salt =
         MessageDigest.getInstance("SHA-1")
             .digest(passphrase.toByteArray())
-            .slice(0 until SALT_SIZE)
+            .slice(0 until 8)
             .toByteArray()
 
     override fun encrypt(data: ByteArray): ByteArray {
