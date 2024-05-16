@@ -65,7 +65,7 @@ enum class ColorMode {
 data class SortModelSnapshot(
     val books: SortModel<BookSortable> = SortModel(SortOrder.ASCENDING, BookSortable.ID),
     val readers: SortModel<ReaderSortable> = SortModel(SortOrder.ASCENDING, ReaderSortable.ID),
-    val borrows: SortModel<ReaderSortable> = SortModel(SortOrder.ASCENDING, ReaderSortable.ID),
+    val borrows: SortModel<BorrowSortable> = SortModel(SortOrder.ASCENDING, BorrowSortable.BOOK_ID),
 )
 
 interface Configurations {
