@@ -39,6 +39,12 @@ fun App(windowState: WindowState, configurations: Configurations) {
         AppViewModel(library, route)
     }
 
+    DisposableEffect(library) {
+        onDispose {
+            library.close()
+        }
+    }
+
     MaterialTheme(colorScheme = if (darkMode) darkColorScheme() else lightColorScheme()) {
         LibcheckApp(model, windowSize)
     }
@@ -57,4 +63,5 @@ fun main() = runBlocking {
             App(state, config)
         }
     }
+    config.save()
 }
