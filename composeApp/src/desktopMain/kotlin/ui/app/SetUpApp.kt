@@ -3,9 +3,7 @@
 
 package ui.app
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.expandVertically
-import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.*
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -62,13 +60,19 @@ fun SetUpApp(windowSize: WindowSize, configurations: Configurations) {
 @Composable
 private fun ColumnScope.Content(configurations: Configurations) {
     val coroutine = rememberCoroutineScope()
+    val sources by remember(configurations) { derivedStateOf { configurations.sources.entries.sortedBy { it.key } } }
+    val working by remember { mutableStateOf(false) }
+    val states =
+        remember { mutableStateMapOf(*(sources.map { (type, _) -> type to PreferenceState() }).toTypedArray()) }
+    val currentState by remember { derivedStateOf { states[configurations.currentSourceType]!! } }
 
+    AnimatedVisibility(working, enter = fadeIn(), exit = fadeOut()) {
+        LinearProgressIndicator(Modifier.fillMaxWidth())
+    }
     Spacer(Modifier.height(PaddingLarge * 4))
     WelcomeHeader()
     Spacer(Modifier.height(PaddingLarge * 2))
 
-    val sources by remember(configurations) { derivedStateOf { configurations.sources.entries.sortedBy { it.key } } }
-    val state = remember { PreferenceState() }
     LazyColumn {
         items(sources.size, { sources[it].key }) { index ->
             val type = sources[index].key
@@ -92,8 +96,8 @@ private fun ColumnScope.Content(configurations: Configurations) {
                     Text(text = stringResource(type.descriptionStrRes), style = MaterialTheme.typography.labelMedium)
                     Spacer(Modifier.height(PaddingMedium))
                     when (type) {
-                        DataSourceType.Local -> LocalSource(configurations, state)
-                        DataSourceType.Remote -> RemoteSource(configurations, state)
+                        DataSourceType.Local -> LocalSource(configurations, !working, states[type]!!)
+                        DataSourceType.Remote -> RemoteSource(configurations, !working, states[type]!!)
                     }
                 }
             }
@@ -110,6 +114,7 @@ private fun ColumnScope.Content(configurations: Configurations) {
                     configurations.save()
                 }
             },
+            enabled = currentState.valid
         ) {
             Text(stringResource(Res.string.next_para))
         }
@@ -118,9 +123,9 @@ private fun ColumnScope.Content(configurations: Configurations) {
 }
 
 @Composable
-private fun LocalSource(context: Configurations, state: PreferenceState) {
+private fun LocalSource(context: Configurations, enabled: Boolean, state: PreferenceState) {
     LocalDataSourcePreferences(
-        enabled = true,
+        enabled = enabled,
         state = state,
         source = context.sources[DataSourceType.Local]!! as DataSource.Local,
         onValueChanged = { context.sources[DataSourceType.Local] = it },
@@ -129,9 +134,9 @@ private fun LocalSource(context: Configurations, state: PreferenceState) {
 }
 
 @Composable
-private fun RemoteSource(context: Configurations, state: PreferenceState) {
+private fun RemoteSource(context: Configurations, enabled: Boolean, state: PreferenceState) {
     RemoteDataSourcePreferences(
-        enabled = true,
+        enabled = enabled,
         state = state,
         source = context.sources[DataSourceType.Remote]!! as DataSource.Remote,
         onValueChanged = { context.sources[DataSourceType.Remote] = it }
