@@ -43,22 +43,18 @@ fun SetUpApp(windowSize: WindowSize, configurations: Configurations) {
             when (windowSize) {
                 WindowSize.WIDE ->
                     Card(Modifier.fillMaxHeight().width(800.dp).padding(PaddingLarge)) {
-                        Column(Modifier.padding(horizontal = PaddingLarge * 4)) {
-                            Content(configurations)
-                        }
+                        Content(configurations, Modifier.padding(horizontal = PaddingLarge * 4))
                     }
 
                 else ->
-                    Column(Modifier.padding(horizontal = PaddingLarge)) {
-                        Content(configurations)
-                    }
+                    Content(configurations, Modifier.padding(horizontal = PaddingLarge))
             }
         }
     }
 }
 
 @Composable
-private fun ColumnScope.Content(configurations: Configurations) {
+private fun Content(configurations: Configurations, modifier: Modifier = Modifier) {
     val coroutine = rememberCoroutineScope()
     val sources by remember(configurations) { derivedStateOf { configurations.sources.entries.sortedBy { it.key } } }
     val working by remember { mutableStateOf(false) }
@@ -66,60 +62,73 @@ private fun ColumnScope.Content(configurations: Configurations) {
         remember { mutableStateMapOf(*(sources.map { (type, _) -> type to PreferenceState() }).toTypedArray()) }
     val currentState by remember { derivedStateOf { states[configurations.currentSourceType]!! } }
 
-    AnimatedVisibility(working, enter = fadeIn(), exit = fadeOut()) {
-        LinearProgressIndicator(Modifier.fillMaxWidth())
-    }
-    Spacer(Modifier.height(PaddingLarge * 4))
-    WelcomeHeader()
-    Spacer(Modifier.height(PaddingLarge * 2))
-
-    LazyColumn {
-        items(sources.size, { sources[it].key }) { index ->
-            val type = sources[index].key
-            val selected = type == configurations.currentSourceType
-            Surface(color = Color.Transparent, onClick = { configurations.currentSourceType = type }) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth().padding(PaddingLarge)
+    Scaffold(
+        containerColor = Color.Transparent,
+        topBar = {
+            Column {
+                AnimatedVisibility(working, enter = fadeIn(), exit = fadeOut()) {
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                }
+                Spacer(Modifier.height(PaddingLarge * 4))
+                WelcomeHeader()
+                Spacer(Modifier.height(PaddingLarge * 2))
+            }
+        },
+        bottomBar = {
+            Row(
+                horizontalArrangement = Arrangement.End,
+                modifier = Modifier.fillMaxWidth().padding(bottom = PaddingLarge * 2)
+            ) {
+                TextButton(
+                    onClick = {
+                        configurations.firstLaunch = false
+                        coroutine.launch {
+                            configurations.save()
+                        }
+                    },
+                    enabled = currentState.valid
                 ) {
-                    Icon(imageVector = type.icon, contentDescription = type.name)
-                    Spacer(Modifier.width(PaddingLarge))
-                    Text(text = stringResource(type.titleStrRes), style = MaterialTheme.typography.titleLarge)
-                    Spacer(Modifier.weight(1f))
-                    if (selected) {
-                        Icon(Icons.Default.Check, "selected")
-                    }
+                    Text(stringResource(Res.string.next_para))
                 }
             }
-            AnimatedVisibility(selected, enter = expandVertically(), exit = shrinkVertically()) {
-                Column(Modifier.padding(horizontal = PaddingLarge)) {
-                    Text(text = stringResource(type.descriptionStrRes), style = MaterialTheme.typography.labelMedium)
-                    Spacer(Modifier.height(PaddingMedium))
-                    when (type) {
-                        DataSourceType.Local -> LocalSource(configurations, !working, states[type]!!)
-                        DataSourceType.Remote -> RemoteSource(configurations, !working, states[type]!!)
+        },
+        modifier = modifier
+    ) {
+        LazyColumn(Modifier.padding(it)) {
+            items(sources.size, { sources[it].key }) { index ->
+                val type = sources[index].key
+                val selected = type == configurations.currentSourceType
+                Surface(color = Color.Transparent, onClick = { configurations.currentSourceType = type }) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth().padding(PaddingLarge)
+                    ) {
+                        Icon(imageVector = type.icon, contentDescription = type.name)
+                        Spacer(Modifier.width(PaddingLarge))
+                        Text(text = stringResource(type.titleStrRes), style = MaterialTheme.typography.titleLarge)
+                        Spacer(Modifier.weight(1f))
+                        if (selected) {
+                            Icon(Icons.Default.Check, "selected")
+                        }
                     }
                 }
-            }
-            Spacer(Modifier.height(PaddingLarge))
-        }
-    }
-
-    Spacer(Modifier.weight(1f))
-    Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-        TextButton(
-            onClick = {
-                configurations.firstLaunch = false
-                coroutine.launch {
-                    configurations.save()
+                AnimatedVisibility(selected, enter = expandVertically(), exit = shrinkVertically()) {
+                    Column(Modifier.padding(horizontal = PaddingLarge)) {
+                        Text(
+                            text = stringResource(type.descriptionStrRes),
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        Spacer(Modifier.height(PaddingMedium))
+                        when (type) {
+                            DataSourceType.Local -> LocalSource(configurations, !working, states[type]!!)
+                            DataSourceType.Remote -> RemoteSource(configurations, !working, states[type]!!)
+                        }
+                    }
                 }
-            },
-            enabled = currentState.valid
-        ) {
-            Text(stringResource(Res.string.next_para))
+                Spacer(Modifier.height(PaddingLarge))
+            }
         }
     }
-    Spacer(Modifier.height(PaddingLarge * 2))
 }
 
 @Composable
