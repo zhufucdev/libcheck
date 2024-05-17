@@ -1,9 +1,9 @@
 package ui.component
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.material.Icon
-import androidx.compose.material.LocalTextStyle
-import androidx.compose.material.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalTextStyle
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Alignment
@@ -24,17 +24,17 @@ fun HeadingPlaceholder(imageVector: ImageVector, title: @Composable () -> Unit, 
             imageVector = imageVector,
             contentDescription = "",
             modifier = Modifier.size(64.dp).padding(bottom = PaddingLarge),
-            tint = MaterialTheme.colors.onSurface.variant
+            tint = MaterialTheme.colorScheme.onSurface.variant
         )
         CompositionLocalProvider(
             LocalTextStyle provides
-                    MaterialTheme.typography.h5.copy(color = MaterialTheme.colors.onSurface.variant)
+                    MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface.variant)
         ) {
             title()
         }
         CompositionLocalProvider(
             LocalTextStyle provides
-                    MaterialTheme.typography.caption.copy(color = MaterialTheme.colors.onSurface.variant)
+                    MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurface.variant)
         ) {
             description?.invoke()
         }
