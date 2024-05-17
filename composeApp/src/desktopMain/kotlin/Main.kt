@@ -1,5 +1,8 @@
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.*
@@ -15,6 +18,7 @@ import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.libcheck_header
 import ui.app.LibcheckApp
+import ui.app.SetUpApp
 import ui.calculateWindowSize
 import ui.rememberSystemDarkMode
 
@@ -24,19 +28,12 @@ fun App(windowState: WindowState, configurations: Configurations) {
     val windowSize by remember(windowState) {
         derivedStateOf { calculateWindowSize(windowState.size) }
     }
-    val library by remember(configurations) {
-        derivedStateOf {
-            configurations
-                .sources[configurations.currentSourceType]!!
-                .initialize(configurations)
-        }
-    }
     val route = remember {
         mutableStateOf(Route.BOOKS)
     }
 
     val systemInDarkMode = rememberSystemDarkMode()
-    val darkMode by remember(configurations.colorMode) {
+    val darkMode by remember(configurations) {
         derivedStateOf {
             when (configurations.colorMode) {
                 ColorMode.System -> systemInDarkMode
@@ -46,18 +43,31 @@ fun App(windowState: WindowState, configurations: Configurations) {
         }
     }
 
-    val model = remember {
-        AppViewModel(library, route)
-    }
-
-    DisposableEffect(library) {
-        onDispose {
-            library.close()
-        }
-    }
-
     MaterialTheme(colorScheme = if (darkMode) darkColorScheme() else lightColorScheme()) {
-        LibcheckApp(model, windowSize)
+        Surface {
+            if (configurations.firstLaunch) {
+                SetUpApp(windowSize, configurations)
+            }
+            AnimatedVisibility(!configurations.firstLaunch, enter = fadeIn()) {
+                val library by remember(configurations) {
+                    derivedStateOf {
+                        configurations
+                            .sources[configurations.currentSourceType]!!
+                            .initialize(configurations)
+                    }
+                }
+                val model = remember {
+                    AppViewModel(library, route)
+                }
+
+                DisposableEffect(library) {
+                    onDispose {
+                        library.close()
+                    }
+                }
+                LibcheckApp(model, windowSize)
+            }
+        }
     }
 }
 

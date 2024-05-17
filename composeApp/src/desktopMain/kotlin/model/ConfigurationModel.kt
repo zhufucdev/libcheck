@@ -1,10 +1,18 @@
 package model
 
 import AesCipher
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Computer
+import androidx.compose.material.icons.filled.LocationCity
+import androidx.compose.ui.graphics.vector.ImageVector
+import getHostName
 import io.grpc.ManagedChannelBuilder
 import kotlinx.serialization.Serializable
 import library.LocalMachineLibrary
 import library.RemoteLibrary
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.StringResource
+import resources.*
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -20,8 +28,9 @@ sealed class DataSource {
     @Serializable
     data class Remote(
         val remoteHost: String = "",
-        val useTransportSecurity: Boolean = true,
         val remotePort: Int = 5411,
+        val deviceName: String = getHostName(),
+        val useTransportSecurity: Boolean = true,
         val password: ByteArray = AesCipher().encrypt("".encodeToByteArray()),
     ) : DataSource() {
         override fun initialize(context: Configurations): Library {
@@ -31,7 +40,7 @@ sealed class DataSource {
                 .build()
             val password = AesCipher().decrypt(password).decodeToString()
 
-            return RemoteLibrary(channel, password, context)
+            return RemoteLibrary(channel, password, deviceName, context)
         }
 
         override fun equals(other: Any?): Boolean {
@@ -58,8 +67,20 @@ sealed class DataSource {
     }
 }
 
-enum class DataSourceType(val clazz: KClass<out DataSource>) {
-    Local(DataSource.Local::class), Remote(DataSource.Remote::class);
+@OptIn(ExperimentalResourceApi::class)
+enum class DataSourceType(
+    val clazz: KClass<out DataSource>,
+    val titleStrRes: StringResource,
+    val descriptionStrRes: StringResource,
+    val icon: ImageVector,
+) {
+    Local(DataSource.Local::class, Res.string.store_locally_para, Res.string.store_locally_des, Icons.Default.Computer),
+    Remote(
+        DataSource.Remote::class,
+        Res.string.store_on_a_checkmate_server_para,
+        Res.string.store_on_a_checkmate_server_des,
+        Icons.Default.LocationCity
+    );
 
     companion object {
         fun of(clazz: KClass<out DataSource>): DataSourceType = entries.first { it.clazz == clazz }
@@ -79,10 +100,11 @@ data class SortModelSnapshot(
 )
 
 interface Configurations {
-    var sources: Map<DataSourceType, DataSource>
+    var sources: MutableMap<DataSourceType, DataSource>
     var currentSourceType: DataSourceType
     var colorMode: ColorMode
     var sortModels: SortModelSnapshot
+    var firstLaunch: Boolean
 
     val defaultRootPath: String
 

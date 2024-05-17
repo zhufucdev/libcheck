@@ -23,6 +23,7 @@ private data class ConfigurationsModel(
     val dataSource: DataSourceType = DataSourceType.Local,
     val colorMode: ColorMode = ColorMode.System,
     val sorting: SortModelSnapshot = SortModelSnapshot(),
+    val firstLaunch: Boolean = true
 )
 
 class LocalMachineConfigurationViewModel(val rootDir: File) : Configurations {
@@ -39,7 +40,7 @@ class LocalMachineConfigurationViewModel(val rootDir: File) : Configurations {
         } else {
             ConfigurationsModel()
         }
-    override var sources: Map<DataSourceType, DataSource> = mutableStateMapOf(
+    override var sources: MutableMap<DataSourceType, DataSource> = mutableStateMapOf(
         *(libraryConfigFiles.entries.map { (type, path) ->
             type to (File(rootDir, path).takeIf { it.exists() }?.inputStream()
                 ?.use { Json.decodeFromStream(type.serializer(), it) } ?: type.clazz.createInstance())
@@ -48,6 +49,7 @@ class LocalMachineConfigurationViewModel(val rootDir: File) : Configurations {
     override var currentSourceType: DataSourceType by mutableStateOf(model.dataSource)
     override var colorMode: ColorMode by mutableStateOf(model.colorMode)
     override var sortModels: SortModelSnapshot by mutableStateOf(model.sorting)
+    override var firstLaunch: Boolean by mutableStateOf(model.firstLaunch)
     override val defaultRootPath: String
         get() = rootDir.absolutePath
 

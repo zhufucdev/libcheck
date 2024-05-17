@@ -6,7 +6,6 @@ import com.google.protobuf.ByteString
 import com.sqlmaster.proto.*
 import com.sqlmaster.proto.LibraryOuterClass.UpdateEffect
 import currentPlatform
-import getHostName
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -20,6 +19,7 @@ import java.time.Instant
 class RemoteLibrary(
     private val channel: ManagedChannel,
     password: String,
+    private val deviceName: String,
     private val configurations: Configurations,
 ) : Library {
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
@@ -105,7 +105,7 @@ class RemoteLibrary(
     override suspend fun connect() {
         val auth = authorizationRequest {
             os = currentPlatform::class.simpleName!!
-            deviceName = getHostName()
+            deviceName = this@RemoteLibrary.deviceName
             password = this@RemoteLibrary.password!!
         }
         val authResult = authenticationChannel.authorize(auth)
