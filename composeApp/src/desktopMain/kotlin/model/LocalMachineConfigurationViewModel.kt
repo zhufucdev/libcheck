@@ -61,6 +61,7 @@ class LocalMachineConfigurationViewModel(val rootDir: File) : Configurations {
 
     override suspend fun save() {
         val model = ConfigurationsModel(
+            firstLaunch = firstLaunch,
             dataSource = currentSourceType,
             colorMode = colorMode,
             sorting = sortModels
