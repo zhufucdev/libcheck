@@ -37,9 +37,9 @@ import ui.PaddingMedium
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
-fun DataSourcePreferences(config: Configurations) {
+fun DataSourcePreferences(config: Configurations, modifier: Modifier = Modifier) {
     val sources by remember(config) { derivedStateOf { config.sources.entries.sortedBy { it.key } } }
-    LazyColumn {
+    LazyColumn(modifier) {
         items(sources.size, { sources[it].key }) { index ->
             val type = sources[index].key
             val source = sources[index].value

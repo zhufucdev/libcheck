@@ -9,6 +9,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import model.Configurations
 import model.NavigationModel
@@ -22,9 +23,10 @@ import ui.component.DataSourcePreferences
 
 @Composable
 fun PreferencesApp(model: Configurations, navigator: NavigationModel) {
+    val topBarState = TopAppBarDefaults.enterAlwaysScrollBehavior()
     Scaffold(
         topBar = {
-            TopAppBar(
+            LargeTopAppBar(
                 title = { Text(stringResource(Res.string.preferences_para)) },
                 navigationIcon = {
                     TooltipBox(
@@ -41,12 +43,13 @@ fun PreferencesApp(model: Configurations, navigator: NavigationModel) {
                             )
                         }
                     }
-                }
+                },
+                scrollBehavior = topBarState
             )
         }
     ) {
         Box(Modifier.padding(it).padding(end = PaddingLarge)) {
-            DataSourcePreferences(model)
+            DataSourcePreferences(model, modifier = Modifier.nestedScroll(topBarState.nestedScrollConnection))
         }
     }
 }
