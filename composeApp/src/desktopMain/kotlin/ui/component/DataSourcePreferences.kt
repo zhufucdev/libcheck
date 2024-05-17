@@ -71,7 +71,7 @@ fun DataSourcePreferences(config: Configurations, modifier: Modifier = Modifier)
                                 config.sources[type] = it
                             },
                             context = config,
-                            modifier = Modifier.padding(start = PaddingLarge * 4)
+                            modifier = Modifier.padding(start = PaddingLarge * 4, end = PaddingLarge)
                         )
 
                     DataSourceType.Remote ->
@@ -82,7 +82,7 @@ fun DataSourcePreferences(config: Configurations, modifier: Modifier = Modifier)
                             onValueChanged = {
                                 config.sources[type] = it
                             },
-                            modifier = Modifier.padding(start = PaddingLarge * 4)
+                            modifier = Modifier.padding(start = PaddingLarge * 4, end = PaddingLarge)
                         )
                 }
             }

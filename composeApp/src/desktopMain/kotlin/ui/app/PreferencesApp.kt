@@ -18,7 +18,6 @@ import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.navigate_up_span
 import resources.preferences_para
-import ui.PaddingLarge
 import ui.component.DataSourcePreferences
 
 @Composable
@@ -48,7 +47,7 @@ fun PreferencesApp(model: Configurations, navigator: NavigationModel) {
             )
         }
     ) {
-        Box(Modifier.padding(it).padding(end = PaddingLarge)) {
+        Box(Modifier.padding(it)) {
             DataSourcePreferences(model, modifier = Modifier.nestedScroll(topBarState.nestedScrollConnection))
         }
     }
