@@ -20,6 +20,10 @@ import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
+import resources.Res
+import resources.go_para
+import resources.library_not_working_para
+import resources.tune_the_preferences_to_fix
 import ui.PaddingLarge
 import ui.PaddingMedium
 import ui.WindowSize
@@ -30,9 +34,15 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
     var searchQuery by remember { mutableStateOf("") }
     var isSearching by remember { mutableStateOf(false) }
     val searchResult = remember { mutableStateListOf<Searchable>() }
+    var connectionException by remember { mutableStateOf<Exception?>(null) }
 
     LaunchedEffect(model.library) {
-        model.library.connect()
+        connectionException = null
+        try {
+            model.library.connect()
+        } catch (e: Exception) {
+            connectionException = e
+        }
     }
 
     LaunchedEffect(searchQuery) {
@@ -157,6 +167,20 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                 InitializationPlaceholder()
             }
         }
+    }
+
+    if (connectionException != null) {
+        AlertDialog(
+            onDismissRequest = {},
+            icon = { Icon(imageVector = Icons.Default.ErrorOutline, contentDescription = "library not working") },
+            title = { Text(stringResource(Res.string.library_not_working_para)) },
+            text = { Text(stringResource(Res.string.tune_the_preferences_to_fix, connectionException?.message ?: "null")) },
+            confirmButton = {
+                TextButton(onClick = { model.route.push(Route.Preferences) }) {
+                    Text(stringResource(Res.string.go_para))
+                }
+            }
+        )
     }
 }
 
