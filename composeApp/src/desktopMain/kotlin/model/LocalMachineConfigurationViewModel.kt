@@ -26,7 +26,7 @@ private data class ConfigurationsModel(
     val firstLaunch: Boolean = true
 )
 
-class LocalMachineConfigurationViewModel(val rootDir: File) : Configurations {
+class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurations {
     private val configFile = File(rootDir, "preferences.json")
     private val libraryConfigFiles = buildMap {
         DataSource::class.sealedSubclasses.forEach {
