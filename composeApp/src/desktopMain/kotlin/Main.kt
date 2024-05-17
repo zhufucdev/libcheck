@@ -1,5 +1,6 @@
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.desktop.ui.tooling.preview.Preview
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -18,6 +19,7 @@ import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.libcheck_header
 import ui.app.LibcheckApp
+import ui.app.PreferencesApp
 import ui.app.SetUpApp
 import ui.calculateWindowSize
 import ui.rememberSystemDarkMode
@@ -28,9 +30,7 @@ fun App(windowState: WindowState, configurations: Configurations) {
     val windowSize by remember(windowState) {
         derivedStateOf { calculateWindowSize(windowState.size) }
     }
-    val route = remember {
-        mutableStateOf(Route.BOOKS)
-    }
+    val navigator = remember { NavigationModel() }
 
     val systemInDarkMode = rememberSystemDarkMode()
     val darkMode by remember(configurations) {
@@ -48,7 +48,18 @@ fun App(windowState: WindowState, configurations: Configurations) {
             if (configurations.firstLaunch) {
                 SetUpApp(windowSize, configurations)
             }
-            AnimatedVisibility(!configurations.firstLaunch, enter = fadeIn()) {
+            AnimatedVisibility(
+                visible = navigator.current == Route.Preferences,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
+                PreferencesApp(configurations, navigator)
+            }
+            AnimatedVisibility(
+                visible = !configurations.firstLaunch && navigator.current.docked,
+                enter = fadeIn(),
+                exit = fadeOut()
+            ) {
                 val library by remember(configurations) {
                     derivedStateOf {
                         configurations
@@ -56,8 +67,8 @@ fun App(windowState: WindowState, configurations: Configurations) {
                             .initialize(configurations)
                     }
                 }
-                val model = remember {
-                    AppViewModel(library, route)
+                val model = remember(library, navigator) {
+                    AppViewModel(library, navigator)
                 }
 
                 DisposableEffect(library) {

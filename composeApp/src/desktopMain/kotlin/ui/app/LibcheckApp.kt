@@ -1,11 +1,9 @@
 @file:Suppress("FunctionName")
+@file:OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class)
 
 package ui.app
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideIn
+import androidx.compose.animation.*
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,7 +16,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import model.*
+import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.stringResource
 import ui.PaddingLarge
 import ui.PaddingMedium
 import ui.WindowSize
@@ -47,35 +48,56 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
             Column(
                 Modifier.fillMaxWidth()
             ) {
-                SearchBar(
-                    query = searchQuery,
-                    active = isSearching,
-                    onActiveChange = { isSearching = it },
-                    onQueryChange = { searchQuery = it },
-                    content = {
-                        LazyColumn {
-                            searchResult.forEach {
-                                item(it.id) {
-                                    SearchResult(it, model) {
-                                        isSearching = false
-                                        model.reveal = it.id
-                                        model.route = when (it) {
-                                            is Reader -> Route.READERS
-                                            is Book -> Route.BOOKS
-                                            is BorrowInstanced -> Route.BORROWING
-                                            else -> throw IllegalArgumentException()
+                Row(
+                    modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = PaddingLarge),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    SearchBar(
+                        query = searchQuery,
+                        active = isSearching,
+                        onActiveChange = { isSearching = it },
+                        onQueryChange = { searchQuery = it },
+                        content = {
+                            LazyColumn {
+                                searchResult.forEach {
+                                    item(it.id) {
+                                        SearchResult(it, model) {
+                                            isSearching = false
+                                            model.reveal = it.id
+                                            model.route.push(when (it) {
+                                                is Reader -> Route.Readers
+                                                is Book -> Route.Books
+                                                is BorrowInstanced -> Route.Borrowing
+                                                else -> throw IllegalArgumentException()
+                                            })
                                         }
                                     }
                                 }
                             }
+                        },
+                        leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = "search icon") },
+                        onSearch = {},
+                        modifier = (if (windowSize <= WindowSize.WIDE) Modifier.weight(1f) else Modifier),
+                    )
+                    AnimatedVisibility(!isSearching, enter = expandHorizontally(), exit = shrinkHorizontally()) {
+                        IconButton(
+                            onClick = { model.route.push(Route.Preferences) },
+                            modifier = Modifier.padding(end = PaddingMedium)
+                        ) {
+                            TooltipBox(
+                                tooltip = {
+                                    PlainTooltip {
+                                        Text(stringResource(Route.Preferences.label))
+                                    }
+                                },
+                                positionProvider = rememberComponentRectPositionProvider(),
+                                state = rememberTooltipState()
+                            ) {
+                                Icon(imageVector = Route.Preferences.icon, contentDescription = "preferences")
+                            }
                         }
-                    },
-                    leadingIcon = { Icon(imageVector = Icons.Default.Search, contentDescription = "") },
-                    onSearch = {},
-                    modifier = Modifier.widthIn(min = 500.dp)
-                        .align(Alignment.CenterHorizontally)
-                        .padding(bottom = PaddingMedium)
-                )
+                    }
+                }
                 AnimatedVisibility(
                     visible = model.library.state !is LibraryState.Idle,
                     enter = fadeIn(),
@@ -103,8 +125,8 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         bottomBar = {
             if (windowSize < WindowSize.WIDE) {
                 NavigationBar {
-                    BottomNavigationItems(model.route) {
-                        model.route = it
+                    BottomNavigationItems(model.route.current) {
+                        model.route.push(it)
                     }
                 }
             }
@@ -119,7 +141,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                 if (windowSize >= WindowSize.WIDE) {
                     Row {
                         PermanentDrawerSheet {
-                            NavigationDrawerItems(model.route) { next -> model.route = next }
+                            NavigationDrawerItems(model.route.current) { next -> model.route.push(next) }
                         }
                         MainContent(model)
                     }
@@ -163,12 +185,14 @@ private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit)
     Spacer(Modifier.height(PaddingLarge))
     Column(Modifier.padding(horizontal = PaddingMedium)) {
         Route.entries.forEach {
-            NavigationDrawerItem(
-                label = { Text(it.label) },
-                onClick = { onNavigation(it) },
-                icon = { Icon(imageVector = it.icon, contentDescription = "") },
-                selected = current == it
-            )
+            if (it.docked) {
+                NavigationDrawerItem(
+                    label = { Text(stringResource(it.label)) },
+                    onClick = { onNavigation(it) },
+                    icon = { Icon(imageVector = it.icon, contentDescription = "") },
+                    selected = current == it
+                )
+            }
         }
     }
 }
@@ -176,21 +200,24 @@ private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit)
 @Composable
 private fun RowScope.BottomNavigationItems(current: Route, onNavigation: (Route) -> Unit) {
     Route.entries.forEach {
-        NavigationBarItem(
-            selected = current == it,
-            onClick = { onNavigation(it) },
-            icon = { Icon(it.icon, "") },
-            label = { Text(it.label) }
-        )
+        if (it.docked) {
+            NavigationBarItem(
+                selected = current == it,
+                onClick = { onNavigation(it) },
+                icon = { Icon(it.icon, "") },
+                label = { Text(stringResource(it.label)) }
+            )
+        }
     }
 }
 
 @Composable
 private fun MainContent(model: AppViewModel) {
-    when (model.route) {
-        Route.BOOKS -> BooksApp(model)
-        Route.READERS -> ReadersApp(model)
-        Route.BORROWING -> BorrowingApp(model)
+    when (model.route.current) {
+        Route.Books -> BooksApp(model)
+        Route.Readers -> ReadersApp(model)
+        Route.Borrowing -> BorrowingApp(model)
+        else -> {}
     }
 }
 

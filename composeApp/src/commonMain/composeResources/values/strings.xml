@@ -58,4 +58,9 @@
     <string name="this_device_name_para">Name of this device</string>
     <string name="use_transport_layer_security_para">Use transport layer security</string>
     <string name="password_para">Password</string>
+    <string name="books_para">Books</string>
+    <string name="readers_para">Readers</string>
+    <string name="borrowing_para">Borrowing</string>
+    <string name="preferences_para">Preferences</string>
+    <string name="navigate_up_span">navigate up</string>
 </resources>

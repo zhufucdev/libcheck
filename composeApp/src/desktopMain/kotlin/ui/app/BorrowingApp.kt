@@ -171,7 +171,7 @@ fun BorrowingApp(model: AppViewModel) {
                                     TextButton(
                                         onClick = {
                                             model.reveal = b.id
-                                            model.route = Route.BOOKS
+                                            model.route.push(Route.Books)
                                         },
                                         content = {
                                             Text(
@@ -200,7 +200,7 @@ fun BorrowingApp(model: AppViewModel) {
                                     TextButton(
                                         onClick = {
                                             model.reveal = r.id
-                                            model.route = Route.READERS
+                                            model.route.push(Route.Readers)
                                         },
                                         content = {
                                             Text(
