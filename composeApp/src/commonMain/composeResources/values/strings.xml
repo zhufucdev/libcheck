@@ -51,7 +51,7 @@
     <string name="store_locally_para">Store locally</string>
     <string name="store_locally_des">I want to store all the library information only on my computer</string>
     <string name="store_on_a_checkmate_server_para">Store on a Checkmate server</string>
-    <string name="store_on_a_checkmate_server_des">If there's a Checkmate server available, I want to connect to it and store the library data there. My changes might be visible to others, as it is the way around</string>
+    <string name="store_on_a_checkmate_server_des">If there's a Checkmate server available, I want to connect to it and store the library data there. My changes might be visible to others, as it is the other way around</string>
     <string name="root_path_para">Root path</string>
     <string name="host_para">Host</string>
     <string name="port_para">Port</string>
