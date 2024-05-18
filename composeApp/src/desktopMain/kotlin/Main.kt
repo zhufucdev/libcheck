@@ -33,7 +33,7 @@ fun App(windowState: WindowState, configurations: Configurations) {
     val navigator = remember { NavigationModel() }
 
     val systemInDarkMode = rememberSystemDarkMode()
-    val darkMode by remember(configurations) {
+    val darkMode by remember(configurations, systemInDarkMode) {
         derivedStateOf {
             when (configurations.colorMode) {
                 ColorMode.System -> systemInDarkMode
