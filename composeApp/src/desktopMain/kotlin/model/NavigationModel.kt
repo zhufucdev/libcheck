@@ -31,12 +31,15 @@ data class Route(val type: RouteType, val parameters: NavigationParameters)
 @Stable
 open class RevealParameters(val identifier: Identifier) : NavigationParameters
 
-abstract class FilterParameters<T> : NavigationParameters {
+sealed class FilterParameters<T> : NavigationParameters {
     abstract fun T.isCandidate(): Boolean
 }
 
 @Stable
-open class FilterBorrowParameters(private val books: List<Identifier>, private val readers: List<Identifier>) : FilterParameters<Borrow>() {
+open class FilterBorrowParameters(
+    private val books: List<Identifier> = emptyList(),
+    private val readers: List<Identifier> = emptyList(),
+) : FilterParameters<Borrow>() {
     override fun Borrow.isCandidate(): Boolean =
         (books.isEmpty() || books.contains(bookId))
                 && (readers.isEmpty() || readers.contains(readerId))

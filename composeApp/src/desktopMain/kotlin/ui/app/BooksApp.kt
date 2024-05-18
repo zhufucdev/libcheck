@@ -44,11 +44,8 @@ import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.*
-import ui.LaunchReveal
-import ui.PaddingLarge
+import ui.*
 import ui.component.*
-import ui.rememberRevealAnimation
-import ui.variant
 
 @Composable
 fun BooksApp(model: AppViewModel) {
@@ -237,7 +234,15 @@ fun BooksApp(model: AppViewModel) {
         DetailBookDialog(
             model = it,
             library = model.library,
-            onDismissRequest = { bookRevealed = null }
+            onDismissRequest = { bookRevealed = null },
+            onRevealRequest = {
+                model.route.push(
+                    dest = RouteType.Borrowing,
+                    parameters = FilterBorrowParameters(
+                        books = listOf(it.id)
+                    )
+                )
+            }
         )
     }
 }
@@ -416,7 +421,7 @@ private fun BookCard(model: AppViewModel, book: Book, onClick: (Book) -> Unit, o
 }
 
 @Composable
-private fun DetailBookDialog(model: Book, library: Library, onDismissRequest: () -> Unit) {
+private fun DetailBookDialog(model: Book, library: Library, onDismissRequest: () -> Unit, onRevealRequest: () -> Unit) {
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
         content = {
@@ -433,7 +438,7 @@ private fun DetailBookDialog(model: Book, library: Library, onDismissRequest: ()
                             modifier = Modifier.size(120.dp)
                         )
                         Spacer(Modifier.width(PaddingLarge))
-                        Column {
+                        Column(Modifier) {
                             val textColor = LocalContentColor.current
                             BasicTextField(
                                 value = model.name,
@@ -458,6 +463,7 @@ private fun DetailBookDialog(model: Book, library: Library, onDismissRequest: ()
                                     onValueChange = {}
                                 )
                             }
+                            Spacer(Modifier.height(PaddingSmall))
                             val available by remember(library) { derivedStateOf { with(library) { model.getStock() } } }
                             Text(
                                 text = stringResource(
@@ -471,7 +477,15 @@ private fun DetailBookDialog(model: Book, library: Library, onDismissRequest: ()
                         }
                     }
 
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                    Spacer(Modifier.height(PaddingMedium))
+
+                    Row(modifier = Modifier.fillMaxWidth()) {
+                        TextButton(
+                            onClick = onRevealRequest
+                        ) {
+                            Text(stringResource(Res.string.borrows_para))
+                        }
+                        Spacer(Modifier.weight(1f))
                         TextButton(
                             onClick = onDismissRequest
                         ) {

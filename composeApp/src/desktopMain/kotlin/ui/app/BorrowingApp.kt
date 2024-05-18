@@ -22,10 +22,7 @@ import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
-import model.AppViewModel
-import model.BorrowSortable
-import model.RevealParameters
-import model.RouteType
+import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.*
@@ -46,11 +43,19 @@ fun BorrowingApp(model: AppViewModel) {
     val coroutine = rememberCoroutineScope()
     val now = rememberNow()
     val listState = rememberLazyListState()
+    val borrows = model.library.borrows.let { borrows ->
+        val parameters = model.route.current.parameters
+        if (parameters is FilterBorrowParameters) {
+            borrows.filter { with(parameters) { it.isCandidate() } }
+        } else {
+            borrows
+        }
+    }
 
     LaunchReveal(model.library.borrows, model, listState)
 
     Scaffold {
-        if (model.library.borrows.isEmpty()) {
+        if (borrows.isEmpty()) {
             HeadingPlaceholder(
                 imageVector = Icons.Default.VpnKeyOff,
                 title = { Text(text = stringResource(Res.string.no_borrow_records_para)) }
@@ -92,10 +97,14 @@ fun BorrowingApp(model: AppViewModel) {
                     }
                 }
                 LazyColumn(state = listState) {
-                    model.library.borrows.forEachIndexed { index, borrow ->
+                    borrows.forEachIndexed { index, borrow ->
                         item(borrow.id) {
                             val headTooltipState = remember { TooltipState() }
-                            val bgColor = rememberRevealAnimation(model, borrow.id, surfaceColor = MaterialTheme.colorScheme.surface)
+                            val bgColor = rememberRevealAnimation(
+                                model,
+                                borrow.id,
+                                surfaceColor = MaterialTheme.colorScheme.surface
+                            )
                             FlowRow(
                                 modifier = Modifier.padding(horizontal = PaddingLarge).animateItemPlacement()
                                     .background(bgColor),
