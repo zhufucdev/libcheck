@@ -40,7 +40,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import extension.takeIfInstanceOf
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.getString
@@ -498,8 +500,10 @@ private fun BookCard(
                     expanded = contextMenu,
                     onDismissRequest = { contextMenu = false },
                     onDelete = {
-                        model.library.deleteBook(book)
-                        onDeleted(book)
+                        withContext(Dispatchers.IO) {
+                            model.library.deleteBook(book)
+                            onDeleted(book)
+                        }
                     },
                     onEdit = {
                         onEdit(book)

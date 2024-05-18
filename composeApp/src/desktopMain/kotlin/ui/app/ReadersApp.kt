@@ -24,7 +24,9 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
 import extension.takeIfInstanceOf
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import model.*
 import org.jetbrains.compose.resources.*
 import resources.*
@@ -383,8 +385,10 @@ private fun ReaderList(
                                                 onEditReaderRequest(reader)
                                             },
                                             onDelete = {
-                                                model.library.deleteReader(reader)
-                                                onReaderDeleted(reader)
+                                                withContext(Dispatchers.IO) {
+                                                    model.library.deleteReader(reader)
+                                                    onReaderDeleted(reader)
+                                                }
                                             }
                                         )
                                     }
