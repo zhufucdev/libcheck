@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.onClick
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -22,24 +23,28 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
+import extension.takeIfInstanceOf
 import kotlinx.coroutines.launch
-import model.AppViewModel
-import model.Identifier
-import model.Reader
-import model.ReaderSortable
+import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
 import resources.*
-import ui.LaunchReveal
-import ui.PaddingLarge
+import ui.*
 import ui.component.*
-import ui.rememberRevealAnimation
-import ui.stringRes
 
 @Composable
 fun ReadersApp(model: AppViewModel) {
     val coroutine = rememberCoroutineScope()
+    val detailedReader by remember(model) {
+        derivedStateOf {
+            model.navigator.current.parameters
+                .takeIfInstanceOf<NavigationParameters, RevealDetailsParameters>()
+                ?.identifier
+                ?.let { model.library.getReader(it) }
+        }
+    }
     var addingReader by remember { mutableStateOf(false) }
     var editingReader by remember { mutableStateOf(false) }
     var readerUri by remember { mutableStateOf("") }
@@ -66,7 +71,9 @@ fun ReadersApp(model: AppViewModel) {
         Box(Modifier.padding(it)) {
             ReaderList(
                 model = model,
-                onReaderClick = {},
+                onReaderClick = { reader ->
+                    model.navigator.replace(parameters = RevealDetailsParameters(reader.id))
+                },
                 onEditReader = { reader ->
                     readerId = reader.id
                     readerName = reader.name
@@ -180,6 +187,22 @@ fun ReadersApp(model: AppViewModel) {
             }
         )
     }
+
+    detailedReader?.let {
+        DetailedReaderDialog(
+            model = it,
+            library = model.library,
+            onDismissRequest = { model.navigator.replace() },
+            onRevealRequest = {
+                model.navigator.push(
+                    RouteType.Borrowing,
+                    FilterBorrowParameters(
+                        readers = listOf(it.id)
+                    )
+                )
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -281,12 +304,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit, onE
                                     horizontalAlignment = Alignment.CenterHorizontally
                                 ) {
                                     Box {
-                                        LazyAvatar(
-                                            uri = reader.avatarUri,
-                                            defaultImageVector = Icons.Default.Person,
-                                            modifier = Modifier.size(120.dp)
-                                        )
-
+                                        ReaderAvatar(reader.avatarUri)
                                         CommonContextMenu(
                                             expanded = contextMenu,
                                             onDismissRequest = { contextMenu = false },
@@ -314,4 +332,75 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit, onE
             }
         }
     }
+}
+
+@Composable
+private fun DetailedReaderDialog(
+    model: Reader,
+    library: Library,
+    onDismissRequest: () -> Unit,
+    onRevealRequest: () -> Unit,
+) {
+    BasicAlertDialog(
+        onDismissRequest = onDismissRequest
+    ) {
+        Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceBright)) {
+            Column(Modifier.padding(PaddingLarge * 2)) {
+                Text(
+                    text = stringResource(Res.string.about_this_reader_para),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Spacer(Modifier.height(PaddingLarge * 2))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    ReaderAvatar(model.avatarUri)
+                    Spacer(Modifier.width(PaddingLarge))
+                    Column {
+                        val textColor = LocalContentColor.current
+                        BasicTextField(
+                            value = model.name,
+                            textStyle = MaterialTheme.typography.titleLarge.copy(color = textColor),
+                            readOnly = true,
+                            onValueChange = {}
+                        )
+                        Text(
+                            text = stringArrayResource(Res.array.tier_reader_para)[model.tier.number],
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Spacer(Modifier.height(PaddingSmall))
+                        Text(
+                            text = with(library) {
+                                val b = model.getBorrows().size
+                                pluralStringResource(Res.plurals.borrows_span, b, b)
+                            },
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(PaddingMedium))
+                Row(modifier = Modifier.fillMaxWidth()) {
+                    TextButton(
+                        onClick = onRevealRequest
+                    ) {
+                        Text(stringResource(Res.string.borrows_para))
+                    }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(
+                        onClick = onDismissRequest
+                    ) {
+                        Text(stringResource(Res.string.ok_caption))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReaderAvatar(uri: String) {
+    LazyAvatar(
+        uri = uri,
+        defaultImageVector = Icons.Default.Person,
+        modifier = Modifier.size(120.dp)
+    )
 }

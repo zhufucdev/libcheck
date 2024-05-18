@@ -241,7 +241,7 @@ fun BooksApp(model: AppViewModel) {
     }
 
     detailedBook?.let {
-        DetailBookDialog(
+        DetailedBookDialog(
             model = it,
             library = model.library,
             onDismissRequest = {
@@ -433,14 +433,14 @@ private fun BookCard(model: AppViewModel, book: Book, onClick: (Book) -> Unit, o
 }
 
 @Composable
-private fun DetailBookDialog(model: Book, library: Library, onDismissRequest: () -> Unit, onRevealRequest: () -> Unit) {
+private fun DetailedBookDialog(model: Book, library: Library, onDismissRequest: () -> Unit, onRevealRequest: () -> Unit) {
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
         content = {
             Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceBright)) {
                 Column(Modifier.padding(PaddingLarge * 2)) {
                     Text(
-                        text = stringResource(Res.string.about_this_book),
+                        text = stringResource(Res.string.about_this_book_para),
                         style = MaterialTheme.typography.titleLarge,
                     )
                     Spacer(Modifier.height(PaddingLarge * 2))
@@ -479,7 +479,7 @@ private fun DetailBookDialog(model: Book, library: Library, onDismissRequest: ()
                             val available by remember(library) { derivedStateOf { with(library) { model.getStock() } } }
                             Text(
                                 text = stringResource(
-                                    Res.string.available_borrowed_total,
+                                    Res.string.available_borrowed_total_para,
                                     available,
                                     model.stock - available,
                                     model.stock
