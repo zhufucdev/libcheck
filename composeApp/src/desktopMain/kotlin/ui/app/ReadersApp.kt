@@ -63,13 +63,17 @@ fun ReadersApp(model: AppViewModel) {
         }
     ) {
         Box(Modifier.padding(it)) {
-            ReaderList(model) { reader ->
-                readerId = reader.id
-                readerName = reader.name
-                readerUri = reader.avatarUri
-                readerTier = reader.tier
-                editingReader = true
-            }
+            ReaderList(
+                model = model,
+                onReaderClick = {},
+                onEditReader = { reader ->
+                    readerId = reader.id
+                    readerName = reader.name
+                    readerUri = reader.avatarUri
+                    readerTier = reader.tier
+                    editingReader = true
+                }
+            )
         }
     }
 
@@ -179,7 +183,7 @@ fun ReadersApp(model: AppViewModel) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
+private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit, onEditReader: (Reader) -> Unit) {
     val library = model.library
     val coroutine = rememberCoroutineScope()
     val gridState = remember { LazyGridState() }
@@ -285,10 +289,11 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit) {
                                         CommonContextMenu(
                                             expanded = contextMenu,
                                             onDismissRequest = { contextMenu = false },
+                                            onEdit = {
+                                                onEditReader(reader)
+                                            },
                                             onDelete = {
-                                                coroutine.launch {
-                                                    model.library.deleteReader(reader)
-                                                }
+                                                model.library.deleteReader(reader)
                                             }
                                         )
                                     }

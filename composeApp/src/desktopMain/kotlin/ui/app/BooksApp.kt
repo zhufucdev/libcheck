@@ -94,15 +94,20 @@ fun BooksApp(model: AppViewModel) {
         }
     ) {
         Box(Modifier.padding(it).fillMaxSize()) {
-            BookList(model) { book ->
-                bookId = book.id
-                bookUri = book.avatarUri
-                bookTitle = book.name
-                bookAuthor = book.author
-                bookIsbn = book.isbn
-                bookStock = book.stock.toString()
-                editingBook = true
-            }
+            BookList(
+                model = model,
+                onBookClicked = { book ->
+                },
+                onEditBook = { book ->
+                    bookId = book.id
+                    bookUri = book.avatarUri
+                    bookTitle = book.name
+                    bookAuthor = book.author
+                    bookIsbn = book.isbn
+                    bookStock = book.stock.toString()
+                    editingBook = true
+                }
+            )
         }
     }
 
@@ -233,7 +238,7 @@ fun BooksApp(model: AppViewModel) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
+private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit, onEditBook: (Book) -> Unit) {
     val library = model.library
     val state = remember { LazyGridState() }
     var sorting by remember { mutableStateOf(false) }
@@ -298,7 +303,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
                 library.books.forEach { book ->
                     item(book.id) {
                         Box(modifier = Modifier.animateItemPlacement()) {
-                            BookCard(model, book) { onBookClicked(it) }
+                            BookCard(model, book, onBookClicked, onEditBook)
                             Text(
                                 text = with(library) { book.getStock().toString() },
                                 style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onPrimary),
@@ -322,8 +327,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit) {
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit) {
-    val coroutine = rememberCoroutineScope()
+private fun BookCard(model: AppViewModel, book: Book, onClick: (Book) -> Unit, onEdit: (Book) -> Unit) {
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
@@ -363,7 +367,7 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                     }
                 )
             },
-        onClick = { onClicked(book) }
+        onClick = { onClick(book) }
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -397,10 +401,11 @@ private fun BookCard(model: AppViewModel, book: Book, onClicked: (Book) -> Unit)
                     expanded = contextMenu,
                     onDismissRequest = { contextMenu = false },
                     onDelete = {
-                        coroutine.launch {
-                            model.library.deleteBook(book)
-                        }
+                        model.library.deleteBook(book)
                     },
+                    onEdit = {
+                        onEdit(book)
+                    }
                 )
             }
             Text(text = book.name, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
