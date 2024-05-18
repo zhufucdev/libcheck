@@ -26,7 +26,7 @@ fun rememberRevealAnimation(
             animate(converter, cardColor, primarySurfaceColor) { v, _ ->
                 cardColor = v
             }
-            delay(0.5.seconds)
+            delay(1.seconds)
             animate(converter, cardColor, surfaceColor) { v, _ ->
                 cardColor = v
             }
