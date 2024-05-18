@@ -4,8 +4,6 @@ package ui.app
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import kotlinx.coroutines.launch
 import model.Configurations
 import model.DataSource
@@ -22,11 +19,11 @@ import model.NavigationModel
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.Res
-import resources.navigate_up_span
 import resources.preferences_para
 import ui.PaddingLarge
 import ui.PaddingMedium
 import ui.component.LocalDataSourcePreferences
+import ui.component.NavigateUpButton
 import ui.component.PreferenceState
 import ui.component.RemoteDataSourcePreferences
 
@@ -39,25 +36,10 @@ fun PreferencesApp(model: Configurations, navigator: NavigationModel) {
             LargeTopAppBar(
                 title = { Text(stringResource(Res.string.preferences_para)) },
                 navigationIcon = {
-                    TooltipBox(
-                        positionProvider = rememberComponentRectPositionProvider(),
-                        state = rememberTooltipState(),
-                        tooltip = {
-                            PlainTooltip { Text(stringResource(Res.string.navigate_up_span)) }
-                        }
-                    ) {
-                        IconButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    model.save()
-                                    navigator.pop()
-                                }
-                            }
-                        ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "navigation up"
-                            )
+                    NavigateUpButton {
+                        coroutineScope.launch {
+                            model.save()
+                            navigator.pop()
                         }
                     }
                 },

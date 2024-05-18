@@ -44,7 +44,7 @@ fun BorrowingApp(model: AppViewModel) {
     val now = rememberNow()
     val listState = rememberLazyListState()
     val borrows = model.library.borrows.let { borrows ->
-        val parameters = model.route.current.parameters
+        val parameters = model.navigator.current.parameters
         if (parameters is FilterBorrowParameters) {
             borrows.filter { with(parameters) { it.isCandidate() } }
         } else {
@@ -181,7 +181,7 @@ fun BorrowingApp(model: AppViewModel) {
                                     val b = book!!
                                     TextButton(
                                         onClick = {
-                                            model.route.push(RouteType.Books, RevealParameters(b.id))
+                                            model.navigator.push(RouteType.Books, RevealParameters(b.id))
                                         },
                                         content = {
                                             Text(
@@ -209,7 +209,7 @@ fun BorrowingApp(model: AppViewModel) {
                                     val r = reader!!
                                     TextButton(
                                         onClick = {
-                                            model.route.push(RouteType.Readers, RevealParameters(r.id))
+                                            model.navigator.push(RouteType.Readers, RevealParameters(r.id))
                                         },
                                         content = {
                                             Text(

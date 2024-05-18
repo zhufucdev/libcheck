@@ -23,7 +23,7 @@ fun rememberRevealAnimation(
     var cardColor by remember(surfaceColor) { mutableStateOf(surfaceColor) }
     var revealed by remember { mutableStateOf(false) }
     val target =
-        model.route.current.parameters.takeIf { it is RevealParameters }?.let { (it as RevealParameters).identifier }
+        model.navigator.current.parameters.takeIf { it is RevealParameters }?.let { (it as RevealParameters).identifier }
 
     LaunchedEffect(target) {
         if (target == current && !revealed) {
@@ -46,7 +46,7 @@ fun rememberRevealAnimation(
 @Composable
 fun LaunchReveal(list: List<Identifiable>, model: AppViewModel, state: Any) {
     val identifier =
-        model.route.current.parameters.takeIfInstanceOf<NavigationParameters, RevealParameters>()?.identifier
+        model.navigator.current.parameters.takeIfInstanceOf<NavigationParameters, RevealParameters>()?.identifier
     LaunchedEffect(identifier) {
         val revealId = identifier ?: return@LaunchedEffect
         val idx = list.indexOfFirst { it.id == revealId }

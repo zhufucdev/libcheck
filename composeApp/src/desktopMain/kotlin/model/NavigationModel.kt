@@ -7,15 +7,11 @@ import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.StringResource
 import resources.*
-import java.util.*
 
 enum class RouteType(val label: StringResource, val icon: ImageVector, val docked: Boolean = true) {
     Books(Res.string.books_para, Icons.Default.Book),
@@ -51,7 +47,10 @@ data object EmptyParameters : NavigationParameters
 class NavigationModel(current: Route = Route(RouteType.Books, EmptyParameters)) {
     var current: Route by mutableStateOf(current)
         private set
-    private val stack = Stack<Route>()
+    var stackSize by mutableStateOf(0)
+        private set
+    val canGoBack by derivedStateOf { stackSize > 1 }
+    private val stack = java.util.Stack<Route>()
 
     init {
         stack.push(current)
@@ -61,6 +60,7 @@ class NavigationModel(current: Route = Route(RouteType.Books, EmptyParameters)) 
         val route = Route(dest, parameters)
         stack.push(route)
         current = route
+        stackSize = stack.size
     }
 
     fun replace(dest: RouteType, parameters: NavigationParameters = EmptyParameters) {
@@ -72,5 +72,6 @@ class NavigationModel(current: Route = Route(RouteType.Books, EmptyParameters)) 
     fun pop() {
         stack.pop()
         current = stack.peek()
+        stackSize = stack.size
     }
 }

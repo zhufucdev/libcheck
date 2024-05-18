@@ -236,7 +236,7 @@ fun BooksApp(model: AppViewModel) {
             library = model.library,
             onDismissRequest = { bookRevealed = null },
             onRevealRequest = {
-                model.route.push(
+                model.navigator.push(
                     dest = RouteType.Borrowing,
                     parameters = FilterBorrowParameters(
                         books = listOf(it.id)

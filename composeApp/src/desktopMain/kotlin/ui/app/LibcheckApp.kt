@@ -27,6 +27,7 @@ import ui.PaddingLarge
 import ui.PaddingMedium
 import ui.WindowSize
 import ui.component.ConnectionAlertDialog
+import ui.component.NavigateUpButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -59,6 +60,16 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                     modifier = Modifier.align(Alignment.CenterHorizontally).padding(bottom = PaddingLarge),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
+                    AnimatedVisibility(
+                        visible = !isSearching && model.navigator.canGoBack,
+                        enter = expandHorizontally(),
+                        exit = shrinkHorizontally()
+                    ) {
+                        NavigateUpButton {
+                            model.navigator.pop()
+                        }
+                    }
+
                     SearchBar(
                         query = searchQuery,
                         active = isSearching,
@@ -70,7 +81,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                                     item(it.id) {
                                         SearchResult(it, model) {
                                             isSearching = false
-                                            model.route.push(
+                                            model.navigator.push(
                                                 when (it) {
                                                     is Reader -> RouteType.Readers
                                                     is Book -> RouteType.Books
@@ -90,7 +101,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                     )
                     AnimatedVisibility(!isSearching, enter = expandHorizontally(), exit = shrinkHorizontally()) {
                         IconButton(
-                            onClick = { model.route.push(RouteType.Preferences) },
+                            onClick = { model.navigator.push(RouteType.Preferences) },
                             modifier = Modifier.padding(end = PaddingMedium)
                         ) {
                             TooltipBox(
@@ -134,8 +145,8 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         bottomBar = {
             if (windowSize < WindowSize.WIDE) {
                 NavigationBar {
-                    BottomNavigationItems(model.route.current.type) {
-                        model.route.replace(it)
+                    BottomNavigationItems(model.navigator.current.type) {
+                        model.navigator.replace(it)
                     }
                 }
             }
@@ -150,7 +161,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                 if (windowSize >= WindowSize.WIDE) {
                     Row {
                         PermanentDrawerSheet {
-                            NavigationDrawerItems(model.route.current.type) { next -> model.route.replace(next) }
+                            NavigationDrawerItems(model.navigator.current.type) { next -> model.navigator.replace(next) }
                         }
                         MainContent(model)
                     }
@@ -172,7 +183,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         ConnectionAlertDialog(
             exception = it,
             confirmButton = {
-                TextButton(onClick = { model.route.push(RouteType.Preferences) }) {
+                TextButton(onClick = { model.navigator.push(RouteType.Preferences) }) {
                     Text(stringResource(Res.string.go_para))
                 }
             }
@@ -233,7 +244,7 @@ private fun RowScope.BottomNavigationItems(current: RouteType, onNavigation: (Ro
 
 @Composable
 private fun MainContent(model: AppViewModel) {
-    when (model.route.current.type) {
+    when (model.navigator.current.type) {
         RouteType.Books -> BooksApp(model)
         RouteType.Readers -> ReadersApp(model)
         RouteType.Borrowing -> BorrowingApp(model)
