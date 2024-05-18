@@ -84,4 +84,9 @@
     </string-array>
     <string name="reader_is_deleted_para">Reader is deleted</string>
     <string name="undo_para">Undo</string>
+    <string name="reconstruct_para">Reconstruct</string>
+    <string name="reader_was_not_found">Reader wasn't found</string>
+    <string name="book_was_not_found">Book wasn't found</string>
+    <string name="reconstructing_a_reader_para">Reconstructing a reader</string>
+    <string name="reconstructing_a_book_para">Reconstructing a book</string>
 </resources>

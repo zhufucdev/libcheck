@@ -42,8 +42,21 @@ fun ReadersApp(model: AppViewModel) {
                 ?.let { model.library.getReader(it) }
         }
     }
+    val reconstructId by remember(model) {
+        derivedStateOf {
+            model.navigator.current.parameters
+                .takeIfInstanceOf<NavigationParameters, ReconstructParameters>()
+                ?.identifier
+        }
+    }
 
-    var editMode by remember { mutableStateOf<EditMode?>(null) }
+    var editMode by remember(reconstructId) {
+        mutableStateOf<ReaderEditMode?>(reconstructId?.let {
+            ReaderEditMode.Reconstruct(
+                it
+            )
+        })
+    }
     val snackbars = remember { SnackbarHostState() }
 
     Scaffold(
@@ -54,7 +67,7 @@ fun ReadersApp(model: AppViewModel) {
                 ExtendedFloatingActionButton(
                     text = { Text(stringResource(Res.string.new_reader_para)) },
                     icon = { Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "") },
-                    onClick = { editMode = EditMode.Create }
+                    onClick = { editMode = ReaderEditMode.Create }
                 )
             }
         },
@@ -67,7 +80,7 @@ fun ReadersApp(model: AppViewModel) {
                     model.navigator.replace(parameters = RevealDetailsParameters(reader.id))
                 },
                 onEditReaderRequest = { reader ->
-                    editMode = EditMode.Overwrite(reader.id)
+                    editMode = ReaderEditMode.Overwrite(reader)
                 },
                 onReaderDeleted = {
                     coroutine.launch {
@@ -91,6 +104,9 @@ fun ReadersApp(model: AppViewModel) {
             onUpdateRequest = {
                 coroutine.launch {
                     mode.apply(it, model.library)
+                    if (reconstructId != null) {
+                        model.navigator.replace()
+                    }
                 }
             }
         )
@@ -113,16 +129,28 @@ fun ReadersApp(model: AppViewModel) {
     }
 }
 
-private sealed interface EditMode {
+private sealed interface ReaderEditMode {
     suspend fun apply(model: Reader, library: Library)
 
-    data class Overwrite(val identifier: Identifier) : EditMode {
+    sealed interface SpecificId {
+        val identifier: Identifier
+    }
+
+    data class Overwrite(val original: Reader) : ReaderEditMode, SpecificId {
+        override val identifier: Identifier
+            get() = original.id
         override suspend fun apply(model: Reader, library: Library) {
             library.updateReader(model)
         }
     }
 
-    data object Create : EditMode {
+    data object Create : ReaderEditMode {
+        override suspend fun apply(model: Reader, library: Library) {
+            library.addReader(model)
+        }
+    }
+
+    data class Reconstruct(override val identifier: Identifier) : ReaderEditMode, SpecificId {
         override suspend fun apply(model: Reader, library: Library) {
             library.addReader(model)
         }
@@ -131,7 +159,7 @@ private sealed interface EditMode {
 
 @Composable
 private fun EditReaderDialog(
-    mode: EditMode,
+    mode: ReaderEditMode,
     onDismissRequest: () -> Unit,
     onUpdateRequest: (Reader) -> Unit,
 ) {
@@ -141,6 +169,15 @@ private fun EditReaderDialog(
     var tierMenuExpanded by remember { mutableStateOf(false) }
 
     val canSave by remember { derivedStateOf { readerName.isNotBlank() } }
+
+    LaunchedEffect(mode) {
+        if (mode is ReaderEditMode.Overwrite) {
+            val o = mode.original
+            readerName = o.name
+            readerUri = o.avatarUri
+            readerTier = o.tier
+        }
+    }
 
     AlertDialog(
         icon = {
@@ -152,7 +189,13 @@ private fun EditReaderDialog(
         },
         title = {
             Text(
-                text = stringResource(if (mode is EditMode.Create) Res.string.adding_a_reader_para else Res.string.editing_a_reader_para),
+                text = stringResource(
+                    when (mode) {
+                        is ReaderEditMode.Create -> Res.string.adding_a_reader_para
+                        is ReaderEditMode.Overwrite -> Res.string.editing_a_reader_para
+                        is ReaderEditMode.Reconstruct -> Res.string.reconstructing_a_reader_para
+                    }
+                ),
             )
         },
         text = {
@@ -210,27 +253,16 @@ private fun EditReaderDialog(
             TextButton(
                 content = { Text(stringResource(Res.string.ok_caption)) },
                 onClick = {
-                    when (mode) {
-                        is EditMode.Create ->
-                            onUpdateRequest(
-                                Reader(
-                                    readerName,
-                                    Identifier(),
-                                    readerUri,
-                                    readerTier
-                                )
-                            )
-
-                        is EditMode.Overwrite ->
-                            onUpdateRequest(
-                                Reader(
-                                    readerName,
-                                    mode.identifier,
-                                    readerUri,
-                                    readerTier
-                                )
-                            )
-                    }
+                    onUpdateRequest(
+                        Reader(
+                            readerName,
+                            if (mode is ReaderEditMode.SpecificId) mode.identifier
+                            else Identifier(),
+                            readerUri,
+                            readerTier
+                        )
+                    )
+                    onDismissRequest()
                 },
                 enabled = canSave,
                 modifier = Modifier.padding(6.dp)

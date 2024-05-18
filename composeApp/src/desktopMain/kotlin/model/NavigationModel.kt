@@ -44,6 +44,8 @@ open class FilterBorrowParameters(
                 && (readers.isEmpty() || readers.contains(readerId))
 }
 
+data class ReconstructParameters(val identifier: Identifier) : NavigationParameters
+
 data object EmptyParameters : NavigationParameters
 
 @Stable

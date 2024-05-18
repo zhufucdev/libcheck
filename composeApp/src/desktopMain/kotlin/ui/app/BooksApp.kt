@@ -50,11 +50,14 @@ import ui.component.*
 
 @Composable
 fun BooksApp(model: AppViewModel) {
-    val coroutine = rememberCoroutineScope()
-    val textColor = MaterialTheme.colorScheme.onSurface
+    val coroutineScope = rememberCoroutineScope()
 
-    var addingBook by remember { mutableStateOf(false) }
-    var editingBook by remember { mutableStateOf(false) }
+    var editMode by remember(model) {
+        mutableStateOf<BookEditMode?>(
+            model.navigator.current.parameters
+                .takeIfInstanceOf<NavigationParameters, ReconstructParameters>()
+                ?.let { BookEditMode.Reconstruct(it.identifier) })
+    }
     val detailedBook by remember(model) {
         derivedStateOf {
             model.navigator.current.parameters
@@ -63,24 +66,6 @@ fun BooksApp(model: AppViewModel) {
                 ?.let { model.library.getBook(it) }
         }
     }
-    var bookId by remember { mutableStateOf<Identifier?>(null) }
-    var bookUri by remember { mutableStateOf("") }
-    var bookTitle by remember { mutableStateOf("") }
-    var bookAuthor by remember { mutableStateOf("") }
-    var bookIsbn by remember { mutableStateOf("") }
-    var bookStock by remember { mutableStateOf("10") }
-    var bookStockParsed by remember { mutableStateOf<UInt?>(10u) }
-
-    val negativeInStock by remember {
-        derivedStateOf {
-            val targetStock = bookStockParsed ?: return@derivedStateOf false
-            val id = bookId ?: return@derivedStateOf false
-            editingBook && targetStock < with(model.library) {
-                getBook(id)?.let { it.stock - it.getStock() } ?: return@derivedStateOf false
-            }
-        }
-    }
-    val canSave by remember { derivedStateOf { bookStockParsed != null && bookTitle.isNotBlank() && !negativeInStock } }
 
     Scaffold(
         floatingActionButton = {
@@ -90,7 +75,7 @@ fun BooksApp(model: AppViewModel) {
                 ExtendedFloatingActionButton(
                     text = { Text(stringResource(Res.string.new_book_para)) },
                     icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "") },
-                    onClick = { addingBook = true }
+                    onClick = { editMode = BookEditMode.Create }
                 )
             }
         }
@@ -104,140 +89,10 @@ fun BooksApp(model: AppViewModel) {
                     )
                 },
                 onEditBook = { book ->
-                    bookId = book.id
-                    bookUri = book.avatarUri
-                    bookTitle = book.name
-                    bookAuthor = book.author
-                    bookIsbn = book.isbn
-                    bookStock = book.stock.toString()
-                    editingBook = true
+                    editMode = BookEditMode.Overwrite(book)
                 }
             )
         }
-    }
-
-    if (addingBook || editingBook) {
-        AlertDialog(
-            onDismissRequest = {
-                addingBook = false
-                editingBook = false
-            },
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.BookmarkAdd,
-                    contentDescription = "",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = stringResource(
-                        if (addingBook) Res.string.adding_a_book_para else Res.string.editing_a_book_para
-                    ),
-                )
-            },
-            text = {
-                Column {
-                    AvatarInput(
-                        uri = bookUri,
-                        onUriChange = { bookUri = it },
-                        label = { Text(stringResource(Res.string.cover_para)) },
-                        Icons.Default.Book
-                    )
-                    OutlinedTextField(
-                        value = bookTitle,
-                        onValueChange = { bookTitle = it },
-                        label = { Text(stringResource(Res.string.title_para)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
-                    )
-                    OutlinedTextField(
-                        value = bookAuthor,
-                        onValueChange = { bookAuthor = it },
-                        label = { Text(stringResource(Res.string.auther_para)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = bookIsbn,
-                        onValueChange = { bookIsbn = it },
-                        label = { Text(stringResource(Res.string.isbn_caption)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        visualTransformation = {
-                            TransformedText(
-                                buildAnnotatedString {
-                                    append(
-                                        AnnotatedString(
-                                            bookIsbn,
-                                            SpanStyle(
-                                                color = textColor,
-                                                fontFamily = FontFamily.Monospace
-                                            )
-                                        )
-                                    )
-                                    val placeholder = "000-0-00-000000-0"
-                                    append(
-                                        AnnotatedString(
-                                            placeholder.substring(bookIsbn.length until placeholder.length),
-                                            SpanStyle(
-                                                color = textColor.variant,
-                                                fontFamily = FontFamily.Monospace
-                                            )
-                                        )
-                                    )
-                                },
-                                object : OffsetMapping {
-                                    override fun originalToTransformed(offset: Int): Int {
-                                        return offset
-                                    }
-
-                                    override fun transformedToOriginal(offset: Int): Int {
-                                        return minOf(offset, bookIsbn.length)
-                                    }
-                                }
-                            )
-                        }
-                    )
-                    OutlinedTextField(
-                        value = bookStock,
-                        onValueChange = {
-                            bookStockParsed = it.toUIntOrNull()
-                            bookStock = it
-                        },
-                        label = { Text(stringResource(Res.string.stock_para)) },
-                        modifier = Modifier.fillMaxWidth(),
-                        isError = bookStockParsed == null || negativeInStock,
-                        singleLine = true
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    content = { Text(stringResource(Res.string.ok_caption)) },
-                    onClick = {
-                        val book = Book(
-                            bookTitle,
-                            bookAuthor,
-                            bookIsbn,
-                            if (editingBook) bookId!! else Identifier(),
-                            bookUri,
-                            bookStockParsed!!
-                        )
-
-                        coroutine.launch {
-                            if (addingBook) {
-                                model.library.addBook(book)
-                            } else if (editingBook) {
-                                model.library.updateBook(book)
-                            }
-                            addingBook = false
-                            editingBook = false
-                        }
-                    },
-                    enabled = canSave,
-                    modifier = Modifier.padding(6.dp)
-                )
-            }
-        )
     }
 
     detailedBook?.let {
@@ -257,6 +112,205 @@ fun BooksApp(model: AppViewModel) {
             }
         )
     }
+
+    editMode?.let { mode ->
+        EditBookDialog(
+            mode = mode,
+            library = model.library,
+            onDismissRequest = { editMode = null },
+            onUpdateRequest = {
+                coroutineScope.launch {
+                    mode.apply(it, model.library)
+                    if (mode is BookEditMode.Reconstruct) {
+                        model.navigator.replace()
+                    }
+                }
+            }
+        )
+    }
+}
+
+private sealed interface BookEditMode {
+    suspend fun apply(model: Book, library: Library)
+
+    sealed interface SpecificId {
+        val identifier: Identifier
+    }
+
+    data class Overwrite(val original: Book) : BookEditMode, SpecificId {
+        override val identifier: Identifier
+            get() = original.id
+
+        override suspend fun apply(model: Book, library: Library) {
+            library.updateBook(model)
+        }
+    }
+
+    data object Create : BookEditMode {
+        override suspend fun apply(model: Book, library: Library) {
+            library.addBook(model)
+        }
+    }
+
+    data class Reconstruct(override val identifier: Identifier) : BookEditMode, SpecificId {
+        override suspend fun apply(model: Book, library: Library) {
+            library.addBook(model)
+        }
+    }
+}
+
+@Composable
+private fun EditBookDialog(
+    mode: BookEditMode,
+    library: Library,
+    onDismissRequest: () -> Unit,
+    onUpdateRequest: (Book) -> Unit,
+) {
+    val textColor = MaterialTheme.colorScheme.onSurface
+
+    var bookUri by remember { mutableStateOf("") }
+    var bookTitle by remember { mutableStateOf("") }
+    var bookAuthor by remember { mutableStateOf("") }
+    var bookIsbn by remember { mutableStateOf("") }
+    var bookStock by remember { mutableStateOf("10") }
+    var bookStockParsed by remember { mutableStateOf<UInt?>(10u) }
+
+    LaunchedEffect(mode) {
+        if (mode is BookEditMode.Overwrite) {
+            val o = mode.original
+            bookUri = o.avatarUri
+            bookTitle = o.name
+            bookAuthor = o.name
+            bookIsbn = o.isbn
+            bookStock = o.stock.toString()
+            bookStockParsed = o.stock
+        }
+    }
+
+    val negativeInStock by remember {
+        derivedStateOf {
+            val targetStock = bookStockParsed ?: return@derivedStateOf false
+            mode is BookEditMode.SpecificId && targetStock < with(library) {
+                getBook(mode.identifier)?.let { it.stock - it.getStock() } ?: return@derivedStateOf false
+            }
+        }
+    }
+    val canSave by remember { derivedStateOf { bookStockParsed != null && bookTitle.isNotBlank() && !negativeInStock } }
+    AlertDialog(
+        onDismissRequest = onDismissRequest,
+        icon = {
+            Icon(
+                imageVector = Icons.Default.BookmarkAdd,
+                contentDescription = "",
+                modifier = Modifier.size(24.dp)
+            )
+        },
+        title = {
+            Text(
+                text = stringResource(
+                    when (mode) {
+                        is BookEditMode.Create -> Res.string.adding_a_book_para
+                        is BookEditMode.Overwrite -> Res.string.editing_a_book_para
+                        is BookEditMode.Reconstruct -> Res.string.reconstructing_a_book_para
+                    }
+                ),
+            )
+        },
+        text = {
+            Column {
+                AvatarInput(
+                    uri = bookUri,
+                    onUriChange = { bookUri = it },
+                    label = { Text(stringResource(Res.string.cover_para)) },
+                    Icons.Default.Book
+                )
+                OutlinedTextField(
+                    value = bookTitle,
+                    onValueChange = { bookTitle = it },
+                    label = { Text(stringResource(Res.string.title_para)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = bookAuthor,
+                    onValueChange = { bookAuthor = it },
+                    label = { Text(stringResource(Res.string.auther_para)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                OutlinedTextField(
+                    value = bookIsbn,
+                    onValueChange = { bookIsbn = it },
+                    label = { Text(stringResource(Res.string.isbn_caption)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    visualTransformation = {
+                        TransformedText(
+                            buildAnnotatedString {
+                                append(
+                                    AnnotatedString(
+                                        bookIsbn,
+                                        SpanStyle(
+                                            color = textColor,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    )
+                                )
+                                val placeholder = "000-0-00-000000-0"
+                                append(
+                                    AnnotatedString(
+                                        placeholder.substring(bookIsbn.length until placeholder.length),
+                                        SpanStyle(
+                                            color = textColor.variant,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    )
+                                )
+                            },
+                            object : OffsetMapping {
+                                override fun originalToTransformed(offset: Int): Int {
+                                    return offset
+                                }
+
+                                override fun transformedToOriginal(offset: Int): Int {
+                                    return minOf(offset, bookIsbn.length)
+                                }
+                            }
+                        )
+                    }
+                )
+                OutlinedTextField(
+                    value = bookStock,
+                    onValueChange = {
+                        bookStockParsed = it.toUIntOrNull()
+                        bookStock = it
+                    },
+                    label = { Text(stringResource(Res.string.stock_para)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    isError = bookStockParsed == null || negativeInStock,
+                    singleLine = true
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(
+                content = { Text(stringResource(Res.string.ok_caption)) },
+                onClick = {
+                    val book = Book(
+                        bookTitle,
+                        bookAuthor,
+                        bookIsbn,
+                        if (mode is BookEditMode.SpecificId) mode.identifier
+                        else Identifier(),
+                        bookUri,
+                        bookStockParsed!!
+                    )
+                    onUpdateRequest(book)
+                    onDismissRequest()
+                },
+                enabled = canSave,
+                modifier = Modifier.padding(6.dp)
+            )
+        }
+    )
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -433,7 +487,12 @@ private fun BookCard(model: AppViewModel, book: Book, onClick: (Book) -> Unit, o
 }
 
 @Composable
-private fun DetailedBookDialog(model: Book, library: Library, onDismissRequest: () -> Unit, onRevealRequest: () -> Unit) {
+private fun DetailedBookDialog(
+    model: Book,
+    library: Library,
+    onDismissRequest: () -> Unit,
+    onRevealRequest: () -> Unit,
+) {
     BasicAlertDialog(
         onDismissRequest = onDismissRequest,
         content = {

@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import resources.*
 import ui.LaunchReveal
@@ -172,10 +173,21 @@ fun BorrowingApp(model: AppViewModel) {
                                     null
                                 )
                                 if (book == null) {
-                                    Icon(
-                                        imageVector = Icons.Default.QuestionMark,
-                                        contentDescription = "",
-                                        modifier = Modifier.align(Alignment.CenterVertically)
+                                    ReconstructButton(
+                                        icon = {
+                                            Icon(
+                                                painter = painterResource(Res.drawable.book_search),
+                                                contentDescription = "book not found",
+                                                modifier = Modifier.align(Alignment.CenterVertically).size(24.dp)
+                                            )
+                                        },
+                                        text = { Text(stringResource(Res.string.book_was_not_found)) },
+                                        onReconstructRequest = {
+                                            model.navigator.push(
+                                                RouteType.Books,
+                                                ReconstructParameters(borrow.bookId)
+                                            )
+                                        }
                                     )
                                 } else {
                                     val b = book!!
@@ -200,10 +212,23 @@ fun BorrowingApp(model: AppViewModel) {
                                     flow { emit(model.library.getReader(borrow.readerId)) }
                                 }.collectAsState(null)
                                 if (reader == null) {
-                                    Icon(
-                                        imageVector = Icons.Default.PersonSearch,
-                                        contentDescription = "",
-                                        modifier = Modifier.align(Alignment.CenterVertically)
+                                    ReconstructButton(
+                                        icon = {
+                                            Icon(
+                                                imageVector = Icons.Default.PersonSearch,
+                                                contentDescription = "reader not found",
+                                                modifier = Modifier.align(Alignment.CenterVertically)
+                                            )
+                                        },
+                                        text = {
+                                            Text(stringResource(Res.string.reader_was_not_found))
+                                        },
+                                        onReconstructRequest = {
+                                            model.navigator.push(
+                                                RouteType.Readers,
+                                                ReconstructParameters(borrow.readerId)
+                                            )
+                                        }
                                     )
                                 } else {
                                     val r = reader!!
@@ -270,7 +295,7 @@ private fun Separator() {
 }
 
 @Composable
-fun rememberNow(): Instant {
+private fun rememberNow(): Instant {
     var now by remember { mutableStateOf(Instant.now()) }
     LaunchedEffect(true) {
         while (true) {
@@ -279,4 +304,40 @@ fun rememberNow(): Instant {
         }
     }
     return now
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ReconstructButton(
+    icon: @Composable () -> Unit,
+    text: @Composable () -> Unit,
+    onReconstructRequest: () -> Unit,
+) {
+    var openMenu by remember { mutableStateOf(false) }
+    TooltipBox(
+        positionProvider = rememberComponentRectPositionProvider(),
+        state = rememberTooltipState(),
+        tooltip = {
+            PlainTooltip {
+                text()
+            }
+        }
+    ) {
+        IconButton(
+            onClick = { openMenu = true }
+        ) {
+            icon()
+        }
+
+        DropdownMenu(
+            expanded = openMenu,
+            onDismissRequest = { openMenu = false }
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(Res.string.reconstruct_para)) },
+                onClick = onReconstructRequest,
+                leadingIcon = { Icon(imageVector = Icons.Default.Replay, contentDescription = "reconstruct") }
+            )
+        }
+    }
 }
