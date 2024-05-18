@@ -194,7 +194,7 @@ private fun EditBookDialog(
             val o = mode.original
             bookUri = o.avatarUri
             bookTitle = o.name
-            bookAuthor = o.name
+            bookAuthor = o.author
             bookIsbn = o.isbn
             bookStock = o.stock.toString()
             bookStockParsed = o.stock
