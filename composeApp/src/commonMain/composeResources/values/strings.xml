@@ -64,6 +64,9 @@
     <string name="preferences_para">Preferences</string>
     <string name="navigate_up_span">navigate up</string>
     <string name="library_not_working_para">Library not working</string>
-    <string name="tune_the_preferences_to_fix">Tune the preferences to fix this:\t%1$s</string>
+    <string name="tune_the_preferences_to_fix">%1$s\nTune the preferences to fix it</string>
     <string name="go_para">Go</string>
+    <string name="launch_app_para">Launch app</string>
+    <string name="back_para">Back</string>
+    <string name="you_are_all_set_para">You're all set!</string>
 </resources>

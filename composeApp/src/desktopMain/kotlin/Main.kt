@@ -46,7 +46,8 @@ fun App(windowState: WindowState, configurations: Configurations) {
     MaterialTheme(colorScheme = if (darkMode) darkColorScheme() else lightColorScheme()) {
         Surface {
             if (configurations.firstLaunch) {
-                SetUpApp(windowSize, configurations)
+                val model = remember { SetUpAppModel(configurations) }
+                SetUpApp(windowSize, model)
             }
             AnimatedVisibility(
                 visible = navigator.current == Route.Preferences,

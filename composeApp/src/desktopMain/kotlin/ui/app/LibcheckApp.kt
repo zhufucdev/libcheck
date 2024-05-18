@@ -23,11 +23,10 @@ import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.go_para
-import resources.library_not_working_para
-import resources.tune_the_preferences_to_fix
 import ui.PaddingLarge
 import ui.PaddingMedium
 import ui.WindowSize
+import ui.component.ConnectionAlertDialog
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -72,12 +71,14 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                                         SearchResult(it, model) {
                                             isSearching = false
                                             model.reveal = it.id
-                                            model.route.push(when (it) {
-                                                is Reader -> Route.Readers
-                                                is Book -> Route.Books
-                                                is BorrowInstanced -> Route.Borrowing
-                                                else -> throw IllegalArgumentException()
-                                            })
+                                            model.route.push(
+                                                when (it) {
+                                                    is Reader -> Route.Readers
+                                                    is Book -> Route.Books
+                                                    is BorrowInstanced -> Route.Borrowing
+                                                    else -> throw IllegalArgumentException()
+                                                }
+                                            )
                                         }
                                     }
                                 }
@@ -167,12 +168,9 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         }
     }
 
-    if (connectionException != null) {
-        AlertDialog(
-            onDismissRequest = {},
-            icon = { Icon(imageVector = Icons.Default.ErrorOutline, contentDescription = "library not working") },
-            title = { Text(stringResource(Res.string.library_not_working_para)) },
-            text = { Text(stringResource(Res.string.tune_the_preferences_to_fix, connectionException?.message ?: "null")) },
+    connectionException?.let {
+        ConnectionAlertDialog(
+            exception = it,
             confirmButton = {
                 TextButton(onClick = { model.route.push(Route.Preferences) }) {
                     Text(stringResource(Res.string.go_para))
