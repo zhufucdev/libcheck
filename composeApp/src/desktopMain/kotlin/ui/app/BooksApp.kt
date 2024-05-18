@@ -26,10 +26,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerButton
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.boundsInParent
 import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.SpanStyle
@@ -241,7 +239,6 @@ fun BooksApp(model: AppViewModel) {
 private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit, onEditBook: (Book) -> Unit) {
     val library = model.library
     val state = remember { LazyGridState() }
-    var sorting by remember { mutableStateOf(false) }
     var sortButtonPos by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
     val coroutine = rememberCoroutineScope()
 
@@ -256,47 +253,44 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit, onEditB
     } else {
         Column(Modifier.padding(horizontal = PaddingLarge).padding(top = PaddingLarge)) {
             Row(horizontalArrangement = Arrangement.End, modifier = Modifier.fillMaxWidth()) {
-                SortMenu(
-                    expanded = sorting,
-                    offset = sortButtonPos,
-                    onDismissRequest = { sorting = false },
-                    sortOrder = library.sorter.bookModel.order,
-                    onSortOrderChanged = {
-                        coroutine.launch {
-                            library.sorter.sortBooks(it)
+                Box {
+                    var sorting by remember { mutableStateOf(false) }
+                    SortButton(
+                        onClick = {
+                            sorting = true
                         }
-                    }
-                ) {
-                    SortMenuCaption(stringResource(Res.string.keyword_para))
-                    BookSortable.entries.forEach {
-                        val selected = library.sorter.bookModel.by == it
-                        SortMenuItem(
-                            text = { Text(it.label) },
-                            icon = {
-                                Icon(
-                                    imageVector = if (!selected) Icons.Default.SortByAlpha else Icons.Default.Done,
-                                    contentDescription = ""
-                                )
-                            },
-                            selected = selected,
-                            onClick = {
-                                coroutine.launch {
-                                    library.sorter.sortBooks(by = it)
-                                }
+                    )
+                    SortMenu(
+                        expanded = sorting,
+                        onDismissRequest = { sorting = false },
+                        sortOrder = library.sorter.bookModel.order,
+                        onSortOrderChanged = {
+                            coroutine.launch {
+                                library.sorter.sortBooks(it)
                             }
-                        )
+                        }
+                    ) {
+                        SortMenuCaption(stringResource(Res.string.keyword_para))
+                        BookSortable.entries.forEach {
+                            val selected = library.sorter.bookModel.by == it
+                            SortMenuItem(
+                                text = { Text(it.label) },
+                                icon = {
+                                    Icon(
+                                        imageVector = if (!selected) Icons.Default.SortByAlpha else Icons.Default.Done,
+                                        contentDescription = ""
+                                    )
+                                },
+                                selected = selected,
+                                onClick = {
+                                    coroutine.launch {
+                                        library.sorter.sortBooks(by = it)
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
-                SortButton(
-                    onClick = {
-                        sorting = true
-                    },
-                    modifier = Modifier.onGloballyPositioned {
-                        sortButtonPos = it.positionInParent().let { w ->
-                            DpOffset(w.x.dp, (w.y - it.boundsInParent().height).dp)
-                        }
-                    }
-                )
             }
 
             LazyVerticalGrid(columns = GridCells.Adaptive(240.dp), state = state) {
