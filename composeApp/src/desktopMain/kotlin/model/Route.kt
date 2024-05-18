@@ -3,9 +3,9 @@
 package model
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.LibraryBooks
-import androidx.compose.material.icons.filled.Contacts
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Key
+import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -18,8 +18,8 @@ import resources.*
 import java.util.*
 
 enum class Route(val label: StringResource, val icon: ImageVector, val docked: Boolean = true) {
-    Books(Res.string.books_para, Icons.AutoMirrored.Filled.LibraryBooks),
-    Readers(Res.string.readers_para, Icons.Default.Contacts),
+    Books(Res.string.books_para, Icons.Default.Book),
+    Readers(Res.string.readers_para, Icons.Default.People),
     Borrowing(Res.string.borrowing_para, Icons.Default.Key),
     Preferences(Res.string.preferences_para, Icons.Default.Settings, docked = false),
 }
