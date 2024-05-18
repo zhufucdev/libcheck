@@ -59,7 +59,7 @@ private fun Content(configurations: Configurations, modifier: Modifier = Modifie
     val sources by remember(configurations) { derivedStateOf { configurations.sources.entries.sortedBy { it.key } } }
     val working by remember { mutableStateOf(false) }
     val states =
-        remember { mutableStateMapOf(*(sources.map { (type, _) -> type to PreferenceState() }).toTypedArray()) }
+        remember { mutableStateMapOf(*(sources.map { (type, _) -> type to PreferenceState(loading = true) }).toTypedArray()) }
     val currentState by remember { derivedStateOf { states[configurations.currentSourceType]!! } }
 
     Scaffold(
@@ -98,6 +98,7 @@ private fun Content(configurations: Configurations, modifier: Modifier = Modifie
             items(sources.size, { sources[it].key }) { index ->
                 val type = sources[index].key
                 val selected = type == configurations.currentSourceType
+                val state = states[type]!!
                 Surface(color = Color.Transparent, onClick = { configurations.currentSourceType = type }) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -108,7 +109,11 @@ private fun Content(configurations: Configurations, modifier: Modifier = Modifie
                         Text(text = stringResource(type.titleStrRes), style = MaterialTheme.typography.titleLarge)
                         Spacer(Modifier.weight(1f))
                         if (selected) {
-                            Icon(Icons.Default.Check, "selected")
+                            if (state.loading) {
+                                CircularProgressIndicator(Modifier.size(24.dp))
+                            } else {
+                                Icon(Icons.Default.Check, "selected")
+                            }
                         }
                     }
                 }
@@ -120,8 +125,8 @@ private fun Content(configurations: Configurations, modifier: Modifier = Modifie
                         )
                         Spacer(Modifier.height(PaddingMedium))
                         when (type) {
-                            DataSourceType.Local -> LocalSource(configurations, !working, states[type]!!)
-                            DataSourceType.Remote -> RemoteSource(configurations, !working, states[type]!!)
+                            DataSourceType.Local -> LocalSource(configurations, !working, state)
+                            DataSourceType.Remote -> RemoteSource(configurations, !working, state)
                         }
                     }
                 }

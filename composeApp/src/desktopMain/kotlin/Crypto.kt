@@ -1,5 +1,7 @@
 import com.github.javakeyring.Keyring
 import com.github.javakeyring.PasswordAccessException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.security.SecureRandom
@@ -16,7 +18,7 @@ interface EncryptDecrypt {
 
 private const val ITERATION_COUNT = 20
 
-class AesCipher(passphrase: String) : EncryptDecrypt {
+open class AesCipher(passphrase: String) : EncryptDecrypt {
     private val cipher = Cipher.getInstance("PBEWithMD5AndDES")
     private val key =
         SecretKeyFactory.getInstance("PBEWithMD5AndDES")
@@ -40,20 +42,28 @@ class AesCipher(passphrase: String) : EncryptDecrypt {
     }
 }
 
-fun AesCipher(): AesCipher {
-    val keyring = Keyring.create()
-    val passphrase = try {
-        keyring.getPassword("libcheck", "default")
-    } catch (_: PasswordAccessException) {
-        val random = try {
-            SecureRandom.getInstanceStrong()
-        } catch (_: NoSuchAlgorithmException) {
-            SecureRandom()
+private var keychainedAes: AesCipher? = null
+suspend fun AesCipher(): AesCipher {
+    val captured = keychainedAes
+    if (captured == null) {
+        return withContext(Dispatchers.IO) {
+            val keyring = Keyring.create()
+            val passphrase = try {
+                keyring.getPassword("libcheck", "default")
+            } catch (_: PasswordAccessException) {
+                val random = try {
+                    SecureRandom.getInstanceStrong()
+                } catch (_: NoSuchAlgorithmException) {
+                    SecureRandom()
+                }
+                val seed = random.generateSeed(32)
+                Base64.getEncoder().encodeToString(seed).also {
+                    keyring.setPassword("libcheck", "default", it)
+                }
+            }
+            AesCipher(passphrase).also { keychainedAes = it }
         }
-        val seed = random.generateSeed(32)
-        Base64.getEncoder().encodeToString(seed).also {
-            keyring.setPassword("libcheck", "default", it)
-        }
+    } else {
+        return captured
     }
-    return AesCipher(passphrase)
 }

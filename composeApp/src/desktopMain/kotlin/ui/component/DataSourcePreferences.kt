@@ -4,11 +4,11 @@
 package ui.component
 
 import AesCipher
+import EncryptDecrypt
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
@@ -19,7 +19,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -28,79 +27,23 @@ import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import kotlinx.coroutines.delay
 import model.Configurations
 import model.DataSource
-import model.DataSourceType
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.*
-import ui.PaddingLarge
 import ui.PaddingMedium
 import kotlin.time.Duration.Companion.seconds
 
-@Composable
-fun DataSourcePreferences(config: Configurations, modifier: Modifier = Modifier) {
-    val sources by remember(config) { derivedStateOf { config.sources.entries.sortedBy { it.key } } }
-    LazyColumn(modifier) {
-        items(sources.size, { sources[it].key }) { index ->
-            val type = sources[index].key
-            val source = sources[index].value
-            Column {
-                Surface(
-                    onClick = { config.currentSourceType = type },
-                    modifier = Modifier.fillMaxWidth(),
-                    color = Color.Transparent
-                ) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        RadioButton(
-                            selected = type == config.currentSourceType,
-                            onClick = { config.currentSourceType = type }
-                        )
-
-                        Text(stringResource(type.titleStrRes), style = MaterialTheme.typography.titleMedium)
-                    }
-                }
-                Spacer(Modifier.height(PaddingMedium))
-
-                val enabled = config.currentSourceType == type
-                when (type) {
-                    DataSourceType.Local ->
-                        LocalDataSourcePreferences(
-                            enabled = enabled,
-                            state = remember { PreferenceState() },
-                            source = source as DataSource.Local,
-                            onValueChanged = {
-                                config.sources[type] = it
-                            },
-                            context = config,
-                            modifier = Modifier.padding(start = PaddingLarge * 4, end = PaddingLarge)
-                        )
-
-                    DataSourceType.Remote ->
-                        RemoteDataSourcePreferences(
-                            enabled = enabled,
-                            state = remember { PreferenceState() },
-                            source = source as DataSource.Remote,
-                            onValueChanged = {
-                                config.sources[type] = it
-                            },
-                            modifier = Modifier.padding(start = PaddingLarge * 4, end = PaddingLarge)
-                        )
-                }
-            }
-            Spacer(Modifier.height(PaddingLarge))
-        }
-    }
-}
-
 @Stable
-class PreferenceState(valid: Boolean = true) {
+class PreferenceState(valid: Boolean = true, loading: Boolean = false) {
     var valid: Boolean by mutableStateOf(valid)
+    var loading: Boolean by mutableStateOf(loading)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocalDataSourcePreferences(
     enabled: Boolean,
-    state: PreferenceState,
+    state: PreferenceState = remember { PreferenceState() },
     source: DataSource.Local,
     onValueChanged: (DataSource.Local) -> Unit,
     context: Configurations,
@@ -116,6 +59,7 @@ fun LocalDataSourcePreferences(
     }
     LaunchedEffect(rootPath) {
         state.valid = rootPath.isNotBlank()
+        state.loading = false
     }
 
     Box(modifier) {
@@ -154,21 +98,32 @@ fun LocalDataSourcePreferences(
 fun RemoteDataSourcePreferences(
     enabled: Boolean,
     source: DataSource.Remote,
-    state: PreferenceState,
+    state: PreferenceState = remember { PreferenceState(loading = false) },
     onValueChanged: (DataSource.Remote) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val cipher = remember { AesCipher() }
+    var cipher by remember { mutableStateOf<EncryptDecrypt?>(null) }
+    var password by remember { mutableStateOf(System.currentTimeMillis().toString()) }
+    LaunchedEffect(true) {
+        state.loading = true
+        cipher = AesCipher()
+        password = cipher!!.decrypt(source.password).decodeToString()
+        state.loading = false
+    }
 
-    var host by remember { mutableStateOf(source.remoteHost) }
-    var port by remember { mutableStateOf(source.remotePort.toString()) }
-    var deviceName by remember { mutableStateOf(source.deviceName) }
-    var useTls by remember { mutableStateOf(source.useTransportSecurity) }
-    var password by remember { mutableStateOf(cipher.decrypt(source.password).decodeToString()) }
+    val actualEnabled by remember(state, enabled) { derivedStateOf { enabled && !state.loading } }
+
+    var host by remember(source) { mutableStateOf(source.remoteHost) }
+    var port by remember(source) { mutableStateOf(source.remotePort.toString()) }
+    var deviceName by remember(source) { mutableStateOf(source.deviceName) }
+    var useTls by remember(source) { mutableStateOf(source.useTransportSecurity) }
 
     val portValid by remember { derivedStateOf { port.toShortOrNull()?.let { it > 0 } == true } }
 
     LaunchedEffect(host, port, deviceName, useTls, password) {
+        if (state.loading) {
+            return@LaunchedEffect
+        }
         val captured = listOf(host, port, deviceName, useTls, password)
         delay(1.seconds)
         if (!state.valid) {
@@ -182,7 +137,7 @@ fun RemoteDataSourcePreferences(
                     port.toInt(),
                     deviceName,
                     useTls,
-                    cipher.encrypt(password.encodeToByteArray())
+                    cipher!!.encrypt(password.encodeToByteArray())
                 )
             )
         }
@@ -196,7 +151,7 @@ fun RemoteDataSourcePreferences(
             value = host,
             onValueChange = { host = it },
             label = { Text(stringResource(Res.string.host_para)) },
-            enabled = enabled,
+            enabled = actualEnabled,
             singleLine = true,
             modifier = Modifier.fillMaxWidth()
         )
@@ -205,7 +160,7 @@ fun RemoteDataSourcePreferences(
             value = port,
             onValueChange = { port = it },
             label = { Text(stringResource(Res.string.port_para)) },
-            enabled = enabled,
+            enabled = actualEnabled,
             singleLine = true,
             isError = !portValid,
             trailingIcon = { InvalidFieldIndicator(portValid) },
@@ -216,7 +171,7 @@ fun RemoteDataSourcePreferences(
             value = deviceName,
             onValueChange = { deviceName = it },
             label = { Text(stringResource(Res.string.this_device_name_para)) },
-            enabled = enabled,
+            enabled = actualEnabled,
             singleLine = true,
             isError = deviceName.isBlank(),
             trailingIcon = { InvalidFieldIndicator(deviceName.isNotBlank()) },
@@ -228,7 +183,7 @@ fun RemoteDataSourcePreferences(
             value = password,
             onValueChange = { password = it },
             label = { Text(stringResource(Res.string.password_para)) },
-            enabled = enabled,
+            enabled = actualEnabled,
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
@@ -249,13 +204,13 @@ fun RemoteDataSourcePreferences(
         ) {
             Text(
                 stringResource(Res.string.use_transport_layer_security_para),
-                style = MaterialTheme.typography.bodyLarge.let { if (enabled) it else it.disabled }
+                style = MaterialTheme.typography.bodyLarge.let { if (actualEnabled) it else it.disabled }
             )
             Spacer(Modifier.weight(1f))
             Switch(
                 checked = useTls,
                 onCheckedChange = { useTls = it },
-                enabled = enabled
+                enabled = actualEnabled
             )
         }
     }

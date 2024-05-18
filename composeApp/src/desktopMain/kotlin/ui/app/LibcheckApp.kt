@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
+import kotlinx.coroutines.flow.toCollection
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
@@ -47,10 +48,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
 
     LaunchedEffect(searchQuery) {
         searchResult.clear()
-        model.library.search(searchQuery)
-            .collect {
-                searchResult.add(it)
-            }
+        model.library.search(searchQuery).toCollection(searchResult)
     }
 
     Scaffold(

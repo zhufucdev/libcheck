@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.ui.graphics.vector.ImageVector
 import getHostName
 import io.grpc.ManagedChannelBuilder
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 import library.LocalMachineLibrary
 import library.RemoteLibrary
@@ -31,14 +32,14 @@ sealed class DataSource {
         val remotePort: Int = 5411,
         val deviceName: String = getHostName(),
         val useTransportSecurity: Boolean = true,
-        val password: ByteArray = AesCipher().encrypt("".encodeToByteArray()),
+        val password: ByteArray = runBlocking { AesCipher() }.encrypt("".encodeToByteArray()),
     ) : DataSource() {
         override fun initialize(context: Configurations): Library {
             val channel = ManagedChannelBuilder
                 .forAddress(remoteHost, remotePort)
                 .let { if (useTransportSecurity) it.useTransportSecurity() else it.usePlaintext() }
                 .build()
-            val password = AesCipher().decrypt(password).decodeToString()
+            val password = runBlocking { AesCipher() }.decrypt(password).decodeToString()
 
             return RemoteLibrary(channel, password, deviceName, context)
         }
