@@ -85,7 +85,7 @@ fun ReadersApp(model: AppViewModel) {
                 onReaderDeleted = {
                     coroutine.launch {
                         val res = snackbars.showSnackbar(
-                            getString(Res.string.reader_is_deleted_para),
+                            getString(Res.string.is_deleted_para, it.name),
                             getString(Res.string.undo_para)
                         )
                         if (res == SnackbarResult.ActionPerformed) {

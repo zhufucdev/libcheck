@@ -43,6 +43,7 @@ import extension.takeIfInstanceOf
 import kotlinx.coroutines.launch
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import resources.*
 import ui.*
@@ -51,6 +52,7 @@ import ui.component.*
 @Composable
 fun BooksApp(model: AppViewModel) {
     val coroutineScope = rememberCoroutineScope()
+    val snackbars = remember { SnackbarHostState() }
 
     var editMode by remember(model) {
         mutableStateOf<BookEditMode?>(
@@ -78,7 +80,8 @@ fun BooksApp(model: AppViewModel) {
                     onClick = { editMode = BookEditMode.Create }
                 )
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbars) }
     ) {
         Box(Modifier.padding(it).fillMaxSize()) {
             BookList(
@@ -88,8 +91,19 @@ fun BooksApp(model: AppViewModel) {
                         parameters = RevealDetailsParameters(book.id)
                     )
                 },
-                onEditBook = { book ->
+                onBookEditRequest = { book ->
                     editMode = BookEditMode.Overwrite(book)
+                },
+                onBookDeleted = {
+                    coroutineScope.launch {
+                        val res = snackbars.showSnackbar(
+                            getString(Res.string.is_deleted_para, it.name),
+                            getString(Res.string.undo_para)
+                        )
+                        if (res == SnackbarResult.ActionPerformed) {
+                            model.library.addBook(it)
+                        }
+                    }
                 }
             )
         }
@@ -315,7 +329,12 @@ private fun EditBookDialog(
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit, onEditBook: (Book) -> Unit) {
+private fun BookList(
+    model: AppViewModel,
+    onBookClicked: (Book) -> Unit,
+    onBookEditRequest: (Book) -> Unit,
+    onBookDeleted: (Book) -> Unit,
+) {
     val library = model.library
     val state = remember { LazyGridState() }
     val coroutine = rememberCoroutineScope()
@@ -375,7 +394,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit, onEditB
                 library.books.forEach { book ->
                     item(book.id) {
                         Box(modifier = Modifier.animateItemPlacement()) {
-                            BookCard(model, book, onBookClicked, onEditBook)
+                            BookCard(model, book, onBookClicked, onBookEditRequest, onBookDeleted)
                             Text(
                                 text = with(library) { book.getStock().toString() },
                                 style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onPrimary),
@@ -399,7 +418,13 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit, onEditB
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun BookCard(model: AppViewModel, book: Book, onClick: (Book) -> Unit, onEdit: (Book) -> Unit) {
+private fun BookCard(
+    model: AppViewModel,
+    book: Book,
+    onClick: (Book) -> Unit,
+    onEdit: (Book) -> Unit,
+    onDeleted: (Book) -> Unit,
+) {
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
@@ -474,6 +499,7 @@ private fun BookCard(model: AppViewModel, book: Book, onClick: (Book) -> Unit, o
                     onDismissRequest = { contextMenu = false },
                     onDelete = {
                         model.library.deleteBook(book)
+                        onDeleted(book)
                     },
                     onEdit = {
                         onEdit(book)

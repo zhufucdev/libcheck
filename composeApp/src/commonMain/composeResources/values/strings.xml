@@ -82,7 +82,7 @@
         <item>Chromium reader</item>
         <item>Platinum reader</item>
     </string-array>
-    <string name="reader_is_deleted_para">Reader is deleted</string>
+    <string name="is_deleted_para">%1$s is deleted</string>
     <string name="undo_para">Undo</string>
     <string name="reconstruct_para">Reconstruct</string>
     <string name="reader_was_not_found">Reader wasn't found</string>
