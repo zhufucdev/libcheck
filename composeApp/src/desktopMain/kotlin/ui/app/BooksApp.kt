@@ -309,7 +309,7 @@ private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit, onEditB
                                 style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onPrimary),
                                 textAlign = TextAlign.Center,
                                 modifier = Modifier
-                                    .size(44.dp)
+                                    .sizeIn(minWidth = 44.dp)
                                     .background(
                                         color = MaterialTheme.colorScheme.primary,
                                         shape = CircleShape
