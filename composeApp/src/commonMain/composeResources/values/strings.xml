@@ -82,4 +82,6 @@
         <item>Chromium reader</item>
         <item>Platinum reader</item>
     </string-array>
+    <string name="reader_is_deleted_para">Reader is deleted</string>
+    <string name="undo_para">Undo</string>
 </resources>

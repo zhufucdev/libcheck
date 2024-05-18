@@ -26,10 +26,7 @@ import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
 import extension.takeIfInstanceOf
 import kotlinx.coroutines.launch
 import model.*
-import org.jetbrains.compose.resources.ExperimentalResourceApi
-import org.jetbrains.compose.resources.pluralStringResource
-import org.jetbrains.compose.resources.stringArrayResource
-import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.*
 import resources.*
 import ui.*
 import ui.component.*
@@ -45,15 +42,9 @@ fun ReadersApp(model: AppViewModel) {
                 ?.let { model.library.getReader(it) }
         }
     }
-    var addingReader by remember { mutableStateOf(false) }
-    var editingReader by remember { mutableStateOf(false) }
-    var readerUri by remember { mutableStateOf("") }
-    var readerName by remember { mutableStateOf("") }
-    var readerTier by remember { mutableStateOf(ReaderTier.TIER_STARTER) }
-    var readerId by remember { mutableStateOf<Identifier?>(null) }
-    var tierMenuExpanded by remember { mutableStateOf(false) }
 
-    val canSave by remember { derivedStateOf { readerName.isNotBlank() } }
+    var editMode by remember { mutableStateOf<EditMode?>(null) }
+    val snackbars = remember { SnackbarHostState() }
 
     Scaffold(
         floatingActionButton = {
@@ -63,10 +54,11 @@ fun ReadersApp(model: AppViewModel) {
                 ExtendedFloatingActionButton(
                     text = { Text(stringResource(Res.string.new_reader_para)) },
                     icon = { Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "") },
-                    onClick = { addingReader = true }
+                    onClick = { editMode = EditMode.Create }
                 )
             }
-        }
+        },
+        snackbarHost = { SnackbarHost(snackbars) }
     ) {
         Box(Modifier.padding(it)) {
             ReaderList(
@@ -74,116 +66,32 @@ fun ReadersApp(model: AppViewModel) {
                 onReaderClick = { reader ->
                     model.navigator.replace(parameters = RevealDetailsParameters(reader.id))
                 },
-                onEditReader = { reader ->
-                    readerId = reader.id
-                    readerName = reader.name
-                    readerUri = reader.avatarUri
-                    readerTier = reader.tier
-                    editingReader = true
+                onEditReaderRequest = { reader ->
+                    editMode = EditMode.Overwrite(reader.id)
+                },
+                onReaderDeleted = {
+                    coroutine.launch {
+                        val res = snackbars.showSnackbar(
+                            getString(Res.string.reader_is_deleted_para),
+                            getString(Res.string.undo_para)
+                        )
+                        if (res == SnackbarResult.ActionPerformed) {
+                            model.library.addReader(it)
+                        }
+                    }
                 }
             )
         }
     }
 
-    if (addingReader || editingReader) {
-        AlertDialog(
-            icon = {
-                Icon(
-                    imageVector = Icons.Default.PersonAdd,
-                    contentDescription = "",
-                    modifier = Modifier.size(24.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = stringResource(if (addingReader) Res.string.adding_a_reader_para else Res.string.editing_a_reader_para),
-                )
-            },
-            text = {
-                Column(modifier = Modifier.fillMaxWidth()) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
-
-                    Spacer(modifier = Modifier.height(PaddingLarge))
-                    AvatarInput(
-                        uri = readerUri,
-                        onUriChange = { readerUri = it },
-                        defaultImageVector = Icons.Default.Person,
-                        label = { Text(stringResource(Res.string.avatar_para)) }
-                    )
-                    OutlinedTextField(
-                        value = readerName,
-                        onValueChange = { readerName = it },
-                        label = { Text(stringResource(Res.string.name_para)) },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    Spacer(Modifier.height(PaddingLarge))
-
-                    ExposedDropdownMenuBox(
-                        expanded = tierMenuExpanded,
-                        onExpandedChange = { tierMenuExpanded = it },
-                    ) {
-                        ExposedDropdownTextField(
-                            value = readerTier.stringRes(),
-                            label = { Text(stringResource(Res.string.tier_para)) },
-                            modifier = Modifier.menuAnchor().fillMaxWidth()
-                        )
-                        ExposedDropdownMenu(
-                            expanded = tierMenuExpanded,
-                            onDismissRequest = { tierMenuExpanded = false },
-                        ) {
-                            ReaderTier.entries.forEach { tier ->
-                                if (tier.ordinal >= ReaderTier.TIER_PLATINUM.ordinal) {
-                                    return@forEach
-                                }
-                                DropdownMenuItem(
-                                    text = { Text(tier.stringRes()) },
-                                    onClick = {
-                                        readerTier = tier
-                                        tierMenuExpanded = false
-                                    }
-                                )
-                            }
-                        }
-                    }
+    editMode?.let { mode ->
+        EditReaderDialog(
+            mode = mode,
+            onDismissRequest = { editMode = null },
+            onUpdateRequest = {
+                coroutine.launch {
+                    mode.apply(it, model.library)
                 }
-            },
-            onDismissRequest = {
-                addingReader = false
-                editingReader = false
-            },
-            confirmButton = {
-                TextButton(
-                    content = { Text(stringResource(Res.string.ok_caption)) },
-                    onClick = {
-                        coroutine.launch {
-                            if (addingReader) {
-                                model.library.addReader(
-                                    Reader(
-                                        readerName,
-                                        Identifier(),
-                                        readerUri,
-                                        readerTier
-                                    )
-                                )
-                            } else if (editingReader) {
-                                model.library.updateReader(
-                                    Reader(
-                                        readerName,
-                                        readerId!!,
-                                        readerUri,
-                                        readerTier
-                                    )
-                                )
-                            }
-                            addingReader = false
-                            editingReader = false
-                        }
-                    },
-                    enabled = canSave,
-                    modifier = Modifier.padding(6.dp)
-                )
             }
         )
     }
@@ -205,9 +113,140 @@ fun ReadersApp(model: AppViewModel) {
     }
 }
 
+private sealed interface EditMode {
+    suspend fun apply(model: Reader, library: Library)
+
+    data class Overwrite(val identifier: Identifier) : EditMode {
+        override suspend fun apply(model: Reader, library: Library) {
+            library.updateReader(model)
+        }
+    }
+
+    data object Create : EditMode {
+        override suspend fun apply(model: Reader, library: Library) {
+            library.addReader(model)
+        }
+    }
+}
+
+@Composable
+private fun EditReaderDialog(
+    mode: EditMode,
+    onDismissRequest: () -> Unit,
+    onUpdateRequest: (Reader) -> Unit,
+) {
+    var readerUri by remember { mutableStateOf("") }
+    var readerName by remember { mutableStateOf("") }
+    var readerTier by remember { mutableStateOf(ReaderTier.TIER_STARTER) }
+    var tierMenuExpanded by remember { mutableStateOf(false) }
+
+    val canSave by remember { derivedStateOf { readerName.isNotBlank() } }
+
+    AlertDialog(
+        icon = {
+            Icon(
+                imageVector = Icons.Default.PersonAdd,
+                contentDescription = "",
+                modifier = Modifier.size(24.dp)
+            )
+        },
+        title = {
+            Text(
+                text = stringResource(if (mode is EditMode.Create) Res.string.adding_a_reader_para else Res.string.editing_a_reader_para),
+            )
+        },
+        text = {
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                }
+
+                Spacer(modifier = Modifier.height(PaddingLarge))
+                AvatarInput(
+                    uri = readerUri,
+                    onUriChange = { readerUri = it },
+                    defaultImageVector = Icons.Default.Person,
+                    label = { Text(stringResource(Res.string.avatar_para)) }
+                )
+                OutlinedTextField(
+                    value = readerName,
+                    onValueChange = { readerName = it },
+                    label = { Text(stringResource(Res.string.name_para)) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Spacer(Modifier.height(PaddingLarge))
+
+                ExposedDropdownMenuBox(
+                    expanded = tierMenuExpanded,
+                    onExpandedChange = { tierMenuExpanded = it },
+                ) {
+                    ExposedDropdownTextField(
+                        value = readerTier.stringRes(),
+                        label = { Text(stringResource(Res.string.tier_para)) },
+                        modifier = Modifier.menuAnchor().fillMaxWidth()
+                    )
+                    ExposedDropdownMenu(
+                        expanded = tierMenuExpanded,
+                        onDismissRequest = { tierMenuExpanded = false },
+                    ) {
+                        ReaderTier.entries.forEach { tier ->
+                            if (tier.ordinal >= ReaderTier.TIER_PLATINUM.ordinal) {
+                                return@forEach
+                            }
+                            DropdownMenuItem(
+                                text = { Text(tier.stringRes()) },
+                                onClick = {
+                                    readerTier = tier
+                                    tierMenuExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            TextButton(
+                content = { Text(stringResource(Res.string.ok_caption)) },
+                onClick = {
+                    when (mode) {
+                        is EditMode.Create ->
+                            onUpdateRequest(
+                                Reader(
+                                    readerName,
+                                    Identifier(),
+                                    readerUri,
+                                    readerTier
+                                )
+                            )
+
+                        is EditMode.Overwrite ->
+                            onUpdateRequest(
+                                Reader(
+                                    readerName,
+                                    mode.identifier,
+                                    readerUri,
+                                    readerTier
+                                )
+                            )
+                    }
+                },
+                enabled = canSave,
+                modifier = Modifier.padding(6.dp)
+            )
+        }
+    )
+}
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit, onEditReader: (Reader) -> Unit) {
+private fun ReaderList(
+    model: AppViewModel,
+    onReaderClick: (Reader) -> Unit,
+    onEditReaderRequest: (Reader) -> Unit,
+    onReaderDeleted: (Reader) -> Unit,
+) {
     val library = model.library
     val coroutine = rememberCoroutineScope()
     val gridState = remember { LazyGridState() }
@@ -309,10 +348,11 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit, onE
                                             expanded = contextMenu,
                                             onDismissRequest = { contextMenu = false },
                                             onEdit = {
-                                                onEditReader(reader)
+                                                onEditReaderRequest(reader)
                                             },
                                             onDelete = {
                                                 model.library.deleteReader(reader)
+                                                onReaderDeleted(reader)
                                             }
                                         )
                                     }
