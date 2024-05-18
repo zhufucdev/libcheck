@@ -70,4 +70,7 @@
     <string name="back_para">Back</string>
     <string name="you_are_all_set_para">You're all set!</string>
     <string name="edit_para">Edit</string>
+    <string name="about_this_book">About this book</string>
+    <string name="by_auther_para">By %1$s</string>
+    <string name="available_borrowed_total">%1$d available, %2$d borrowed, %3$d in total</string>
 </resources>

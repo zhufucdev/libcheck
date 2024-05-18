@@ -70,14 +70,14 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                                     item(it.id) {
                                         SearchResult(it, model) {
                                             isSearching = false
-                                            model.reveal = it.id
                                             model.route.push(
                                                 when (it) {
-                                                    is Reader -> Route.Readers
-                                                    is Book -> Route.Books
-                                                    is BorrowInstanced -> Route.Borrowing
+                                                    is Reader -> RouteType.Readers
+                                                    is Book -> RouteType.Books
+                                                    is BorrowInstanced -> RouteType.Borrowing
                                                     else -> throw IllegalArgumentException()
-                                                }
+                                                },
+                                                RevealParameters(it.id)
                                             )
                                         }
                                     }
@@ -90,19 +90,19 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                     )
                     AnimatedVisibility(!isSearching, enter = expandHorizontally(), exit = shrinkHorizontally()) {
                         IconButton(
-                            onClick = { model.route.push(Route.Preferences) },
+                            onClick = { model.route.push(RouteType.Preferences) },
                             modifier = Modifier.padding(end = PaddingMedium)
                         ) {
                             TooltipBox(
                                 tooltip = {
                                     PlainTooltip {
-                                        Text(stringResource(Route.Preferences.label))
+                                        Text(stringResource(RouteType.Preferences.label))
                                     }
                                 },
                                 positionProvider = rememberComponentRectPositionProvider(),
                                 state = rememberTooltipState()
                             ) {
-                                Icon(imageVector = Route.Preferences.icon, contentDescription = "preferences")
+                                Icon(imageVector = RouteType.Preferences.icon, contentDescription = "preferences")
                             }
                         }
                     }
@@ -134,8 +134,8 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         bottomBar = {
             if (windowSize < WindowSize.WIDE) {
                 NavigationBar {
-                    BottomNavigationItems(model.route.current) {
-                        model.route.push(it)
+                    BottomNavigationItems(model.route.current.type) {
+                        model.route.replace(it)
                     }
                 }
             }
@@ -150,7 +150,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                 if (windowSize >= WindowSize.WIDE) {
                     Row {
                         PermanentDrawerSheet {
-                            NavigationDrawerItems(model.route.current) { next -> model.route.push(next) }
+                            NavigationDrawerItems(model.route.current.type) { next -> model.route.replace(next) }
                         }
                         MainContent(model)
                     }
@@ -172,7 +172,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         ConnectionAlertDialog(
             exception = it,
             confirmButton = {
-                TextButton(onClick = { model.route.push(Route.Preferences) }) {
+                TextButton(onClick = { model.route.push(RouteType.Preferences) }) {
                     Text(stringResource(Res.string.go_para))
                 }
             }
@@ -201,10 +201,10 @@ private fun InitializationPlaceholder() {
 }
 
 @Composable
-private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit) {
+private fun NavigationDrawerItems(current: RouteType, onNavigation: (RouteType) -> Unit) {
     Spacer(Modifier.height(PaddingLarge))
     Column(Modifier.padding(horizontal = PaddingMedium)) {
-        Route.entries.forEach {
+        RouteType.entries.forEach {
             if (it.docked) {
                 NavigationDrawerItem(
                     label = { Text(stringResource(it.label)) },
@@ -218,8 +218,8 @@ private fun NavigationDrawerItems(current: Route, onNavigation: (Route) -> Unit)
 }
 
 @Composable
-private fun RowScope.BottomNavigationItems(current: Route, onNavigation: (Route) -> Unit) {
-    Route.entries.forEach {
+private fun RowScope.BottomNavigationItems(current: RouteType, onNavigation: (RouteType) -> Unit) {
+    RouteType.entries.forEach {
         if (it.docked) {
             NavigationBarItem(
                 selected = current == it,
@@ -233,10 +233,10 @@ private fun RowScope.BottomNavigationItems(current: Route, onNavigation: (Route)
 
 @Composable
 private fun MainContent(model: AppViewModel) {
-    when (model.route.current) {
-        Route.Books -> BooksApp(model)
-        Route.Readers -> ReadersApp(model)
-        Route.Borrowing -> BorrowingApp(model)
+    when (model.route.current.type) {
+        RouteType.Books -> BooksApp(model)
+        RouteType.Readers -> ReadersApp(model)
+        RouteType.Borrowing -> BorrowingApp(model)
         else -> {}
     }
 }

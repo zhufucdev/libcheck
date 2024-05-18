@@ -24,13 +24,15 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import model.AppViewModel
 import model.BorrowSortable
-import model.Route
+import model.RevealParameters
+import model.RouteType
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.*
 import ui.LaunchReveal
 import ui.PaddingLarge
 import ui.component.*
+import ui.rememberRevealAnimation
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -45,7 +47,7 @@ fun BorrowingApp(model: AppViewModel) {
     val now = rememberNow()
     val listState = rememberLazyListState()
 
-    LaunchReveal(model.library.borrows, model.reveal, listState)
+    LaunchReveal(model.library.borrows, model, listState)
 
     Scaffold {
         if (model.library.borrows.isEmpty()) {
@@ -170,8 +172,7 @@ fun BorrowingApp(model: AppViewModel) {
                                     val b = book!!
                                     TextButton(
                                         onClick = {
-                                            model.reveal = b.id
-                                            model.route.push(Route.Books)
+                                            model.route.push(RouteType.Books, RevealParameters(b.id))
                                         },
                                         content = {
                                             Text(
@@ -199,8 +200,7 @@ fun BorrowingApp(model: AppViewModel) {
                                     val r = reader!!
                                     TextButton(
                                         onClick = {
-                                            model.reveal = r.id
-                                            model.route.push(Route.Readers)
+                                            model.route.push(RouteType.Readers, RevealParameters(r.id))
                                         },
                                         content = {
                                             Text(

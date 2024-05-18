@@ -34,6 +34,7 @@ import resources.*
 import ui.LaunchReveal
 import ui.PaddingLarge
 import ui.component.*
+import ui.rememberRevealAnimation
 import ui.stringRes
 
 @Composable
@@ -189,7 +190,7 @@ private fun ReaderList(model: AppViewModel, onReaderClick: (Reader) -> Unit, onE
     val gridState = remember { LazyGridState() }
     var sorting by remember { mutableStateOf(false) }
 
-    LaunchReveal(library.readers, model.reveal, gridState)
+    LaunchReveal(library.readers, model, gridState)
 
     if (library.readers.isEmpty()) {
         HeadingPlaceholder(

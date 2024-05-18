@@ -50,14 +50,14 @@ fun App(windowState: WindowState, configurations: Configurations) {
                 SetUpApp(windowSize, model)
             }
             AnimatedVisibility(
-                visible = navigator.current == Route.Preferences,
+                visible = navigator.current.type == RouteType.Preferences,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
                 PreferencesApp(configurations, navigator)
             }
             AnimatedVisibility(
-                visible = !configurations.firstLaunch && navigator.current.docked,
+                visible = !configurations.firstLaunch && navigator.current.type.docked,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {

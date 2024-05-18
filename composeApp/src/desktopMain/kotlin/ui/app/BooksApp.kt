@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.onClick
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.BookmarkAdd
@@ -36,20 +37,17 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.launch
-import model.AppViewModel
-import model.Book
-import model.BookSortable
-import model.Identifier
+import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.*
 import ui.LaunchReveal
 import ui.PaddingLarge
 import ui.component.*
+import ui.rememberRevealAnimation
 import ui.variant
 
 @Composable
@@ -59,6 +57,7 @@ fun BooksApp(model: AppViewModel) {
 
     var addingBook by remember { mutableStateOf(false) }
     var editingBook by remember { mutableStateOf(false) }
+    var bookRevealed by remember { mutableStateOf<Book?>(null) }
     var bookId by remember { mutableStateOf<Identifier?>(null) }
     var bookUri by remember { mutableStateOf("") }
     var bookTitle by remember { mutableStateOf("") }
@@ -95,6 +94,7 @@ fun BooksApp(model: AppViewModel) {
             BookList(
                 model = model,
                 onBookClicked = { book ->
+                    bookRevealed = book
                 },
                 onEditBook = { book ->
                     bookId = book.id
@@ -232,6 +232,14 @@ fun BooksApp(model: AppViewModel) {
             }
         )
     }
+
+    bookRevealed?.let {
+        DetailBookDialog(
+            model = it,
+            library = model.library,
+            onDismissRequest = { bookRevealed = null }
+        )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -239,10 +247,9 @@ fun BooksApp(model: AppViewModel) {
 private fun BookList(model: AppViewModel, onBookClicked: (Book) -> Unit, onEditBook: (Book) -> Unit) {
     val library = model.library
     val state = remember { LazyGridState() }
-    var sortButtonPos by remember { mutableStateOf(DpOffset(0.dp, 0.dp)) }
     val coroutine = rememberCoroutineScope()
 
-    LaunchReveal(library.books, model.reveal, state)
+    LaunchReveal(library.books, model, state)
 
     if (library.books.isEmpty()) {
         HeadingPlaceholder(
@@ -406,4 +413,73 @@ private fun BookCard(model: AppViewModel, book: Book, onClick: (Book) -> Unit, o
             Text(text = book.author, style = MaterialTheme.typography.bodySmall)
         }
     }
+}
+
+@Composable
+private fun DetailBookDialog(model: Book, library: Library, onDismissRequest: () -> Unit) {
+    BasicAlertDialog(
+        onDismissRequest = onDismissRequest,
+        content = {
+            Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceBright)) {
+                Column(Modifier.padding(PaddingLarge * 2)) {
+                    Text(
+                        text = stringResource(Res.string.about_this_book),
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Spacer(Modifier.height(PaddingLarge * 2))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        BookAvatar(
+                            uri = model.avatarUri,
+                            modifier = Modifier.size(120.dp)
+                        )
+                        Spacer(Modifier.width(PaddingLarge))
+                        Column {
+                            val textColor = LocalContentColor.current
+                            BasicTextField(
+                                value = model.name,
+                                textStyle = MaterialTheme.typography.titleLarge.copy(color = textColor),
+                                readOnly = true,
+                                onValueChange = {}
+                            )
+                            BasicTextField(
+                                value = stringResource(Res.string.by_auther_para, model.author),
+                                textStyle = MaterialTheme.typography.bodyMedium.copy(color = textColor),
+                                readOnly = true,
+                                onValueChange = {}
+                            )
+                            if (model.isbn.isNotBlank()) {
+                                BasicTextField(
+                                    value = model.isbn,
+                                    textStyle = MaterialTheme.typography.bodyMedium.copy(
+                                        fontFamily = FontFamily.Monospace,
+                                        color = textColor
+                                    ),
+                                    readOnly = true,
+                                    onValueChange = {}
+                                )
+                            }
+                            val available by remember(library) { derivedStateOf { with(library) { model.getStock() } } }
+                            Text(
+                                text = stringResource(
+                                    Res.string.available_borrowed_total,
+                                    available,
+                                    model.stock - available,
+                                    model.stock
+                                ),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+
+                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                        TextButton(
+                            onClick = onDismissRequest
+                        ) {
+                            Text(stringResource(Res.string.ok_caption))
+                        }
+                    }
+                }
+            }
+        }
+    )
 }

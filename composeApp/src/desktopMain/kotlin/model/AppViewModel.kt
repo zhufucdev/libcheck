@@ -7,8 +7,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Rect
 
 class AppViewModel(val library: Library, val route: NavigationModel) {
-    var reveal by mutableStateOf<Identifier?>(null)
-
     val booksInBasket = mutableStateListOf<Identifier>()
     var basketFabBounds by mutableStateOf(Rect.Zero)
     var draggingIn by mutableStateOf(false)
