@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
+import extension.takeIfInstanceOf
 import kotlinx.coroutines.launch
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -54,7 +55,14 @@ fun BooksApp(model: AppViewModel) {
 
     var addingBook by remember { mutableStateOf(false) }
     var editingBook by remember { mutableStateOf(false) }
-    var bookRevealed by remember { mutableStateOf<Book?>(null) }
+    val detailedBook by remember(model) {
+        derivedStateOf {
+            model.navigator.current.parameters
+                .takeIfInstanceOf<NavigationParameters, RevealDetailsParameters>()
+                ?.identifier
+                ?.let { model.library.getBook(it) }
+        }
+    }
     var bookId by remember { mutableStateOf<Identifier?>(null) }
     var bookUri by remember { mutableStateOf("") }
     var bookTitle by remember { mutableStateOf("") }
@@ -91,7 +99,9 @@ fun BooksApp(model: AppViewModel) {
             BookList(
                 model = model,
                 onBookClicked = { book ->
-                    bookRevealed = book
+                    model.navigator.replace(
+                        parameters = RevealDetailsParameters(book.id)
+                    )
                 },
                 onEditBook = { book ->
                     bookId = book.id
@@ -230,11 +240,13 @@ fun BooksApp(model: AppViewModel) {
         )
     }
 
-    bookRevealed?.let {
+    detailedBook?.let {
         DetailBookDialog(
             model = it,
             library = model.library,
-            onDismissRequest = { bookRevealed = null },
+            onDismissRequest = {
+                model.navigator.replace(RouteType.Books)
+            },
             onRevealRequest = {
                 model.navigator.push(
                     dest = RouteType.Borrowing,

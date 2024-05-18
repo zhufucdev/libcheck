@@ -27,6 +27,9 @@ data class Route(val type: RouteType, val parameters: NavigationParameters)
 @Stable
 open class RevealParameters(val identifier: Identifier) : NavigationParameters
 
+@Stable
+open class RevealDetailsParameters(val identifier: Identifier) : NavigationParameters
+
 sealed class FilterParameters<T> : NavigationParameters {
     abstract fun T.isCandidate(): Boolean
 }
@@ -63,7 +66,7 @@ class NavigationModel(current: Route = Route(RouteType.Books, EmptyParameters)) 
         stackSize = stack.size
     }
 
-    fun replace(dest: RouteType, parameters: NavigationParameters = EmptyParameters) {
+    fun replace(dest: RouteType = current.type, parameters: NavigationParameters = EmptyParameters) {
         val route = Route(dest, parameters)
         stack[stack.size - 1] = route
         current = route
