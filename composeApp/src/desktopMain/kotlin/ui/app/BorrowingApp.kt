@@ -252,12 +252,18 @@ private fun BorrowBatchItem(
     hasSeparator: Boolean,
     modifier: Modifier = Modifier,
 ) {
+    val filtering by remember(model) {
+        derivedStateOf {
+            app.navigator.current.parameters is FilterBorrowParameters
+        }
+    }
     val booksExpanded by remember(model) {
         derivedStateOf {
             app.navigator.current.parameters
                 .takeIfInstanceOf<NavigationParameters, RevealDetailsParameters>()
                 ?.identifier
                 ?.let { it == model.id } == true
+                    || filtering
         }
     }
     Column(modifier) {
@@ -270,6 +276,7 @@ private fun BorrowBatchItem(
             separator = hasSeparator && !booksExpanded,
         ) {
             TextButton(
+                enabled = !filtering,
                 onClick = {
                     if (!booksExpanded) {
                         app.navigator.replace(parameters = RevealDetailsParameters(model.id))
