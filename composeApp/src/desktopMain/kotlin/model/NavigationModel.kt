@@ -38,9 +38,9 @@ sealed class FilterParameters<T> : NavigationParameters {
 open class FilterBorrowParameters(
     private val books: List<Identifier> = emptyList(),
     private val readers: List<Identifier> = emptyList(),
-) : FilterParameters<Borrow>() {
-    override fun Borrow.isCandidate(): Boolean =
-        (books.isEmpty() || books.contains(bookId))
+) : FilterParameters<BorrowLike>() {
+    override fun BorrowLike.isCandidate(): Boolean =
+        (books.isEmpty() || books.any { hasBook(it) })
                 && (readers.isEmpty() || readers.contains(readerId))
 }
 

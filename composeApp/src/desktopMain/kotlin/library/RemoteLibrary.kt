@@ -12,6 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import model.*
 import java.time.Instant
@@ -66,24 +67,32 @@ class RemoteLibrary(
         }
     }
 
-    override suspend fun Borrow.setReturned() {
+    override suspend fun BorrowLike.setReturned() {
         val res =
-            libraryChannel.updateBorrow(newUpdateRequest(id) {
-                borrow = this@setReturned.copy(returnTime = System.currentTimeMillis()).toProto()
-            })
+            when (val p = this@setReturned) {
+                is Borrow ->
+                    libraryChannel.updateBorrow(newUpdateRequest(id) {
+                        borrow = p.copy(returnTime = System.currentTimeMillis()).toProto()
+                    })
+
+                is BorrowBatch ->
+                    libraryChannel.updateBorrowBatch(newUpdateRequest(id) {
+
+                    })
+            }
         res.effect.maybeThrow()
     }
 
     override fun Book.getStock(): UInt {
-        val count by derivedStateOf { stock - borrows.count { it.bookId == id && it.returnTime == null }.toUInt() }
+        val count by derivedStateOf { stock - borrows.count { it.hasBook(id) && it.returnTime == null }.toUInt() }
         return count
     }
 
     override val readers = SnapshotStateList<Reader>()
     override val books = SnapshotStateList<Book>()
-    override val borrows = SnapshotStateList<Borrow>()
+    override val borrows = SnapshotStateList<BorrowLike>()
 
-    override fun Reader.getBorrows(): List<Borrow> = borrows.filter { it.readerId == id }
+    override fun Reader.getBorrows(): List<BorrowLike> = borrows.filter { it.readerId == id }
 
     private fun newUpdateRequest(id: Identifier, init: UpdateRequestKt.Dsl.() -> Unit) = updateRequest {
         token = accessToken
@@ -138,10 +147,15 @@ class RemoteLibrary(
         coroutineScope.launch {
             UniqueIdentifierStateList.bindTo(
                 borrows,
-                libraryChannel
-                    .getBorrows(newGetRequest())
-                    .filter { it.ok }
-                    .map { Identifier.parse(it.id) to it.borrowOrNull?.toModel() }
+                merge(
+                    libraryChannel.getBorrowBatches(newGetRequest())
+                        .filter { it.ok }
+                        .map { Identifier.parse(it.id) to it.batchOrNull?.toModel() },
+                    libraryChannel
+                        .getBorrows(newGetRequest())
+                        .filter { it.ok }
+                        .map { Identifier.parse(it.id) to it.borrowOrNull?.toModel() }
+                )
             )
         }
     }
@@ -179,6 +193,20 @@ class RemoteLibrary(
                     id = Identifier().toString()
                     readerId = borrower.id.toString()
                     bookId = book.id.toString()
+                    time = Timestamp(Instant.now().toEpochMilli())
+                    dueTime = Timestamp(due.toEpochMilli())
+                }
+            })
+        res.effect.maybeThrow()
+    }
+
+    override suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant) {
+        val res =
+            libraryChannel.addBorrowBatch(newAddRequest {
+                batch = borrowBatch {
+                    id = Identifier().toString()
+                    readerId = borrower.id.toString()
+                    bookIds.addAll(books.map { it.id.toString() })
                     time = Timestamp(Instant.now().toEpochMilli())
                     dueTime = Timestamp(due.toEpochMilli())
                 }

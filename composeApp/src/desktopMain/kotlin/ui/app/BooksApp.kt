@@ -510,7 +510,7 @@ private fun BookCard(
                     }
                 )
             }
-            Text(text = book.name, style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+            Text(text = book.displayName(), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             Text(text = book.author, style = MaterialTheme.typography.bodySmall)
         }
     }

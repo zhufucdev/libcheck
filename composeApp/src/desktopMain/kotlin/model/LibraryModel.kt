@@ -9,12 +9,12 @@ import java.time.Instant
 interface Library : Closeable {
     val state: LibraryState
     val sorter: LibrarySortingModel
-    suspend fun Borrow.setReturned()
+    suspend fun BorrowLike.setReturned()
     fun Book.getStock(): UInt
     val readers: List<Reader>
     val books: List<Book>
-    val borrows: List<Borrow>
-    fun Reader.getBorrows(): List<Borrow>
+    val borrows: List<BorrowLike>
+    fun Reader.getBorrows(): List<BorrowLike>
 
     suspend fun connect()
     suspend fun addBook(book: Book)
@@ -22,6 +22,7 @@ interface Library : Closeable {
     fun getBook(id: Identifier): Book?
     suspend fun deleteBook(book: Book)
     suspend fun addBorrow(borrower: Reader, book: Book, due: Instant)
+    suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant)
     suspend fun addReader(reader: Reader)
     fun getReader(id: Identifier): Reader?
     suspend fun updateReader(reader: Reader)

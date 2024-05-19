@@ -2,15 +2,8 @@ package library
 
 import com.google.protobuf.Timestamp
 import com.google.protobuf.timestamp
-import com.sqlmaster.proto.LibraryOuterClass
-import com.sqlmaster.proto.book
-import com.sqlmaster.proto.borrow
-import com.sqlmaster.proto.reader
-import model.Book
-import model.Borrow
-import model.Identifier
-import model.Reader
-import java.util.*
+import com.sqlmaster.proto.*
+import model.*
 
 fun LibraryOuterClass.Book.toModel(): Book = Book(
     id = Identifier.parse(id),
@@ -31,8 +24,17 @@ fun LibraryOuterClass.Reader.toModel(): Reader = Reader(
 
 fun LibraryOuterClass.Borrow.toModel(): Borrow = Borrow(
     id = Identifier.parse(id),
-    readerId = Identifier(UUID.fromString(readerId)),
-    bookId = Identifier(UUID.fromString(bookId)),
+    readerId = Identifier.parse(readerId),
+    bookId = Identifier.parse(bookId),
+    time = time.toEpochMilli(),
+    dueTime = dueTime.toEpochMilli(),
+    returnTime = returnTime?.toEpochMilli()
+)
+
+fun LibraryOuterClass.BorrowBatch.toModel(): BorrowBatch = BorrowBatch(
+    id = Identifier.parse(id),
+    readerId = Identifier.parse(readerId),
+    bookIds = bookIdsList.map(Identifier.Companion::parse),
     time = time.toEpochMilli(),
     dueTime = dueTime.toEpochMilli(),
     returnTime = returnTime?.toEpochMilli()
@@ -66,6 +68,15 @@ fun Borrow.toProto(): LibraryOuterClass.Borrow = borrow {
     id = this@toProto.id.toString()
     readerId = this@toProto.readerId.toString()
     bookId = this@toProto.bookId.toString()
+    time = Timestamp(this@toProto.time)
+    dueTime = Timestamp(this@toProto.dueTime)
+    this@toProto.returnTime?.let { returnTime = Timestamp(it) }
+}
+
+fun BorrowBatch.toProto(): LibraryOuterClass.BorrowBatch = borrowBatch {
+    id = this@toProto.id.toString()
+    readerId = this@toProto.readerId.toString()
+    bookIds.addAll(this@toProto.bookIds.map(Identifier::toString))
     time = Timestamp(this@toProto.time)
     dueTime = Timestamp(this@toProto.dueTime)
     this@toProto.returnTime?.let { returnTime = Timestamp(it) }

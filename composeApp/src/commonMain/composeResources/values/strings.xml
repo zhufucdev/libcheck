@@ -89,4 +89,8 @@
     <string name="book_was_not_found">Book wasn't found</string>
     <string name="reconstructing_a_reader_para">Reconstructing a reader</string>
     <string name="reconstructing_a_book_para">Reconstructing a book</string>
+    <string name="lent_to_para">%1$s lent to %2$s</string>
+    <string name="unknown_reader_span">unknown reader</string>
+    <string name="unknown_book_span">unknown book</string>
+    <string name="reveal_in_books_para">Reveal in books</string>
 </resources>

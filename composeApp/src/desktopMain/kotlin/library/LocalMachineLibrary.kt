@@ -25,7 +25,7 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
 
     override val books: List<Book> get() = bookList.items
     override val readers: List<Reader> get() = readerList.items
-    override val borrows: List<Borrow> get() = borrowList.items
+    override val borrows: List<BorrowLike> get() = borrowList.items
 
     private var mInitialized: Boolean by mutableStateOf(false)
     private var mProgress: Float by mutableStateOf(0f)
@@ -163,18 +163,29 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
         saveBorrows()
     }
 
-    override suspend fun Borrow.setReturned() {
+    override suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant) {
+        borrowList.items.add(
+            BorrowBatch(Identifier(), borrower.id, books.map(Book::id), System.currentTimeMillis(), due.toEpochMilli())
+        )
+        borrowList.sort(this)
+        saveBorrows()
+    }
+
+    override suspend fun BorrowLike.setReturned() {
         val index = borrowList.items.indexOf(this)
         if (index < 0) {
             throw NoSuchElementException()
         }
-        borrowList.items[index] = copy(returnTime = Instant.now().toEpochMilli())
+        borrowList.items[index] = when (this) {
+            is Borrow -> copy(returnTime = Instant.now().toEpochMilli())
+            is BorrowBatch -> copy(returnTime = Instant.now().toEpochMilli())
+        }
         borrowList.sort(this@LocalMachineLibrary)
         saveBorrows()
     }
 
     override fun Book.getStock() =
-        stock - borrowList.items.count { it.bookId == id && it.returnTime == null }.toUInt()
+        stock - borrowList.items.count { it.hasBook(id) && it.returnTime == null }.toUInt()
 
     override suspend fun addReader(reader: Reader) {
         readerList.items.add(reader)
@@ -193,7 +204,7 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
         saveReaders()
     }
 
-    override fun Reader.getBorrows(): List<Borrow> =
+    override fun Reader.getBorrows(): List<BorrowLike> =
         borrowList.items.filter { it.readerId == id && it.returnTime == null }
 
     override suspend fun deleteReader(reader: Reader) {
