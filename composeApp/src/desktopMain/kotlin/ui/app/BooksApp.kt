@@ -3,6 +3,7 @@
 
 package ui.app
 
+import androidx.compose.animation.core.animate
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.PointerMatcher
 import androidx.compose.foundation.background
@@ -23,6 +24,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.input.pointer.PointerButton
@@ -41,6 +44,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import extension.takeIfInstanceOf
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import model.*
@@ -430,7 +434,6 @@ private fun BookCard(
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
     var bounds by remember { mutableStateOf(Rect.Zero) }
-    val density = LocalDensity.current
     var contextMenu by remember { mutableStateOf(false) }
     val cardColor = rememberRevealAnimation(model, book.id)
 
@@ -482,19 +485,12 @@ private fun BookCard(
                             bounds = it.boundsInRoot()
                         }
                 )
-
-                if (dragging) {
-                    Popup {
-                        BookAvatar(
-                            uri = book.avatarUri,
-                            modifier = with(density) {
-                                Modifier.size(120.dp).offset(
-                                    dragOff.x.toDp(), dragOff.y.toDp()
-                                )
-                            }
-                        )
-                    }
-                }
+                BookAvatarDraggable(
+                    app = model,
+                    dragging = dragging,
+                    book = book,
+                    offset = dragOff
+                )
 
                 CommonContextMenu(
                     expanded = contextMenu,
@@ -512,6 +508,55 @@ private fun BookCard(
             }
             Text(text = book.displayName(), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
             Text(text = book.author, style = MaterialTheme.typography.bodySmall)
+        }
+    }
+}
+
+@Composable
+private fun BookAvatarDraggable(app: AppViewModel, dragging: Boolean, book: Book, offset: Offset) {
+    var scale by remember { mutableFloatStateOf(if (dragging) 1f else 0f) }
+    var additionOffset by remember { mutableStateOf(Offset.Zero) }
+    var bounds by remember { mutableStateOf(Rect.Zero) }
+    LaunchedEffect(dragging) {
+        if (!dragging) {
+            val touching = !bounds.intersect(app.basketFabBounds).isEmpty
+            if (!touching) {
+                scale = 0f
+                return@LaunchedEffect
+            }
+            coroutineScope {
+                launch {
+                    animate(scale, 0f) { v, _ ->
+                        scale = v
+                    }
+                }
+                launch {
+                    val captured = bounds
+                    val diff = (app.basketFabBounds.center - captured.center)
+                    animate(0f, 1f) { v, _ ->
+                        additionOffset = diff * v
+                    }
+                }
+            }
+        } else {
+            scale = 1f
+            additionOffset = Offset.Zero
+        }
+    }
+    with(LocalDensity.current) {
+        if (scale > 0f) {
+            Popup {
+                BookAvatar(
+                    uri = book.avatarUri,
+                    modifier = Modifier.size(120.dp)
+                        .offset((offset + additionOffset).x.toDp(), (offset + additionOffset).y.toDp())
+                        .onGloballyPositioned {
+                            bounds = it.boundsInRoot()
+                        }
+                        .scale(scale)
+                        .alpha(scale + 0.2f)
+                )
+            }
         }
     }
 }
