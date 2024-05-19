@@ -164,9 +164,9 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
     }
 
     override suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant) {
-        borrowList.items.add(
+        val batch =
             BorrowBatch(Identifier(), borrower.id, books.map(Book::id), System.currentTimeMillis(), due.toEpochMilli())
-        )
+        borrowList.items.add(batch)
         borrowList.sort(this)
         saveBorrows()
     }

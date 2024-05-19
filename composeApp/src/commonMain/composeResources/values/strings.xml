@@ -28,7 +28,13 @@
         <item quantity="one">%1$d borrow</item>
         <item quantity="other">%1$d borrows</item>
     </plurals>
-    <string name="borrowing_a_book_para">Borrowing a book</string>
+    <plurals name="lending_books_para">
+        <item quantity="one">Lending a book</item>
+        <item quantity="two">Lending two books</item>
+        <item quantity="few">Lending a few books</item>
+        <item quantity="many">Lending many books</item>
+        <item quantity="other">Lending books</item>
+    </plurals>
     <string name="unknown_book_para">Unknown book</string>
     <string name="clear_basket_para">Clear basket</string>
     <string name="drag_here_to_stage_para">Drag some books here to stage for borrowing</string>
