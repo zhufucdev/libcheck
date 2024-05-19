@@ -85,7 +85,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                                                 when (it) {
                                                     is Reader -> RouteType.Readers
                                                     is Book -> RouteType.Books
-                                                    is BorrowInstanced -> RouteType.Borrowing
+                                                    is BorrowLikeInstanced -> RouteType.Borrowing
                                                     else -> throw IllegalArgumentException()
                                                 },
                                                 RevealParameters(it.id)
@@ -265,7 +265,7 @@ fun SearchResult(result: Searchable, model: AppViewModel, onClick: () -> Unit) {
                 imageVector = when (result) {
                     is Reader -> Icons.Default.Person
                     is Book -> Icons.Default.Book
-                    is BorrowInstanced -> Icons.Default.Key
+                    is BorrowLikeInstanced -> Icons.Default.Key
                     else -> Icons.Default.QuestionMark
                 },
                 contentDescription = ""
