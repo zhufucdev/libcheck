@@ -235,7 +235,7 @@ private fun EditReaderDialog(
                         onDismissRequest = { tierMenuExpanded = false },
                     ) {
                         ReaderTier.entries.forEach { tier ->
-                            if (tier.ordinal >= ReaderTier.TIER_PLATINUM.ordinal) {
+                            if (tier.ordinal > ReaderTier.TIER_PLATINUM.ordinal) {
                                 return@forEach
                             }
                             DropdownMenuItem(
