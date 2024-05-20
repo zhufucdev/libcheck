@@ -133,10 +133,13 @@ fun DataSourcePreferences(config: Configurations, modifier: Modifier = Modifier)
 @Composable
 private fun UserTiers(model: Configurations) {
     var uniTransform by remember { mutableStateOf(model.unifiedCreditTransformer.expr) }
+    val uniTransParsed by remember { derivedStateOf { CreditTransformer(uniTransform).compileOrNull() } }
 
     DisposableEffect(Unit) {
         onDispose {
-            model.unifiedCreditTransformer = CreditTransformer(uniTransform)
+            uniTransParsed?.let {
+                model.unifiedCreditTransformer = it
+            }
         }
     }
 
@@ -144,7 +147,9 @@ private fun UserTiers(model: Configurations) {
         val captured = uniTransform
         delay(1.seconds)
         if (captured == uniTransform) {
-            model.unifiedCreditTransformer = CreditTransformer(captured)
+            uniTransParsed?.let {
+                model.unifiedCreditTransformer = it
+            }
         }
     }
 
@@ -165,6 +170,7 @@ private fun UserTiers(model: Configurations) {
             onValueChange = { uniTransform = it },
             enabled = model.useUnifiedTierModel,
             label = { Text(stringResource(Res.string.transformation_para)) },
+            isError = uniTransParsed == null,
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(PaddingLarge))
@@ -199,22 +205,25 @@ private fun UserTierPreference(
     modifier: Modifier = Modifier,
 ) {
     var baseCredit by remember { mutableStateOf(model.baseCredit.toString()) }
-    var creditParsed by remember { mutableFloatStateOf(model.baseCredit) }
+    val creditParsed by remember { derivedStateOf { baseCredit.toFloatOrNull() ?: -1f } }
     var expr by remember { mutableStateOf(model.transformer.expr) }
+    val exprParsed by remember { derivedStateOf { CreditTransformer(expr).compileOrNull() } }
 
     DisposableEffect(true) {
         onDispose {
-            if (creditParsed < 0f) {
+            val credit = creditParsed
+            val expp = exprParsed
+            if (credit < 0f || expp == null) {
                 return@onDispose
             }
             onValueChanged(
-                TierModel(creditParsed, CreditTransformer(expr))
+                TierModel(creditParsed, expp)
             )
         }
     }
 
     LaunchedEffect(creditParsed, expr) {
-        if (creditParsed < 0) {
+        if (creditParsed < 0 || exprParsed == null) {
             return@LaunchedEffect
         }
         val credit = creditParsed
@@ -228,10 +237,7 @@ private fun UserTierPreference(
     Column(modifier) {
         OutlinedTextField(
             value = baseCredit,
-            onValueChange = {
-                baseCredit = it
-                creditParsed = it.toFloatOrNull() ?: -1f
-            },
+            onValueChange = { baseCredit = it },
             isError = creditParsed < 0,
             label = { Text(stringResource(Res.string.base_creditability_para)) },
             modifier = Modifier.fillMaxWidth()
@@ -241,6 +247,7 @@ private fun UserTierPreference(
                 value = expr,
                 onValueChange = { expr = it },
                 label = { Text(stringResource(Res.string.creditability_transformation_para)) },
+                isError = exprParsed == null,
                 modifier = Modifier.fillMaxWidth()
             )
         }

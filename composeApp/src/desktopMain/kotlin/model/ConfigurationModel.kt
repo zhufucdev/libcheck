@@ -119,6 +119,13 @@ data class CreditTransformer(val expr: String = "5 * x") {
         )
     }
 
+    fun compileOrNull(): CreditTransformer? = try {
+        exprCompiled
+        this
+    } catch (e: Exception) {
+        null
+    }
+
     fun transform(credit: Float): Double = exprCompiled.evaluate((credit).toDouble())
 }
 
