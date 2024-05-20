@@ -24,6 +24,10 @@
     <string name="name_para">Name</string>
     <string name="no_readers_available_para">No readers available</string>
     <string name="no_readers_available_des">Create new readers by clicking on the right bottom button</string>
+    <plurals name="borrows_creditability_span">
+        <item quantity="one">%1$d borrow, %2$s creditability</item>
+        <item quantity="other">%1$d borrows, %2$s creditability</item>
+    </plurals>
     <plurals name="borrows_span">
         <item quantity="one">%1$d borrow</item>
         <item quantity="other">%1$d borrows</item>
@@ -100,9 +104,15 @@
     <string name="unknown_book_span">unknown book</string>
     <string name="reveal_in_books_para">Reveal in books</string>
     <string name="data_source_para">Data source</string>
-    <string name="reader_tiers">Reader tiers</string>
+    <string name="reader_tiers_para">Reader tiers</string>
     <string name="use_same_creditability_transformation_for_each_tier_para">Use the same creditability transformation for each tier</string>
     <string name="base_creditability_para">Base creditability</string>
     <string name="creditability_transformation_para">Creditability transformation</string>
     <string name="transformation_para">Transformation</string>
+    <string name="reader_creditability_para">Reader creditability</string>
+    <string name="readers_creditability_decreased_para">%1$s's creditability decreased</string>
+    <string name="readers_creditability_increased_para">%1$s's creditability increased</string>
+    <string name="details_para">Details</string>
+    <string name="creditability_details_para">Creditability details</string>
+    <string name="reset_para">Reset</string>
 </resources>

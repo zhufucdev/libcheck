@@ -73,7 +73,7 @@ data class Book(
 }
 
 @Serializable
-class Reader(
+data class Reader(
     override val name: String,
     override val id: Identifier,
     val avatarUri: String,

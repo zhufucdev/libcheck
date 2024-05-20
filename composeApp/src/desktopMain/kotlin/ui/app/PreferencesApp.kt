@@ -17,6 +17,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
+import extension.toFixed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.*
@@ -60,8 +61,11 @@ fun PreferencesApp(model: Configurations, navigator: NavigationModel) {
         ) {
             Caption(stringResource(Res.string.data_source_para))
             DataSourcePreferences(model)
-            Caption(stringResource(Res.string.reader_tiers))
+            Caption(stringResource(Res.string.reader_tiers_para))
             UserTiers(model)
+            Caption(stringResource(Res.string.reader_creditability_para))
+            ReaderCreditability(model)
+            Spacer(Modifier.height(PaddingLarge))
         }
     }
 }
@@ -251,6 +255,23 @@ private fun UserTierPreference(
                 modifier = Modifier.fillMaxWidth()
             )
         }
+    }
+}
+
+const val MAX_STEP = 0.2f
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun ReaderCreditability(model: Configurations) {
+    FlowRow(horizontalArrangement = Arrangement.End, modifier = Modifier.padding(horizontal = PaddingLarge)) {
+        Slider(
+            value = model.creditStep,
+            onValueChange = { model.creditStep = it },
+            valueRange = 0f..MAX_STEP,
+        )
+        Text(
+            text = model.creditStep.toFixed(1000).toString()
+        )
     }
 }
 

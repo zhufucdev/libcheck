@@ -23,7 +23,9 @@ import androidx.compose.ui.layout.boundsInRoot
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.dp
 import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
+import extension.getClearCredit
 import extension.takeIfInstanceOf
+import extension.toFixed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -118,6 +120,7 @@ fun ReadersApp(model: AppViewModel) {
         DetailedReaderDialog(
             model = it,
             library = model.library,
+            configurations = model.configurations,
             onDismissRequest = { model.navigator.replace() },
             onRevealRequest = {
                 model.navigator.push(
@@ -414,6 +417,7 @@ private fun ReaderList(
 private fun DetailedReaderDialog(
     model: Reader,
     library: Library,
+    configurations: Configurations,
     onDismissRequest: () -> Unit,
     onRevealRequest: () -> Unit,
 ) {
@@ -446,7 +450,8 @@ private fun DetailedReaderDialog(
                         Text(
                             text = with(library) {
                                 val b = model.getBorrows().size
-                                pluralStringResource(Res.plurals.borrows_span, b, b)
+                                val cc = model.getClearCredit(configurations).toFixed(1000).toString()
+                                pluralStringResource(Res.plurals.borrows_creditability_span, b, b, cc)
                             },
                             style = MaterialTheme.typography.bodyMedium
                         )

@@ -21,33 +21,37 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
+import extension.calculateCredit
+import extension.getClearCredit
 import extension.takeIfInstanceOf
+import extension.toFixed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import resources.*
-import ui.LaunchReveal
-import ui.PaddingLarge
-import ui.PaddingSmall
+import ui.*
 import ui.component.*
-import ui.rememberRevealAnimation
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
+import kotlin.math.abs
 import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun BorrowingApp(model: AppViewModel) {
-    val formatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
     val coroutine = rememberCoroutineScope()
+    val snackbars = remember { SnackbarHostState() }
+    val formatter = remember { DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM) }
     val now = rememberNow()
     val listState = rememberLazyListState()
     val borrows = model.library.borrows.let { borrows ->
@@ -59,9 +63,37 @@ fun BorrowingApp(model: AppViewModel) {
         }
     }
 
+    var judgingReader by remember { mutableStateOf<JudgeReaderModel?>(null) }
+
+    val onReturn: (borrow: BorrowLike) -> Unit = { borrow ->
+        coroutine.launch {
+            with(model.library) {
+                borrow.setReturned()
+            }
+            val onTime = Instant.now().toEpochMilli() <= borrow.dueTime
+            val reader = model.library.getReader(borrow.readerId) ?: return@launch
+            val newCredit = calculateCredit(reader, model.configurations, model.configurations.creditStep, onTime)
+            model.library.updateReader(reader.copy(creditability = newCredit.toFloat()))
+            val res = snackbars.showSnackbar(
+                message = getString(
+                    if (onTime) Res.string.readers_creditability_increased_para
+                    else Res.string.readers_creditability_decreased_para,
+                    reader.name
+                ),
+                withDismissAction = true,
+                actionLabel = getString(Res.string.details_para)
+            )
+            if (res == SnackbarResult.ActionPerformed) {
+                judgingReader = JudgeReaderModel(reader, onTime)
+            }
+        }
+    }
+
     LaunchReveal(model.library.borrows, model, listState)
 
-    Scaffold {
+    Scaffold(
+        snackbarHost = { SnackbarHost(snackbars) }
+    ) {
         if (borrows.isEmpty()) {
             HeadingPlaceholder(
                 imageVector = Icons.Default.VpnKeyOff,
@@ -122,7 +154,8 @@ fun BorrowingApp(model: AppViewModel) {
                                         formatter = formatter,
                                         now = now,
                                         hasSeparator = hasSeparator,
-                                        modifier = Modifier.animateItemPlacement()
+                                        modifier = Modifier.animateItemPlacement(),
+                                        onReturnRequest = { onReturn(borrow) }
                                     )
 
                                 is BorrowBatch ->
@@ -133,7 +166,8 @@ fun BorrowingApp(model: AppViewModel) {
                                         formatter = formatter,
                                         now = now,
                                         hasSeparator = hasSeparator,
-                                        modifier = Modifier.animateItemPlacement()
+                                        modifier = Modifier.animateItemPlacement(),
+                                        onReturnRequest = { onReturn(borrow) }
                                     )
                             }
                         }
@@ -141,6 +175,21 @@ fun BorrowingApp(model: AppViewModel) {
                 }
             }
         }
+    }
+
+    judgingReader?.let {
+        JudgeReaderDialog(
+            model = it,
+            configurations = model.configurations,
+            onDismissRequest = {
+                judgingReader = null
+            },
+            onConfirmRequest = { r ->
+                coroutine.launch {
+                    model.library.updateReader(r)
+                }
+            }
+        )
     }
 }
 
@@ -153,16 +202,17 @@ private fun BorrowItem(
     formatter: DateTimeFormatter,
     now: Instant,
     hasSeparator: Boolean,
+    onReturnRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     BasicBorrowLike(
         model = model,
-        library = app.library,
         backgroundColor = backgroundColor,
         formatter = formatter,
         now = now,
         modifier = modifier,
-        separator = hasSeparator
+        separator = hasSeparator,
+        onReturnRequest = onReturnRequest
     ) {
         val book = remember(model) { app.library.getBook(model.bookId) }
         if (book == null) {
@@ -250,6 +300,7 @@ private fun BorrowBatchItem(
     formatter: DateTimeFormatter,
     now: Instant,
     hasSeparator: Boolean,
+    onReturnRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val filtering by remember(model) {
@@ -269,11 +320,11 @@ private fun BorrowBatchItem(
     Column(modifier) {
         BasicBorrowLike(
             model = model,
-            library = app.library,
             backgroundColor = backgroundColor,
             formatter = formatter,
             now = now,
             separator = hasSeparator && !booksExpanded,
+            onReturnRequest = onReturnRequest
         ) {
             TextButton(
                 enabled = !filtering,
@@ -382,12 +433,12 @@ private fun BorrowBatchItem(
 @Composable
 private fun BasicBorrowLike(
     model: BorrowLike,
-    library: Library,
     backgroundColor: Color,
     formatter: DateTimeFormatter,
     now: Instant,
     separator: Boolean,
     modifier: Modifier = Modifier,
+    onReturnRequest: () -> Unit,
     content: @Composable FlowRowScope.() -> Unit,
 ) {
     val coroutine = rememberCoroutineScope()
@@ -469,11 +520,7 @@ private fun BasicBorrowLike(
                 },
                 content = {
                     IconButton(
-                        onClick = {
-                            coroutine.launch {
-                                with(library) { model.setReturned() }
-                            }
-                        },
+                        onClick = onReturnRequest,
                         content = {
                             Icon(imageVector = Icons.Default.Archive, contentDescription = "")
                         },
@@ -548,4 +595,84 @@ private fun ReconstructButton(
             )
         }
     }
+}
+
+private data class JudgeReaderModel(val reader: Reader, val onTime: Boolean)
+
+@Composable
+private fun JudgeReaderDialog(
+    model: JudgeReaderModel,
+    configurations: Configurations,
+    onDismissRequest: () -> Unit,
+    onConfirmRequest: (Reader) -> Unit,
+) {
+    val initialStep = remember(model) { if (model.onTime) configurations.creditStep else -configurations.creditStep }
+    var step by remember { mutableFloatStateOf(initialStep) }
+    val original by remember(
+        model.reader,
+        configurations
+    ) { derivedStateOf { model.reader.getClearCredit(configurations) } }
+    val currentReader by remember(model.reader, configurations) {
+        derivedStateOf {
+            model.reader.copy(
+                creditability = calculateCredit(
+                    reader = model.reader,
+                    configurations = configurations,
+                    step = abs(step),
+                    positive = step > 0
+                ).toFloat()
+            )
+        }
+    }
+    val current by remember(currentReader, configurations) {
+        derivedStateOf {
+            currentReader.getClearCredit(
+                configurations
+            )
+        }
+    }
+
+    AlertDialog(
+        icon = { Icon(imageVector = Icons.Default.CreditScore, contentDescription = "creditability") },
+        title = { Text(stringResource(Res.string.creditability_details_para)) },
+        text = {
+            Column(Modifier.fillMaxWidth()) {
+                CompositionLocalProvider(LocalTextStyle provides MaterialTheme.typography.titleLarge.copy(fontFamily = FontFamily.Monospace)) {
+                    Row(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(original.toFixed(1000).toString())
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
+                            contentDescription = "credit changed to",
+                            modifier = Modifier.padding(horizontal = PaddingMedium)
+                        )
+                        Text(current.toFixed(1000).toString())
+                    }
+                }
+                Slider(
+                    value = step,
+                    onValueChange = { step = it },
+                    valueRange = -MAX_STEP..MAX_STEP
+                )
+            }
+        },
+        onDismissRequest = onDismissRequest,
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirmRequest(currentReader)
+                onDismissRequest()
+            }) {
+                Text(stringResource(Res.string.ok_caption))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = {
+                step = initialStep
+            }) {
+                Text(stringResource(Res.string.reset_para))
+            }
+        }
+    )
 }
