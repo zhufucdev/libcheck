@@ -115,4 +115,5 @@
     <string name="details_para">Details</string>
     <string name="creditability_details_para">Creditability details</string>
     <string name="reset_para">Reset</string>
+    <string name="default_creditability_step">Default creditability step</string>
 </resources>

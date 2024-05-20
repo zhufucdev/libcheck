@@ -260,17 +260,24 @@ private fun UserTierPreference(
 
 const val MAX_STEP = 0.2f
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun ReaderCreditability(model: Configurations) {
-    FlowRow(horizontalArrangement = Arrangement.End, modifier = Modifier.padding(horizontal = PaddingLarge)) {
+    Column(modifier = Modifier.padding(horizontal = PaddingLarge)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = stringResource(Res.string.default_creditability_step),
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = PaddingMedium).padding(top = PaddingLarge)
+                    .weight(1f)
+            )
+            Text(
+                text = model.creditStep.toFixed(1000).toString(),
+            )
+        }
         Slider(
             value = model.creditStep,
             onValueChange = { model.creditStep = it },
             valueRange = 0f..MAX_STEP,
-        )
-        Text(
-            text = model.creditStep.toFixed(1000).toString()
         )
     }
 }
