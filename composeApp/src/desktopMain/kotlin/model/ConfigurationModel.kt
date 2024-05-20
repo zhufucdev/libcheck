@@ -150,6 +150,8 @@ interface Configurations {
     var useUnifiedTierModel: Boolean
     var unifiedCreditTransformer: CreditTransformer
 
+    var creditStep: Float
+
     val sources: MutableMap<DataSourceType, DataSource>
     var currentSourceType: DataSourceType
     var colorMode: ColorMode

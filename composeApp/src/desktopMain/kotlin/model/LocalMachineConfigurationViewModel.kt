@@ -2,10 +2,7 @@
 
 package model
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -20,16 +17,22 @@ import java.io.File
 import kotlin.reflect.full.createInstance
 
 @Serializable
-private data class ConfigurationsModel(
-    val dataSource: DataSourceType = DataSourceType.Local,
-    val tiers: Map<ReaderTier, TierModel> = mapOf(
+private data class TierStorageModel(
+    val models: Map<ReaderTier, TierModel> = mapOf(
         ReaderTier.TIER_STARTER to TierModel(baseCredit = 0.2f),
         ReaderTier.TIER_SILVER to TierModel(baseCredit = 0.4f),
         ReaderTier.TIER_CHROMIUM to TierModel(baseCredit = 0.6f),
         ReaderTier.TIER_PLATINUM to TierModel(baseCredit = 0.8f)
     ),
-    val unifyTier: Boolean = true,
-    val uniTransformer: CreditTransformer = CreditTransformer(),
+    val step: Float = 0.01f,
+    val unify: Boolean = true,
+    val transformer: CreditTransformer = CreditTransformer(),
+)
+
+@Serializable
+private data class ConfigurationsModel(
+    val tiers: TierStorageModel = TierStorageModel(),
+    val dataSource: DataSourceType = DataSourceType.Local,
     val colorMode: ColorMode = ColorMode.System,
     val sorting: SortModelSnapshot = SortModelSnapshot(),
     val firstLaunch: Boolean = true,
@@ -56,9 +59,11 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
         }.toTypedArray())
     )
     override val tiers: MutableMap<ReaderTier, TierModel> =
-        mutableStateMapOf(*(model.tiers.entries.map { it.key to it.value }).toTypedArray())
-    override var useUnifiedTierModel: Boolean by mutableStateOf(model.unifyTier)
-    override var unifiedCreditTransformer: CreditTransformer by mutableStateOf(model.uniTransformer)
+        mutableStateMapOf(*(model.tiers.models.entries.map { it.key to it.value }).toTypedArray())
+    override var useUnifiedTierModel: Boolean by mutableStateOf(model.tiers.unify)
+    override var unifiedCreditTransformer: CreditTransformer by mutableStateOf(model.tiers.transformer)
+    override var creditStep: Float by mutableFloatStateOf(model.tiers.step)
+
     override var currentSourceType: DataSourceType by mutableStateOf(model.dataSource)
     override var colorMode: ColorMode by mutableStateOf(model.colorMode)
     override var sortModels: SortModelSnapshot by mutableStateOf(model.sorting)
@@ -74,9 +79,12 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
 
     override suspend fun save() {
         val model = ConfigurationsModel(
-            tiers = tiers,
-            unifyTier = useUnifiedTierModel,
-            uniTransformer = unifiedCreditTransformer,
+            tiers = TierStorageModel(
+                unify = useUnifiedTierModel,
+                transformer = unifiedCreditTransformer,
+                models = tiers,
+                step = creditStep
+            ),
             firstLaunch = firstLaunch,
             dataSource = currentSourceType,
             colorMode = colorMode,
