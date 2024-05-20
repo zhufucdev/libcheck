@@ -120,7 +120,7 @@ class RemoteLibrary(
         val authResult = authenticationChannel.authorize(auth)
         password = null // for security
         if (!authResult.allowed) {
-            throw AccessDeniedException("password authentication failed")
+            throw AccessDeniedException("Password authentication failed")
         }
         accessToken = authResult.token
         val syncProcess by mutableFloatStateOf(0f)
@@ -249,9 +249,9 @@ class RemoteLibrary(
     private fun UpdateEffect.maybeThrow(): UpdateEffect =
         when (this) {
             UpdateEffect.EFFECT_UNSPECIFIED, UpdateEffect.EFFECT_OK -> this
-            UpdateEffect.EFFECT_NOT_FOUND -> throw NullPointerException("book not found")
-            UpdateEffect.EFFECT_FORBIDDEN -> throw AccessDeniedException("access forbidden")
-            UpdateEffect.UNRECOGNIZED -> throw IllegalStateException("unrecognized effect")
+            UpdateEffect.EFFECT_NOT_FOUND -> throw NullPointerException("Book not found")
+            UpdateEffect.EFFECT_FORBIDDEN -> throw AccessDeniedException("Access forbidden")
+            UpdateEffect.UNRECOGNIZED -> throw IllegalStateException("Unrecognized effect")
         }
 
     class AccessDeniedException(message: String) : RuntimeException(message)
