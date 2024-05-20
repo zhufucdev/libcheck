@@ -18,6 +18,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.coroutineScope
@@ -40,6 +41,14 @@ import ui.component.RemoteDataSourcePreferences
 
 @Composable
 fun SetUpApp(windowSize: WindowSize, model: SetUpAppModel) {
+    if (windowSize >= WindowSize.WIDE) {
+        Image(
+            painter = painterResource(Res.drawable.flat_mountains),
+            contentScale = ContentScale.Crop,
+            contentDescription = "generic background",
+            modifier = Modifier.fillMaxSize()
+        )
+    }
     Scaffold(
         topBar = {
             Popup {
@@ -47,7 +56,8 @@ fun SetUpApp(windowSize: WindowSize, model: SetUpAppModel) {
                     LinearProgressIndicator(Modifier.fillMaxWidth())
                 }
             }
-        }
+        },
+        containerColor = Color.Transparent
     ) {
         Box(
             contentAlignment = Alignment.Center,
