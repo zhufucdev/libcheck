@@ -33,6 +33,7 @@ kotlin {
             implementation(libs.mpfilepicker)
             implementation(libs.nativeparameteraccess)
             implementation(libs.javakeyring)
+            implementation(libs.crunch)
 
             implementation(libs.protobuf.java)
             implementation(libs.protobuf.kotlin)

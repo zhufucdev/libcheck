@@ -60,6 +60,8 @@ import ui.PaddingSmall
 import ui.toDateString
 import ui.toTimeString
 import java.time.Instant
+import java.time.ZoneId
+import java.time.temporal.ChronoField
 import java.time.temporal.ChronoUnit
 import java.util.*
 import kotlin.math.pow
@@ -270,7 +272,7 @@ fun Basket(model: AppViewModel) {
         if (batchContent.isNotEmpty()) {
             Popup(alignment = Alignment.Center) {
                 val density = LocalDensity.current
-                DragBooksAvatar(
+                BookBatchAvatar(
                     books = batchContent,
                     modifier = with(density) {
                         Modifier
@@ -283,12 +285,13 @@ fun Basket(model: AppViewModel) {
         }
     }
 
-
     borrower?.takeIf { droppedBooks.isNotEmpty() }?.let {
+        val dueTime = remember { model.getDueTime(it) }
         BorrowDialog(
             onDismissRequest = { droppedBooks = emptyList() },
             borrowingOut = droppedBooks,
             borrower = it,
+            dueTime = dueTime,
             onBorrow = { due ->
                 coroutine.launch {
                     if (droppedBooks.size == 1) {
@@ -313,11 +316,18 @@ private fun BorrowDialog(
     onDismissRequest: () -> Unit,
     borrowingOut: List<Book>,
     borrower: Reader,
+    dueTime: Instant,
     onBorrow: (Instant) -> Unit,
 ) {
     var editor by remember { mutableStateOf<Editor?>(null) }
-    val timePickerState = rememberTimePickerState()
-    val datePickerState = rememberDatePickerState(Instant.now().toEpochMilli())
+    val timePickerState =
+        dueTime.atZone(ZoneId.systemDefault()).let {
+            rememberTimePickerState(
+                it.get(ChronoField.HOUR_OF_DAY),
+                it.get(ChronoField.MINUTE_OF_HOUR)
+            )
+        }
+    val datePickerState = rememberDatePickerState(dueTime.toEpochMilli())
 
     AlertDialog(
         onDismissRequest = onDismissRequest,
@@ -342,7 +352,7 @@ private fun BorrowDialog(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    DragBooksAvatar(borrowingOut)
+                    BookBatchAvatar(borrowingOut)
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowRightAlt,
                         contentDescription = "",
@@ -402,7 +412,7 @@ private fun BorrowDialog(
 }
 
 @Composable
-private fun DragBooksAvatar(books: List<Book>, modifier: Modifier = Modifier) {
+private fun BookBatchAvatar(books: List<Book>, modifier: Modifier = Modifier) {
     if (books.size == 1) {
         BookAvatar(uri = books[0].avatarUri, modifier = Modifier.size(120.dp).then(modifier))
     } else if (books.size > 1) {

@@ -204,9 +204,9 @@ fun RemoteDataSourcePreferences(
         ) {
             Text(
                 stringResource(Res.string.use_transport_layer_security_para),
-                style = MaterialTheme.typography.bodyLarge.let { if (actualEnabled) it else it.disabled }
+                style = MaterialTheme.typography.bodyLarge.let { if (actualEnabled) it else it.disabled },
+                modifier = Modifier.weight(1f)
             )
-            Spacer(Modifier.weight(1f))
             Switch(
                 checked = useTls,
                 onCheckedChange = { useTls = it },

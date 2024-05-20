@@ -10,6 +10,7 @@ dependencyResolutionManagement {
         mavenCentral()
         maven("https://maven.aliyun.com/repository/public/")
         maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+        maven("https://redempt.dev")
         google()
     }
 }

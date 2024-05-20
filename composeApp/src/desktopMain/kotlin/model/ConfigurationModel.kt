@@ -5,14 +5,22 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.LocationCity
 import androidx.compose.ui.graphics.vector.ImageVector
+import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
 import getHostName
 import io.grpc.ManagedChannelBuilder
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.descriptors.SerialDescriptor
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.Encoder
+import kotlinx.serialization.serializer
 import library.LocalMachineLibrary
 import library.RemoteLibrary
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.StringResource
+import redempt.crunch.Crunch
+import redempt.crunch.functional.EvaluationEnvironment
 import resources.*
 import java.io.File
 import kotlin.reflect.KClass
@@ -100,8 +108,42 @@ data class SortModelSnapshot(
     val borrows: SortModel<BorrowSortable> = SortModel(SortOrder.ASCENDING, BorrowSortable.BOOK_ID),
 )
 
+@Serializable(CreditTransformerSerializer::class)
+data class CreditTransformer(val expr: String = "5 * x") {
+    private val exprCompiled by lazy {
+        Crunch.compileExpression(
+            expr,
+            EvaluationEnvironment().apply {
+                setVariableNames("x")
+            }
+        )
+    }
+
+    fun transform(credit: Float): Double = exprCompiled.evaluate((credit).toDouble())
+}
+
+class CreditTransformerSerializer : KSerializer<CreditTransformer> {
+    private val delegateSerializer = serializer<String>()
+    override val descriptor: SerialDescriptor = delegateSerializer.descriptor
+
+    override fun deserialize(decoder: Decoder): CreditTransformer {
+        return CreditTransformer(delegateSerializer.deserialize(decoder))
+    }
+
+    override fun serialize(encoder: Encoder, value: CreditTransformer) {
+        delegateSerializer.serialize(encoder, value.expr)
+    }
+}
+
+@Serializable
+data class TierModel(val baseCredit: Float, val transformer: CreditTransformer = CreditTransformer())
+
 interface Configurations {
-    var sources: MutableMap<DataSourceType, DataSource>
+    val tiers: MutableMap<ReaderTier, TierModel>
+    var useUnifiedTierModel: Boolean
+    var unifiedCreditTransformer: CreditTransformer
+
+    val sources: MutableMap<DataSourceType, DataSource>
     var currentSourceType: DataSourceType
     var colorMode: ColorMode
     var sortModels: SortModelSnapshot

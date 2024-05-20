@@ -99,4 +99,10 @@
     <string name="unknown_reader_span">unknown reader</string>
     <string name="unknown_book_span">unknown book</string>
     <string name="reveal_in_books_para">Reveal in books</string>
+    <string name="data_source_para">Data source</string>
+    <string name="reader_tiers">Reader tiers</string>
+    <string name="use_same_creditability_transformation_for_each_tier_para">Use the same creditability transformation for each tier</string>
+    <string name="base_creditability_para">Base creditability</string>
+    <string name="creditability_transformation_para">Creditability transformation</string>
+    <string name="transformation_para">Transformation</string>
 </resources>
