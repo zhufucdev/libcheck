@@ -12,7 +12,11 @@ suspend fun <T : Identifiable> UniqueIdentifierStateList(flow: Flow<Pair<Identif
 }
 
 object UniqueIdentifierStateList {
-    suspend fun <T : Identifiable> bindTo(list: SnapshotStateList<T>, flow: Flow<Pair<Identifier, T?>>) {
+    suspend fun <T : Identifiable> bindTo(
+        list: SnapshotStateList<T>,
+        flow: Flow<Pair<Identifier, T?>>,
+        onUpdate: (suspend (SnapshotStateList<T>) -> Unit)? = null,
+    ) {
         flow.collect { next ->
             val value = next.second
             if (value != null) {
@@ -22,8 +26,12 @@ object UniqueIdentifierStateList {
                 } else {
                     list.add(value)
                 }
+                onUpdate?.invoke(list)
             } else {
-                list.removeIf { it.id == next.first }
+                val removed = list.removeIf { it.id == next.first }
+                if (removed) {
+                    onUpdate?.invoke(list)
+                }
             }
         }
     }

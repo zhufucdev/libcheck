@@ -7,14 +7,11 @@ import com.sqlmaster.proto.*
 import com.sqlmaster.proto.LibraryOuterClass.UpdateEffect
 import currentPlatform
 import io.grpc.ManagedChannel
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.cancel
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
-import kotlinx.coroutines.launch
 import model.*
 import java.time.Instant
 
@@ -138,6 +135,19 @@ class RemoteLibrary(
             ended++
             if (ended == 4) {
                 state = LibraryState.Idle
+                coroutineScope.launch {
+                    coroutineScope {
+                        launch {
+                            sorter.sortBooks()
+                        }
+                        launch {
+                            sorter.sortReaders()
+                        }
+                        launch {
+                            sorter.sortBorrows()
+                        }
+                    }
+                }
             } else if (ended < 4) {
                 state = LibraryState.Initializing(ended / 4f)
             }
@@ -155,7 +165,11 @@ class RemoteLibrary(
                     }
                     .filter { !it.end }
                     .map { Identifier.parse(it.id) to it.readerOrNull?.toModel() }
-            )
+            ) {
+                if (state !is LibraryState.Initializing) {
+                    sorter.sortReaders()
+                }
+            }
         }
         coroutineScope.launch {
             UniqueIdentifierStateList.bindTo(
@@ -169,7 +183,11 @@ class RemoteLibrary(
                     }
                     .filter { !it.end }
                     .map { Identifier.parse(it.id) to it.bookOrNull?.toModel() }
-            )
+            ) {
+                if (state !is LibraryState.Initializing) {
+                    sorter.sortBooks()
+                }
+            }
         }
         coroutineScope.launch {
             UniqueIdentifierStateList.bindTo(
@@ -193,7 +211,11 @@ class RemoteLibrary(
                         .filter { !it.end }
                         .map { Identifier.parse(it.id) to it.borrowOrNull?.toModel() }
                 )
-            )
+            ) {
+                if (state !is LibraryState.Initializing) {
+                    sorter.sortBorrows()
+                }
+            }
         }
     }
 
