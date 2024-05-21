@@ -55,6 +55,12 @@ fun LocalDataSourcePreferences(
         state.loading = false
     }
 
+    DisposableEffect(true) {
+        onDispose {
+            onValueChanged(source.copy(rootPath = rootPath.takeIf { it.isNotBlank() }))
+        }
+    }
+
     Box(modifier) {
         OutlinedTextField(
             value = rootPath,
@@ -175,6 +181,19 @@ private fun BasicRemoteDataSourcePreferences(
     }
     LaunchedEffect(port, deviceName) {
         state.valid = portValid && deviceName.isNotBlank()
+    }
+
+    DisposableEffect(true) {
+        onDispose {
+            onValueChanged(
+                DataSource.Remote(
+                    host,
+                    port.toInt(),
+                    deviceName,
+                    useTls,
+                )
+            )
+        }
     }
 
     Column(modifier) {

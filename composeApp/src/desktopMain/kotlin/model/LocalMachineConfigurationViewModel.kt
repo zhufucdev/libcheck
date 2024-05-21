@@ -72,9 +72,13 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
     override var firstLaunch: Boolean by mutableStateOf(model.firstLaunch)
 
     override var token: ByteArray? by mutableStateOf(
-        if (tokenFile.exists()) runBlocking { AesCipher() }.decrypt(
-            tokenFile.readBytes()
-        ) else null
+        if (tokenFile.exists()) try {
+            runBlocking { AesCipher() }.decrypt(
+                tokenFile.readBytes()
+            )
+        } catch (e: Exception) {
+            null
+        } else null
     )
 
     var sortModels = model.sorting

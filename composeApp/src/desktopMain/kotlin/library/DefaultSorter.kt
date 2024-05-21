@@ -38,8 +38,8 @@ class DefaultSorter(private val context: DataSource.Context, private val parent:
             sortOrder = order ?: bookModel.order
         )
         list.sort(parent)
-        bookModel = list.model
-        if (context is DataSource.Context.WithSortModel) {
+        if (bookModel != list.model && context is DataSource.Context.WithSortModel) {
+            bookModel = list.model
             context.sortModel = context.sortModel.copy(books = list.model)
             context.save()
         }
@@ -52,8 +52,8 @@ class DefaultSorter(private val context: DataSource.Context, private val parent:
             sortOrder = order ?: readerModel.order
         )
         list.sort()
-        readerModel = list.model
-        if (context is DataSource.Context.WithSortModel) {
+        if (readerModel != list.model && context is DataSource.Context.WithSortModel) {
+            readerModel = list.model
             context.sortModel = context.sortModel.copy(readers = list.model)
             context.save()
         }
@@ -66,8 +66,8 @@ class DefaultSorter(private val context: DataSource.Context, private val parent:
             sortOrder = order ?: borrowModel.order
         )
         list.sort(parent)
-        borrowModel = list.model
-        if (context is DataSource.Context.WithSortModel) {
+        if (borrowModel != list.model && context is DataSource.Context.WithSortModel) {
+            borrowModel = list.model
             context.sortModel = context.sortModel.copy(borrows = list.model)
             context.save()
         }
