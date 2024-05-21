@@ -28,7 +28,7 @@ fun LibraryOuterClass.Borrow.toModel(): Borrow = Borrow(
     bookId = Identifier.parse(bookId),
     time = time.toEpochMilli(),
     dueTime = dueTime.toEpochMilli(),
-    returnTime = returnTime?.toEpochMilli()
+    returnTime = returnTime.takeIf { hasReturnTime() }?.toEpochMilli()
 )
 
 fun LibraryOuterClass.BorrowBatch.toModel(): BorrowBatch = BorrowBatch(
@@ -37,7 +37,7 @@ fun LibraryOuterClass.BorrowBatch.toModel(): BorrowBatch = BorrowBatch(
     bookIds = bookIdsList.map(Identifier.Companion::parse),
     time = time.toEpochMilli(),
     dueTime = dueTime.toEpochMilli(),
-    returnTime = returnTime?.toEpochMilli()
+    returnTime = returnTime.takeIf { hasReturnTime() }?.toEpochMilli()
 )
 
 fun Timestamp(millis: Long) = timestamp {
