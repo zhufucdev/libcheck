@@ -111,7 +111,6 @@ fun DataSourcePreferences(config: Configurations, modifier: Modifier = Modifier)
                             onValueChanged = {
                                 config.sources[type] = it
                             },
-                            context = config,
                             modifier = Modifier.padding(start = PaddingLarge * 4, end = PaddingLarge)
                         )
 

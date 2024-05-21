@@ -37,6 +37,10 @@ sealed class DataSource {
         interface WithToken : Context {
             var token: ByteArray?
         }
+
+        interface WithPassword : Context {
+            val password: String
+        }
     }
 
     abstract fun initialize(context: Context): Library
@@ -53,14 +57,17 @@ sealed class DataSource {
         val remotePort: Int = 5411,
         val deviceName: String = getHostName(),
         val useTransportSecurity: Boolean = true,
-        val token: ByteArray? = null,
     ) : DataSource() {
         override fun initialize(context: Context): Library {
-            val channel = ManagedChannelBuilder
-                .forAddress(remoteHost, remotePort)
-                .let { if (useTransportSecurity) it.useTransportSecurity() else it.usePlaintext() }
-                .build()
-            return RemoteLibrary(channel, deviceName, context)
+            return RemoteLibrary(
+                deviceName = deviceName,
+                context = context,
+            ) {
+                ManagedChannelBuilder
+                    .forAddress(remoteHost, remotePort)
+                    .let { if (useTransportSecurity) it.useTransportSecurity() else it.usePlaintext() }
+                    .build()
+            }
         }
 
         override fun equals(other: Any?): Boolean {
@@ -167,6 +174,7 @@ interface Configurations {
     var firstLaunch: Boolean
 
     val dataSourceContext: DataSource.Context
+    var token: ByteArray?
 
     suspend fun save()
 }

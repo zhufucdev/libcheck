@@ -26,7 +26,6 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import currentPlatform
 import kotlinx.coroutines.delay
-import model.Configurations
 import model.DataSource
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
@@ -47,7 +46,6 @@ fun LocalDataSourcePreferences(
     state: PreferenceState = remember { PreferenceState() },
     source: DataSource.Local,
     onValueChanged: (DataSource.Local) -> Unit,
-    context: Configurations,
     modifier: Modifier = Modifier,
 ) {
     var rootPath by remember { mutableStateOf(source.rootPath ?: currentPlatform.dataDir.absolutePath) }
@@ -101,11 +99,10 @@ fun PasswordRemoteDataSourcePreferences(
     source: DataSource.Remote,
     state: PreferenceState = remember { PreferenceState(loading = false) },
     onValueChanged: (DataSource.Remote) -> Unit,
+    password: String,
     onPasswordChanged: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var password by remember { mutableStateOf(System.currentTimeMillis().toString()) }
-
     BasicRemoteDataSourcePreferences(
         enabled = enabled,
         source = source,
@@ -116,7 +113,9 @@ fun PasswordRemoteDataSourcePreferences(
         var showPassword by remember { mutableStateOf(false) }
         OutlinedTextField(
             value = password,
-            onValueChange = { password = it },
+            onValueChange = {
+                onPasswordChanged(it)
+            },
             label = { Text(stringResource(Res.string.password_para)) },
             enabled = actuallyEnabled,
             singleLine = true,

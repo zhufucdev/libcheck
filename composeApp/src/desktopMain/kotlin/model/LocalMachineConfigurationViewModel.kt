@@ -2,9 +2,11 @@
 
 package model
 
+import AesCipher
 import androidx.compose.runtime.*
 import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.KSerializer
@@ -45,6 +47,7 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
             put(DataSourceType.of(it), "${it.simpleName!!.lowercase()}_lib.preferences.json")
         }
     }
+    private val tokenFile = File(rootDir, "token")
 
     private val model =
         if (configFile.exists()) {
@@ -68,9 +71,15 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
     override var colorMode: ColorMode by mutableStateOf(model.colorMode)
     override var firstLaunch: Boolean by mutableStateOf(model.firstLaunch)
 
+    override var token: ByteArray? by mutableStateOf(
+        if (tokenFile.exists()) runBlocking { AesCipher() }.decrypt(
+            tokenFile.readBytes()
+        ) else null
+    )
+
     var sortModels = model.sorting
     override val dataSourceContext: DataSource.Context
-        get() = when (val source = sources[currentSourceType]!!) {
+        get() = when (sources[currentSourceType]!!) {
             is DataSource.Local -> object : DataSource.Context.WithRootPath, DataSource.Context.WithSortModel {
                 override val defaultRootPath: String = rootDir.absolutePath
                 override var sortModel: SortModelSnapshot by ::sortModels
@@ -81,10 +90,9 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
             is DataSource.Remote ->
                 object : DataSource.Context.WithSortModel, DataSource.Context.WithToken {
                     override var sortModel: SortModelSnapshot by ::sortModels
-                    override var token: ByteArray? = source.token
+                    override var token: ByteArray? by this@LocalMachineConfigurationViewModel::token
 
                     override suspend fun save() {
-                        sources[DataSourceType.Remote] = source.copy(token = token)
                         this@LocalMachineConfigurationViewModel.save()
                     }
                 }
@@ -118,6 +126,13 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
                         source,
                         it
                     )
+                }
+            }
+            token.let {
+                if (it != null) {
+                    tokenFile.writeBytes(AesCipher().encrypt(it))
+                } else {
+                    tokenFile.delete()
                 }
             }
         }

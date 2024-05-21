@@ -21,9 +21,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
-import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import model.*
+import kotlinx.coroutines.withContext
+import model.Configurations
+import model.DataSource
+import model.DataSourceType
+import model.SetUpAppModel
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -112,11 +116,17 @@ private fun Setup(
         remember { mutableStateMapOf(*(sources.map { (type, _) -> type to PreferenceState(loading = true) }).toTypedArray()) }
     val currentState by remember { derivedStateOf { states[configurations.currentSourceType]!! } }
     val coroutine = rememberCoroutineScope()
-    var library by remember { mutableStateOf<Library?>(null) }
+
+    var sourceCtx by remember { mutableStateOf(configurations.dataSourceContext) }
+    val library by remember(configurations, sourceCtx) { derivedStateOf {
+        configurations
+            .sources[configurations.currentSourceType]!!
+            .initialize(sourceCtx)
+    } }
 
     DisposableEffect(library) {
         onDispose {
-            library?.close()
+            library.close()
         }
     }
 
@@ -131,22 +141,14 @@ private fun Setup(
                 onPositiveClick = {
                     coroutine.launch {
                         model.working = true
-                        coroutineScope {
-                            launch {
-                                try {
-                                    val instance =
-                                        configurations
-                                            .sources[configurations.currentSourceType]!!
-                                            .initialize(configurations.dataSourceContext)
-                                    library = instance
-                                    instance.connect()
-                                } catch (e: Exception) {
-                                    model.connectionException = e
-                                }
+                        withContext(Dispatchers.IO) {
+                            try {
+                                library.connect()
+                            } catch (e: Exception) {
+                                model.connectionException = e
+                                e.printStackTrace()
                             }
-                            launch {
-                                configurations.save()
-                            }
+                            configurations.save()
                         }
                         model.working = false
                         if (model.connectionException == null) {
@@ -192,8 +194,11 @@ private fun Setup(
                         )
                         Spacer(Modifier.height(PaddingMedium))
                         when (type) {
-                            DataSourceType.Local -> LocalSource(configurations, !model.working, state)
-                            DataSourceType.Remote -> RemoteSource(configurations, !model.working, state)
+                            DataSourceType.Local ->
+                                LocalSource(configurations, !model.working, state) { ctx -> sourceCtx = ctx }
+
+                            DataSourceType.Remote ->
+                                RemoteSource(configurations, !model.working, state) { ctx -> sourceCtx = ctx }
                         }
                     }
                 }
@@ -279,25 +284,52 @@ private fun Pager(
 }
 
 @Composable
-private fun LocalSource(context: Configurations, enabled: Boolean, state: PreferenceState) {
+private fun LocalSource(
+    model: Configurations,
+    enabled: Boolean,
+    state: PreferenceState,
+    onContextChanged: (DataSource.Context) -> Unit,
+) {
+    LaunchedEffect(model) {
+        onContextChanged(model.dataSourceContext)
+    }
+
     LocalDataSourcePreferences(
         enabled = enabled,
         state = state,
-        source = context.sources[DataSourceType.Local]!! as DataSource.Local,
-        onValueChanged = { context.sources[DataSourceType.Local] = it },
-        context = context,
+        source = model.sources[DataSourceType.Local]!! as DataSource.Local,
+        onValueChanged = { model.sources[DataSourceType.Local] = it },
     )
 }
 
 @Composable
-private fun RemoteSource(context: Configurations, enabled: Boolean, state: PreferenceState) {
+private fun RemoteSource(
+    model: Configurations,
+    enabled: Boolean,
+    state: PreferenceState,
+    onContextChanged: (DataSource.Context) -> Unit,
+) {
+    var password by remember { mutableStateOf("") }
+
+    LaunchedEffect(password, model) {
+        onContextChanged(object : DataSource.Context.WithPassword, DataSource.Context.WithToken {
+            override val password: String = password
+            override var token: ByteArray? = null
+
+            override suspend fun save() {
+                model.token = token
+            }
+        })
+    }
+
     PasswordRemoteDataSourcePreferences(
         enabled = enabled,
-        source = context.sources[DataSourceType.Remote]!! as DataSource.Remote,
+        source = model.sources[DataSourceType.Remote]!! as DataSource.Remote,
         state = state,
-        onValueChanged = { context.sources[DataSourceType.Remote] = it },
+        onValueChanged = { model.sources[DataSourceType.Remote] = it },
+        password = password,
         onPasswordChanged = {
-
+            password = it
         }
     )
 }

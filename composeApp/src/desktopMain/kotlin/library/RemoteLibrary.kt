@@ -20,14 +20,15 @@ import model.*
 import java.time.Instant
 
 class RemoteLibrary(
-    private val channel: ManagedChannel,
     private val deviceName: String,
     private val context: DataSource.Context,
+    channelBuilder: () -> ManagedChannel,
 ) : Library {
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
-    private val libraryChannel = LibraryGrpcKt.LibraryCoroutineStub(channel)
-    private val authenticationChannel = AuthenticationGrpcKt.AuthenticationCoroutineStub(channel)
+    private val channel by lazy { channelBuilder.invoke() }
+    private val libraryChannel by lazy { LibraryGrpcKt.LibraryCoroutineStub(channel) }
+    private val authenticationChannel by lazy { AuthenticationGrpcKt.AuthenticationCoroutineStub(channel) }
 
     override var state: LibraryState by mutableStateOf(LibraryState.Initializing(0f))
     private lateinit var accessToken: ByteString
@@ -95,6 +96,22 @@ class RemoteLibrary(
             val authResult = authenticationChannel.authenticate(auth)
             if (authResult.allowed) {
                 accessToken = init
+            }
+        } else if (context is DataSource.Context.WithPassword) {
+            val auth = authorizationRequest {
+                password = context.password
+                deviceName = this@RemoteLibrary.deviceName
+                os = currentPlatform::class.simpleName!!
+            }
+            val res = authenticationChannel.authorize(auth)
+            if (res.allowed) {
+                accessToken = res.token
+                if (context is DataSource.Context.WithToken) {
+                    context.token = res.token.toByteArray()
+                    context.save()
+                }
+            } else {
+                throw AccessDeniedException("Password authorization failed")
             }
         } else {
             val pwdChan = Channel<String>()
@@ -291,6 +308,9 @@ class RemoteLibrary(
     override fun search(query: String) = searchFlow(query)
 
     override fun close() {
+        if (state is LibraryState.Initializing) {
+            return
+        }
         readers.clear()
         books.clear()
         borrows.clear()
