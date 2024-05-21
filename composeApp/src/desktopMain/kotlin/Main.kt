@@ -56,23 +56,23 @@ fun App(windowState: WindowState, configurations: Configurations) {
             ) {
                 PreferencesApp(configurations, navigator)
             }
-            val library by remember(configurations) {
-                derivedStateOf {
-                    configurations
-                        .sources[configurations.currentSourceType]!!
-                        .initialize(configurations)
-                }
-            }
-            DisposableEffect(library) {
-                onDispose {
-                    library.close()
-                }
-            }
             AnimatedVisibility(
                 visible = !configurations.firstLaunch && navigator.current.type.docked,
                 enter = fadeIn(),
                 exit = fadeOut()
             ) {
+                val library by remember(configurations) {
+                    derivedStateOf {
+                        configurations
+                            .sources[configurations.currentSourceType]!!
+                            .initialize(configurations)
+                    }
+                }
+                DisposableEffect(library) {
+                    onDispose {
+                        library.close()
+                    }
+                }
                 val model = remember(library, navigator, configurations) {
                     AppViewModel(library, navigator, configurations)
                 }

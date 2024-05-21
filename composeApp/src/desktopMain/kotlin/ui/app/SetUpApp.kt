@@ -23,10 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import model.Configurations
-import model.DataSource
-import model.DataSourceType
-import model.SetUpAppModel
+import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -115,6 +112,13 @@ private fun Setup(
         remember { mutableStateMapOf(*(sources.map { (type, _) -> type to PreferenceState(loading = true) }).toTypedArray()) }
     val currentState by remember { derivedStateOf { states[configurations.currentSourceType]!! } }
     val coroutine = rememberCoroutineScope()
+    var library by remember { mutableStateOf<Library?>(null) }
+
+    DisposableEffect(library) {
+        onDispose {
+            library?.close()
+        }
+    }
 
     Scaffold(
         containerColor = Color.Transparent,
@@ -129,10 +133,11 @@ private fun Setup(
                         model.working = true
                         coroutineScope {
                             launch {
+                                val instance = configurations.sources[configurations.currentSourceType]!!
+                                    .initialize(configurations)
+                                library = instance
                                 try {
-                                    configurations.sources[configurations.currentSourceType]!!
-                                        .initialize(configurations)
-                                        .connect()
+                                    instance.connect()
                                 } catch (e: Exception) {
                                     model.connectionException = e
                                 }
