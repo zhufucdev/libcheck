@@ -78,7 +78,7 @@ class RemoteLibrary(
 
                 is BorrowBatch ->
                     libraryChannel.updateBorrowBatch(newUpdateRequest(id) {
-
+                        batch = p.copy(returnTime = System.currentTimeMillis()).toProto()
                     })
             }
         res.effect.maybeThrow()
