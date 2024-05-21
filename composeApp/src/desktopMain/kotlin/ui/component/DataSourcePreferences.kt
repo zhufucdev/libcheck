@@ -9,20 +9,14 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Error
 import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.Visibility
-import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import currentPlatform
 import kotlinx.coroutines.delay
@@ -111,25 +105,12 @@ fun PasswordRemoteDataSourcePreferences(
         modifier = modifier
     ) { actuallyEnabled ->
         var showPassword by remember { mutableStateOf(false) }
-        OutlinedTextField(
+        OutlinedPasswordTextField(
             value = password,
-            onValueChange = {
-                onPasswordChanged(it)
-            },
-            label = { Text(stringResource(Res.string.password_para)) },
-            enabled = actuallyEnabled,
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { showPassword = !showPassword }) {
-                    Icon(
-                        imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = "show / hide password"
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
+            onValueChange = onPasswordChanged,
+            showPassword = showPassword,
+            onShowPasswordChanged = { showPassword = it },
+            enabled = actuallyEnabled
         )
         Spacer(Modifier.height(PaddingMedium))
     }

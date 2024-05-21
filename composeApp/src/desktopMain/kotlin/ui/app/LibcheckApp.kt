@@ -17,17 +17,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
+import extension.takeIfInstanceOf
 import kotlinx.coroutines.flow.toCollection
+import kotlinx.coroutines.launch
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
-import resources.Res
-import resources.go_para
+import resources.*
 import ui.PaddingLarge
 import ui.PaddingMedium
 import ui.WindowSize
 import ui.component.ConnectionAlertDialog
 import ui.component.NavigateUpButton
+import ui.component.OutlinedPasswordTextField
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -123,7 +125,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                     enter = fadeIn(),
                     exit = fadeOut()
                 ) {
-                    val progress by remember {
+                    val progress by remember(model.library) {
                         derivedStateOf {
                             when (val curr = model.library.state) {
                                 is LibraryState.HasProgress -> curr.progress
@@ -187,6 +189,38 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                     Text(stringResource(Res.string.go_para))
                 }
             }
+        )
+    }
+
+    model.library.state.takeIfInstanceOf<LibraryState, LibraryState.PasswordRequired>()?.let {
+        var password by remember { mutableStateOf("") }
+        val coroutineScope = rememberCoroutineScope()
+        AlertDialog(
+            title = { Text(stringResource(Res.string.password_required_para)) },
+            icon = { Icon(imageVector = Icons.Default.Password, contentDescription = "input password") },
+            text = {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(stringResource(Res.string.token_is_expired_use_password_authorization_para))
+                    Spacer(Modifier.height(PaddingLarge))
+                    var showPassword by remember { mutableStateOf(false) }
+                    OutlinedPasswordTextField(
+                        value = password,
+                        onValueChange = { password = it },
+                        showPassword = showPassword,
+                        onShowPasswordChanged = { showPassword = it },
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    coroutineScope.launch {
+                        it.retry(password)
+                    }
+                }) {
+                    Text(stringResource(Res.string.ok_caption))
+                }
+            },
+            onDismissRequest = {}
         )
     }
 }
