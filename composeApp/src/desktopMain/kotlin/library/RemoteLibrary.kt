@@ -13,6 +13,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import model.*
 import java.time.Instant
@@ -126,12 +127,25 @@ class RemoteLibrary(
         val syncProcess by mutableFloatStateOf(0f)
         state = LibraryState.Synchronizing(syncProcess, false)
 
+        var ended = 0
+        fun bumpEnded() {
+            ended++
+            if (ended == 4) {
+                state = LibraryState.Idle
+            }
+        }
+
         coroutineScope.launch {
             UniqueIdentifierStateList.bindTo(
                 readers,
                 libraryChannel
                     .getReaders(newGetRequest())
-                    .filter { it.ok }
+                    .onEach {
+                        if (it.end) {
+                            bumpEnded()
+                        }
+                    }
+                    .filter { !it.end }
                     .map { Identifier.parse(it.id) to it.readerOrNull?.toModel() }
             )
         }
@@ -140,7 +154,12 @@ class RemoteLibrary(
                 books,
                 libraryChannel
                     .getBooks(newGetRequest())
-                    .filter { it.ok }
+                    .onEach {
+                        if (it.end) {
+                            bumpEnded()
+                        }
+                    }
+                    .filter { !it.end }
                     .map { Identifier.parse(it.id) to it.bookOrNull?.toModel() }
             )
         }
@@ -149,11 +168,21 @@ class RemoteLibrary(
                 borrows,
                 merge(
                     libraryChannel.getBorrowBatches(newGetRequest())
-                        .filter { it.ok }
+                        .onEach {
+                            if (it.end) {
+                                bumpEnded()
+                            }
+                        }
+                        .filter { !it.end }
                         .map { Identifier.parse(it.id) to it.batchOrNull?.toModel() },
                     libraryChannel
                         .getBorrows(newGetRequest())
-                        .filter { it.ok }
+                        .onEach {
+                            if (it.end) {
+                                bumpEnded()
+                            }
+                        }
+                        .filter { !it.end }
                         .map { Identifier.parse(it.id) to it.borrowOrNull?.toModel() }
                 )
             )
