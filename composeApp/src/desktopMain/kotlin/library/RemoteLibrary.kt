@@ -136,10 +136,10 @@ class RemoteLibrary(
         var ended = 0
         fun bumpEnded() {
             ended++
-            state = if (ended == 4) {
-                LibraryState.Idle
-            } else {
-                LibraryState.Initializing(ended / 4f)
+            if (ended == 4) {
+                state = LibraryState.Idle
+            } else if (ended < 4) {
+                state = LibraryState.Initializing(ended / 4f)
             }
         }
 
