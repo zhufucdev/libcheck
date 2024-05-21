@@ -1,6 +1,8 @@
 package model
 
 import androidx.compose.runtime.Stable
+import kotlinx.coroutines.channels.ReceiveChannel
+import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import java.io.Closeable
@@ -44,6 +46,18 @@ sealed interface LibraryState {
 
     @Stable
     data class Synchronizing(override val progress: Float, val upload: Boolean) : LibraryState, HasProgress
+
+    @Stable
+    data class PasswordRequired(
+        private val passwordChannel: SendChannel<String>,
+        private val resultChannel: ReceiveChannel<AuthResult>,
+    ) : LibraryState {
+        class AuthResult(val allowed: Boolean, val token: ByteArray?)
+        suspend fun retry(password: String): AuthResult {
+            passwordChannel.send(password)
+            return resultChannel.receive()
+        }
+    }
 }
 
 @Serializable

@@ -66,10 +66,29 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
 
     override var currentSourceType: DataSourceType by mutableStateOf(model.dataSource)
     override var colorMode: ColorMode by mutableStateOf(model.colorMode)
-    override var sortModels: SortModelSnapshot by mutableStateOf(model.sorting)
     override var firstLaunch: Boolean by mutableStateOf(model.firstLaunch)
-    override val defaultRootPath: String
-        get() = rootDir.absolutePath
+
+    var sortModels = model.sorting
+    override val dataSourceContext: DataSource.Context
+        get() = when (val source = sources[currentSourceType]!!) {
+            is DataSource.Local -> object : DataSource.Context.WithRootPath, DataSource.Context.WithSortModel {
+                override val defaultRootPath: String = rootDir.absolutePath
+                override var sortModel: SortModelSnapshot by ::sortModels
+
+                override suspend fun save() = this@LocalMachineConfigurationViewModel.save()
+            }
+
+            is DataSource.Remote ->
+                object : DataSource.Context.WithSortModel, DataSource.Context.WithToken {
+                    override var sortModel: SortModelSnapshot by ::sortModels
+                    override var token: ByteArray? = source.token
+
+                    override suspend fun save() {
+                        sources[DataSourceType.Remote] = source.copy(token = token)
+                        this@LocalMachineConfigurationViewModel.save()
+                    }
+                }
+        }
 
     private fun DataSourceType.serializer(): KSerializer<DataSource> = serializer(
         kClass = clazz,

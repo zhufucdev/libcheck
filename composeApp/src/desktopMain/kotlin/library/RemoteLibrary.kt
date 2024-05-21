@@ -1,6 +1,9 @@
 package library
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.protobuf.ByteString
 import com.sqlmaster.proto.*
@@ -8,6 +11,7 @@ import com.sqlmaster.proto.LibraryOuterClass.UpdateEffect
 import currentPlatform
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -17,52 +21,19 @@ import java.time.Instant
 
 class RemoteLibrary(
     private val channel: ManagedChannel,
-    password: String,
     private val deviceName: String,
-    private val configurations: Configurations,
+    private val context: DataSource.Context,
 ) : Library {
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     private val libraryChannel = LibraryGrpcKt.LibraryCoroutineStub(channel)
     private val authenticationChannel = AuthenticationGrpcKt.AuthenticationCoroutineStub(channel)
 
-    private var password: String? = password
-    private lateinit var accessToken: ByteString
     override var state: LibraryState by mutableStateOf(LibraryState.Initializing(0f))
+    private lateinit var accessToken: ByteString
 
     override val sorter: LibrarySortingModel by lazy {
-        object : LibrarySortingModel {
-            override val bookModel: SortModel<BookSortable> by mutableStateOf(configurations.sortModels.books)
-            override val readerModel: SortModel<ReaderSortable> by mutableStateOf(configurations.sortModels.readers)
-            override val borrowModel: SortModel<BorrowSortable> by mutableStateOf(configurations.sortModels.borrows)
-
-            override suspend fun sortBooks(order: SortOrder?, by: BookSortable?) {
-                SortedBookList(
-                    books,
-                    sortedBy = by ?: bookModel.by,
-                    sortOrder = order ?: bookModel.order
-                ).sort(this@RemoteLibrary)
-                configurations.save()
-            }
-
-            override suspend fun sortReaders(order: SortOrder?, by: ReaderSortable?) {
-                SortedReaderList(
-                    readers,
-                    sortedBy = by ?: readerModel.by,
-                    sortOrder = order ?: readerModel.order
-                ).sort()
-                configurations.save()
-            }
-
-            override suspend fun sortBorrows(order: SortOrder?, by: BorrowSortable?) {
-                SortedBorrowList(
-                    borrows,
-                    sortedBy = by ?: borrowModel.by,
-                    sortOrder = order ?: borrowModel.order
-                ).sort(this@RemoteLibrary)
-                configurations.save()
-            }
-        }
+        DefaultSorter(context, this)
     }
 
     override suspend fun BorrowLike.setReturned() {
@@ -116,19 +87,41 @@ class RemoteLibrary(
             return
         }
 
-        val auth = authorizationRequest {
-            os = currentPlatform::class.simpleName!!
-            deviceName = this@RemoteLibrary.deviceName
-            password = this@RemoteLibrary.password!!
+        if (context is DataSource.Context.WithToken && context.token != null) {
+            val init = ByteString.copyFrom(context.token)
+            val auth = authenticationReqeust {
+                token = init
+            }
+            val authResult = authenticationChannel.authenticate(auth)
+            if (authResult.allowed) {
+                accessToken = init
+            }
+        } else {
+            val pwdChan = Channel<String>()
+            val resChan = Channel<LibraryState.PasswordRequired.AuthResult>()
+            state = LibraryState.PasswordRequired(pwdChan, resChan)
+            while (true) {
+                val pwd = pwdChan.receive()
+                val auth = authorizationRequest {
+                    password = pwd
+                    deviceName = this@RemoteLibrary.deviceName
+                    os = currentPlatform::class.simpleName!!
+                }
+                val res = authenticationChannel.authorize(auth)
+                if (res.allowed) {
+                    accessToken = res.token
+                    if (context is DataSource.Context.WithToken) {
+                        context.token = res.token.toByteArray()
+                        context.save()
+                    }
+                    resChan.send(LibraryState.PasswordRequired.AuthResult(true, res.token.toByteArray()))
+                    break
+                }
+                resChan.send(LibraryState.PasswordRequired.AuthResult(false, null))
+            }
         }
-        val authResult = authenticationChannel.authorize(auth)
-        password = null // for security
-        if (!authResult.allowed) {
-            throw AccessDeniedException("Password authentication failed")
-        }
-        accessToken = authResult.token
-        val syncProcess by mutableFloatStateOf(0f)
-        state = LibraryState.Synchronizing(syncProcess, false)
+
+        state = LibraryState.Synchronizing(0f, false)
 
         var ended = 0
         fun bumpEnded() {

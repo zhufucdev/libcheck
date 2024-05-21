@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
+import currentPlatform
 import kotlinx.coroutines.delay
 import model.Configurations
 import model.DataSource
@@ -49,7 +50,7 @@ fun LocalDataSourcePreferences(
     context: Configurations,
     modifier: Modifier = Modifier,
 ) {
-    var rootPath by remember { mutableStateOf(source.rootPath ?: context.defaultRootPath) }
+    var rootPath by remember { mutableStateOf(source.rootPath ?: currentPlatform.dataDir.absolutePath) }
     LaunchedEffect(rootPath) {
         val captured = rootPath
         delay(1.seconds)
@@ -95,6 +96,47 @@ fun LocalDataSourcePreferences(
 }
 
 @Composable
+fun PasswordRemoteDataSourcePreferences(
+    enabled: Boolean,
+    source: DataSource.Remote,
+    state: PreferenceState = remember { PreferenceState(loading = false) },
+    onValueChanged: (DataSource.Remote) -> Unit,
+    onPasswordChanged: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var password by remember { mutableStateOf(System.currentTimeMillis().toString()) }
+
+    BasicRemoteDataSourcePreferences(
+        enabled = enabled,
+        source = source,
+        state = state,
+        onValueChanged = onValueChanged,
+        modifier = modifier
+    ) { actuallyEnabled ->
+        var showPassword by remember { mutableStateOf(false) }
+        OutlinedTextField(
+            value = password,
+            onValueChange = { password = it },
+            label = { Text(stringResource(Res.string.password_para)) },
+            enabled = actuallyEnabled,
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { showPassword = !showPassword }) {
+                    Icon(
+                        imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                        contentDescription = "show / hide password"
+                    )
+                }
+            },
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(PaddingMedium))
+    }
+}
+
+@Composable
 fun RemoteDataSourcePreferences(
     enabled: Boolean,
     source: DataSource.Remote,
@@ -102,12 +144,22 @@ fun RemoteDataSourcePreferences(
     onValueChanged: (DataSource.Remote) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    BasicRemoteDataSourcePreferences(enabled, source, state, onValueChanged, modifier) {}
+}
+
+@Composable
+private fun BasicRemoteDataSourcePreferences(
+    enabled: Boolean,
+    source: DataSource.Remote,
+    state: PreferenceState = remember { PreferenceState(loading = false) },
+    onValueChanged: (DataSource.Remote) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable (Boolean) -> Unit,
+) {
     var cipher by remember { mutableStateOf<EncryptDecrypt?>(null) }
-    var password by remember { mutableStateOf(System.currentTimeMillis().toString()) }
     LaunchedEffect(true) {
         state.loading = true
         cipher = AesCipher()
-        password = cipher!!.decrypt(source.password).decodeToString()
         state.loading = false
     }
 
@@ -120,16 +172,16 @@ fun RemoteDataSourcePreferences(
 
     val portValid by remember { derivedStateOf { port.toShortOrNull()?.let { it > 0 } == true } }
 
-    LaunchedEffect(host, port, deviceName, useTls, password) {
+    LaunchedEffect(host, port, deviceName, useTls) {
         if (state.loading) {
             return@LaunchedEffect
         }
-        val captured = listOf(host, port, deviceName, useTls, password)
+        val captured = listOf(host, port, deviceName, useTls)
         delay(1.seconds)
         if (!state.valid) {
             return@LaunchedEffect
         }
-        val current = listOf(host, port, deviceName, useTls, password)
+        val current = listOf(host, port, deviceName, useTls)
         if (current == captured) {
             onValueChanged(
                 DataSource.Remote(
@@ -137,7 +189,6 @@ fun RemoteDataSourcePreferences(
                     port.toInt(),
                     deviceName,
                     useTls,
-                    cipher!!.encrypt(password.encodeToByteArray())
                 )
             )
         }
@@ -178,26 +229,7 @@ fun RemoteDataSourcePreferences(
             modifier = Modifier.fillMaxWidth()
         )
         Spacer(Modifier.height(PaddingMedium))
-        var showPassword by remember { mutableStateOf(false) }
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            label = { Text(stringResource(Res.string.password_para)) },
-            enabled = actualEnabled,
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
-            trailingIcon = {
-                IconButton(onClick = { showPassword = !showPassword }) {
-                    Icon(
-                        imageVector = if (showPassword) Icons.Default.Visibility else Icons.Default.VisibilityOff,
-                        contentDescription = "show / hide password"
-                    )
-                }
-            },
-            modifier = Modifier.fillMaxWidth(),
-        )
-        Spacer(Modifier.height(PaddingMedium))
+        content(actualEnabled)
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()

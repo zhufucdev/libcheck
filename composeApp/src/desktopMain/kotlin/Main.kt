@@ -65,7 +65,7 @@ fun App(windowState: WindowState, configurations: Configurations) {
                     derivedStateOf {
                         configurations
                             .sources[configurations.currentSourceType]!!
-                            .initialize(configurations)
+                            .initialize(configurations.dataSourceContext)
                     }
                 }
                 DisposableEffect(library) {

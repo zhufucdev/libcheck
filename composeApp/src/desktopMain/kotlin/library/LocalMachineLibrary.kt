@@ -1,7 +1,11 @@
 package library
 
-import androidx.compose.runtime.*
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshots.SnapshotStateList
+import currentPlatform
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -14,18 +18,15 @@ import java.io.File
 import java.time.Instant
 
 @OptIn(ExperimentalSerializationApi::class)
-class LocalMachineLibrary(private val workingDir: File, private val configurations: Configurations) : Library {
+class LocalMachineLibrary(private val context: DataSource.Context) : Library {
+    private val workingDir by lazy { if (context is DataSource.Context.WithRootPath) File(context.defaultRootPath) else currentPlatform.dataDir }
     private val booksFile get() = File(workingDir, "books.json")
     private val readerFile get() = File(workingDir, "readers.json")
     private val borrowFile get() = File(workingDir, "borrow.json")
 
-    var bookList by mutableStateOf(SortedBookList(SnapshotStateList()))
-    var readerList by mutableStateOf(SortedReaderList(SnapshotStateList()))
-    var borrowList by mutableStateOf(SortedBorrowList(SnapshotStateList()))
-
-    override val books: List<Book> get() = bookList.items
-    override val readers: List<Reader> get() = readerList.items
-    override val borrows: List<BorrowLike> get() = borrowList.items
+    override val books = SnapshotStateList<Book>()
+    override val readers = SnapshotStateList<Reader>()
+    override val borrows = SnapshotStateList<BorrowLike>()
 
     private var mInitialized: Boolean by mutableStateOf(false)
     private var mProgress: Float by mutableStateOf(0f)
@@ -41,41 +42,7 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
     }
 
     override val sorter: LibrarySortingModel by lazy {
-        object : LibrarySortingModel {
-            override var bookModel: SortModel<BookSortable> by mutableStateOf(bookList.model)
-            override var readerModel: SortModel<ReaderSortable> by mutableStateOf(readerList.model)
-            override var borrowModel: SortModel<BorrowSortable> by mutableStateOf(borrowList.model)
-
-            override suspend fun sortBooks(order: SortOrder?, by: BookSortable?) {
-                bookList = bookList.copy(
-                    sortOrder = order ?: bookList.sortOrder,
-                    sortedBy = by ?: bookList.sortedBy
-                )
-                bookList.sort(this@LocalMachineLibrary)
-                bookModel = SortModel(bookList.sortOrder, bookList.sortedBy)
-                saveBooks()
-            }
-
-            override suspend fun sortReaders(order: SortOrder?, by: ReaderSortable?) {
-                readerList = readerList.copy(
-                    sortedBy = by ?: readerList.sortedBy,
-                    sortOrder = order ?: readerList.sortOrder
-                )
-                readerList.sort()
-                readerModel = SortModel(readerList.sortOrder, readerList.sortedBy)
-                saveReaders()
-            }
-
-            override suspend fun sortBorrows(order: SortOrder?, by: BorrowSortable?) {
-                borrowList = borrowList.copy(
-                    sortOrder = order ?: bookList.sortOrder,
-                    sortedBy = by ?: borrowList.sortedBy
-                )
-                borrowList.sort(this@LocalMachineLibrary)
-                borrowModel = SortModel(borrowList.sortOrder, borrowList.sortedBy)
-                saveBorrows()
-            }
-        }
+        DefaultSorter(context, this)
     }
 
     override suspend fun connect() = withContext(Dispatchers.IO) {
@@ -89,130 +56,119 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
             if (exists()) {
                 inputStream().use {
                     if (it.available() > 0) {
-                        bookList = Json.decodeFromStream<SortedBookList>(it).let { s ->
-                            s.copy(items = mutableStateListOf(*s.items.toTypedArray()))
-                        }
+                        books.addAll(Json.decodeFromStream<List<Book>>(it))
                         return@apply
                     }
                 }
             }
-            bookList = SortedBookList(SnapshotStateList())
         }
         mProgress += 1 / 3f
         readerFile.apply {
             if (exists()) {
                 inputStream().use {
                     if (it.available() > 0) {
-                        readerList = Json.decodeFromStream<SortedReaderList>(it).let { s ->
-                            s.copy(items = mutableStateListOf(*s.items.toTypedArray()))
-                        }
-                        return@apply
+                        readers.addAll(Json.decodeFromStream<List<Reader>>(it))
                     }
                 }
             }
-            readerList = SortedReaderList(SnapshotStateList())
         }
         mProgress += 1 / 3f
         borrowFile.apply {
             if (exists()) {
                 inputStream().use {
                     if (it.available() > 0) {
-                        borrowList = Json.decodeFromStream<SortedBorrowList>(it).let { s ->
-                            s.copy(items = mutableStateListOf(*s.items.toTypedArray()))
-                        }
-                        return@apply
+                        borrows.addAll(Json.decodeFromStream<List<Borrow>>(it))
                     }
                 }
             }
-            borrowList = SortedBorrowList(SnapshotStateList())
         }
         mProgress += 1 / 3f
         mInitialized = true
     }
 
     override suspend fun addBook(book: Book) {
-        bookList.items.add(book)
-        bookList.sort(this)
+        books.add(book)
+        sorter.sortBooks()
         saveBooks()
     }
 
     override suspend fun updateBook(book: Book) {
-        val index = bookList.items.indexOfFirst { it.id == book.id }
+        val index = books.indexOfFirst { it.id == book.id }
         if (index < 0) {
             throw NoSuchElementException(book.name)
         }
-        bookList.items[index] = book
-        bookList.sort(this)
+        books[index] = book
+        sorter.sortBooks()
         saveBooks()
     }
 
-    override fun getBook(id: Identifier) = bookList.items.firstOrNull { it.id == id }
+    override fun getBook(id: Identifier) = books.firstOrNull { it.id == id }
 
     override suspend fun deleteBook(book: Book) {
-        val index = bookList.items.indexOfFirst { it.id == book.id }
+        val index = books.indexOfFirst { it.id == book.id }
         if (index < 0) {
             throw NoSuchElementException(book.name)
         }
-        bookList.items.removeAt(index)
+        books.removeAt(index)
         saveBooks()
     }
 
     override suspend fun addBorrow(borrower: Reader, book: Book, due: Instant) {
-        borrowList.items.add(Borrow(Identifier(), borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
-        borrowList.sort(this)
+        borrows.add(Borrow(Identifier(), borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
+        sorter.sortBorrows()
         saveBorrows()
     }
 
     override suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant) {
         val batch =
             BorrowBatch(Identifier(), borrower.id, books.map(Book::id), System.currentTimeMillis(), due.toEpochMilli())
-        borrowList.items.add(batch)
-        borrowList.sort(this)
+        borrows.add(batch)
+        sorter.sortBorrows()
         saveBorrows()
     }
 
     override suspend fun BorrowLike.setReturned() {
-        val index = borrowList.items.indexOf(this)
+        val index = borrows.indexOf(this)
         if (index < 0) {
             throw NoSuchElementException()
         }
-        borrowList.items[index] = when (this) {
+        borrows[index] = when (this) {
             is Borrow -> copy(returnTime = Instant.now().toEpochMilli())
             is BorrowBatch -> copy(returnTime = Instant.now().toEpochMilli())
         }
-        borrowList.sort(this@LocalMachineLibrary)
+        sorter.sortBorrows()
         saveBorrows()
     }
 
     override fun Book.getStock() =
-        stock - borrowList.items.count { it.hasBook(id) && it.returnTime == null }.toUInt()
+        stock - borrows.count { it.hasBook(id) && it.returnTime == null }.toUInt()
 
     override suspend fun addReader(reader: Reader) {
-        readerList.items.add(reader)
-        readerList.sort()
+        readers.add(reader)
+        sorter.sortReaders()
         saveReaders()
     }
 
-    override fun getReader(id: Identifier) = readerList.items.firstOrNull { it.id == id }
+    override fun getReader(id: Identifier) = readers.firstOrNull { it.id == id }
 
     override suspend fun updateReader(reader: Reader) {
-        val index = readerList.items.indexOfFirst { it.id == reader.id }
+        val index = readers.indexOfFirst { it.id == reader.id }
         if (index < 0) {
             throw NoSuchElementException(reader.name)
         }
-        readerList.items[index] = reader
+        readers[index] = reader
         saveReaders()
     }
 
     override fun Reader.getBorrows(): List<BorrowLike> =
-        borrowList.items.filter { it.readerId == id && it.returnTime == null }
+        borrows.filter { it.readerId == id && it.returnTime == null }
 
     override suspend fun deleteReader(reader: Reader) {
-        val index = readerList.items.indexOfFirst { it.id == reader.id }
+        val index = readers.indexOfFirst { it.id == reader.id }
         if (index < 0) {
             throw NoSuchElementException(reader.name)
         }
-        readerList.items.removeAt(index)
+        readers.removeAt(index)
         saveReaders()
     }
 
@@ -222,16 +178,16 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
         if (mSaving) {
             throw IllegalStateException("cannot close while saving")
         }
-        bookList.items.clear()
-        readerList.items.clear()
-        borrowList.items.clear()
+        books.clear()
+        readers.clear()
+        borrows.clear()
     }
 
     private suspend fun saveBooks() = withContext(Dispatchers.IO) {
         mSaving = true
         mProgress = 0f
         booksFile.outputStream().use {
-            Json.encodeToStream(bookList, it)
+            Json.encodeToStream<List<Book>>(books, it)
         }
         mProgress = 1f
         mSaving = false
@@ -241,7 +197,7 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
         mSaving = true
         mProgress = 0f
         readerFile.outputStream().use {
-            Json.encodeToStream(readerList, it)
+            Json.encodeToStream<List<Reader>>(readers, it)
         }
         mProgress = 1f
         mSaving = false
@@ -251,7 +207,7 @@ class LocalMachineLibrary(private val workingDir: File, private val configuratio
         mSaving = true
         mProgress = 0f
         borrowFile.outputStream().use {
-            Json.encodeToStream(borrowList, it)
+            Json.encodeToStream<List<BorrowLike>>(borrows, it)
         }
         mProgress = 1f
         mSaving = false

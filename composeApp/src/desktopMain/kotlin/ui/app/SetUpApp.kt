@@ -33,8 +33,8 @@ import ui.PaddingMedium
 import ui.WindowSize
 import ui.component.ConnectionAlertDialog
 import ui.component.LocalDataSourcePreferences
+import ui.component.PasswordRemoteDataSourcePreferences
 import ui.component.PreferenceState
-import ui.component.RemoteDataSourcePreferences
 
 @Composable
 fun SetUpApp(windowSize: WindowSize, model: SetUpAppModel) {
@@ -133,10 +133,12 @@ private fun Setup(
                         model.working = true
                         coroutineScope {
                             launch {
-                                val instance = configurations.sources[configurations.currentSourceType]!!
-                                    .initialize(configurations)
-                                library = instance
                                 try {
+                                    val instance =
+                                        configurations
+                                            .sources[configurations.currentSourceType]!!
+                                            .initialize(configurations.dataSourceContext)
+                                    library = instance
                                     instance.connect()
                                 } catch (e: Exception) {
                                     model.connectionException = e
@@ -289,11 +291,14 @@ private fun LocalSource(context: Configurations, enabled: Boolean, state: Prefer
 
 @Composable
 private fun RemoteSource(context: Configurations, enabled: Boolean, state: PreferenceState) {
-    RemoteDataSourcePreferences(
+    PasswordRemoteDataSourcePreferences(
         enabled = enabled,
-        state = state,
         source = context.sources[DataSourceType.Remote]!! as DataSource.Remote,
-        onValueChanged = { context.sources[DataSourceType.Remote] = it }
+        state = state,
+        onValueChanged = { context.sources[DataSourceType.Remote] = it },
+        onPasswordChanged = {
+
+        }
     )
 }
 

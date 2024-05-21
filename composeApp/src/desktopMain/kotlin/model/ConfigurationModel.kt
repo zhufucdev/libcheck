@@ -1,6 +1,5 @@
 package model
 
-import AesCipher
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Computer
 import androidx.compose.material.icons.filled.LocationCity
@@ -8,7 +7,6 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import com.sqlmaster.proto.LibraryOuterClass.ReaderTier
 import getHostName
 import io.grpc.ManagedChannelBuilder
-import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.descriptors.SerialDescriptor
@@ -22,16 +20,31 @@ import org.jetbrains.compose.resources.StringResource
 import redempt.crunch.Crunch
 import redempt.crunch.functional.EvaluationEnvironment
 import resources.*
-import java.io.File
 import kotlin.reflect.KClass
 
 sealed class DataSource {
-    abstract fun initialize(context: Configurations): Library
+    sealed interface Context {
+        suspend fun save()
+
+        interface WithRootPath : Context {
+            val defaultRootPath: String
+        }
+
+        interface WithSortModel : Context {
+            var sortModel: SortModelSnapshot
+        }
+
+        interface WithToken : Context {
+            var token: ByteArray?
+        }
+    }
+
+    abstract fun initialize(context: Context): Library
 
     @Serializable
     data class Local(val rootPath: String? = null) : DataSource() {
-        override fun initialize(context: Configurations): Library =
-            LocalMachineLibrary(File(rootPath ?: context.defaultRootPath), context)
+        override fun initialize(context: Context): Library =
+            LocalMachineLibrary(context)
     }
 
     @Serializable
@@ -40,16 +53,14 @@ sealed class DataSource {
         val remotePort: Int = 5411,
         val deviceName: String = getHostName(),
         val useTransportSecurity: Boolean = true,
-        val password: ByteArray = runBlocking { AesCipher() }.encrypt("".encodeToByteArray()),
+        val token: ByteArray? = null,
     ) : DataSource() {
-        override fun initialize(context: Configurations): Library {
+        override fun initialize(context: Context): Library {
             val channel = ManagedChannelBuilder
                 .forAddress(remoteHost, remotePort)
                 .let { if (useTransportSecurity) it.useTransportSecurity() else it.usePlaintext() }
                 .build()
-            val password = runBlocking { AesCipher() }.decrypt(password).decodeToString()
-
-            return RemoteLibrary(channel, password, deviceName, context)
+            return RemoteLibrary(channel, deviceName, context)
         }
 
         override fun equals(other: Any?): Boolean {
@@ -61,7 +72,6 @@ sealed class DataSource {
             if (remoteHost != other.remoteHost) return false
             if (useTransportSecurity != other.useTransportSecurity) return false
             if (remotePort != other.remotePort) return false
-            if (!password.contentEquals(other.password)) return false
 
             return true
         }
@@ -70,7 +80,6 @@ sealed class DataSource {
             var result = remoteHost.hashCode()
             result = 31 * result + useTransportSecurity.hashCode()
             result = 31 * result + remotePort
-            result = 31 * result + password.contentHashCode()
             return result
         }
     }
@@ -155,10 +164,9 @@ interface Configurations {
     val sources: MutableMap<DataSourceType, DataSource>
     var currentSourceType: DataSourceType
     var colorMode: ColorMode
-    var sortModels: SortModelSnapshot
     var firstLaunch: Boolean
 
-    val defaultRootPath: String
+    val dataSourceContext: DataSource.Context
 
     suspend fun save()
 }
