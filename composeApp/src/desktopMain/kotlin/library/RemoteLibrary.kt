@@ -113,6 +113,12 @@ class RemoteLibrary(
     }
 
     override suspend fun connect() {
+        val capturedState = state
+        if (capturedState !is LibraryState.Initializing || capturedState.progress > 0) {
+            // already connected or is connecting
+            return
+        }
+
         val auth = authorizationRequest {
             os = currentPlatform::class.simpleName!!
             deviceName = this@RemoteLibrary.deviceName
@@ -130,8 +136,10 @@ class RemoteLibrary(
         var ended = 0
         fun bumpEnded() {
             ended++
-            if (ended == 4) {
-                state = LibraryState.Idle
+            state = if (ended == 4) {
+                LibraryState.Idle
+            } else {
+                LibraryState.Initializing(ended / 4f)
             }
         }
 
