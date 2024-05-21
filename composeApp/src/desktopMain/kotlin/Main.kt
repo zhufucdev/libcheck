@@ -63,6 +63,11 @@ fun App(windowState: WindowState, configurations: Configurations) {
                         .initialize(configurations)
                 }
             }
+            DisposableEffect(library) {
+                onDispose {
+                    library.close()
+                }
+            }
             AnimatedVisibility(
                 visible = !configurations.firstLaunch && navigator.current.type.docked,
                 enter = fadeIn(),
@@ -72,11 +77,6 @@ fun App(windowState: WindowState, configurations: Configurations) {
                     AppViewModel(library, navigator, configurations)
                 }
 
-                DisposableEffect(library) {
-                    onDispose {
-                        library.close()
-                    }
-                }
                 LibcheckApp(model, windowSize)
             }
         }
