@@ -61,11 +61,20 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "libcheck"
+            packageName = "LibCheck"
             packageVersion = "1.0.0"
             jvmArgs(
                 "-Dapple.awt.application.appearance=system"
             )
+            macOS {
+                iconFile.set(project.file("icons/LibCheck.icns"))
+            }
+            windows {
+                iconFile.set(project.file("icons/LibCheck.ico"))
+            }
+            linux {
+                iconFile.set(project.file("icons/LibCheck.png"))
+            }
         }
     }
 }
