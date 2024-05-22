@@ -60,6 +60,7 @@ compose.desktop {
         mainClass = "MainKt"
 
         nativeDistributions {
+            modules("java.compiler", "java.instrument", "jdk.security.auth", "jdk.unsupported")
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "LibCheck"
             packageVersion = "1.0.0"
