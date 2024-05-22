@@ -25,5 +25,5 @@ jobs:
       - name: Upload Distribution
         uses: actions/upload-artifact@v3
         with:
-          name: windows-x64
+          name: libcheck-${{ matrix.os }}
           path: composeApp/build/compose/binaries/main/**/*.*
