@@ -90,7 +90,7 @@ class RemoteLibrary(
 
         if (context is DataSource.Context.WithToken && context.token != null) {
             val init = ByteString.copyFrom(context.token)
-            val auth = authenticationReqeust {
+            val auth = authenticationRequest {
                 token = init
             }
             val authResult = authenticationChannel.authenticate(auth)
