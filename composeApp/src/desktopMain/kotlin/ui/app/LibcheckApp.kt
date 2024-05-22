@@ -45,6 +45,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
             model.library.connect()
         } catch (e: Exception) {
             connectionException = e
+            e.printStackTrace()
         }
     }
 

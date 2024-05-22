@@ -77,7 +77,7 @@ class LocalMachineLibrary(private val context: DataSource.Context) : Library {
             if (exists()) {
                 inputStream().use {
                     if (it.available() > 0) {
-                        borrows.addAll(Json.decodeFromStream<List<Borrow>>(it))
+                        borrows.addAll(Json.decodeFromStream<List<BorrowLike>>(it))
                     }
                 }
             }
