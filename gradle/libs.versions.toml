@@ -1,6 +1,6 @@
 [versions]
-compose = "1.6.10-beta01"
-kotlin = "1.9.23"
+compose = "1.6.10"
+kotlin = "1.9.24"
 grpc = "1.63.0"
 protobuf = "4.26.1"
 grpc-kotlin = "1.4.1"
