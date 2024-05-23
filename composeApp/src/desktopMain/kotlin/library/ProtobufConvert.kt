@@ -6,7 +6,7 @@ import com.sqlmaster.proto.*
 import model.*
 
 fun LibraryOuterClass.Book.toModel(): Book = Book(
-    id = Identifier.parse(id),
+    id = UuidIdentifier.parse(id),
     name = name,
     author = author,
     isbn = isbn,
@@ -15,7 +15,7 @@ fun LibraryOuterClass.Book.toModel(): Book = Book(
 )
 
 fun LibraryOuterClass.Reader.toModel(): Reader = Reader(
-    id = Identifier.parse(id),
+    id = UuidIdentifier.parse(id),
     name = name,
     avatarUri = avatarUri,
     tier = tier,
@@ -23,21 +23,31 @@ fun LibraryOuterClass.Reader.toModel(): Reader = Reader(
 )
 
 fun LibraryOuterClass.Borrow.toModel(): Borrow = Borrow(
-    id = Identifier.parse(id),
-    readerId = Identifier.parse(readerId),
-    bookId = Identifier.parse(bookId),
+    id = UuidIdentifier.parse(id),
+    readerId = UuidIdentifier.parse(readerId),
+    bookId = UuidIdentifier.parse(bookId),
     time = time.toEpochMilli(),
     dueTime = dueTime.toEpochMilli(),
     returnTime = returnTime.takeIf { hasReturnTime() }?.toEpochMilli()
 )
 
 fun LibraryOuterClass.BorrowBatch.toModel(): BorrowBatch = BorrowBatch(
-    id = Identifier.parse(id),
-    readerId = Identifier.parse(readerId),
-    bookIds = bookIdsList.map(Identifier.Companion::parse),
+    id = UuidIdentifier.parse(id),
+    readerId = UuidIdentifier.parse(readerId),
+    bookIds = bookIdsList.map(UuidIdentifier.Companion::parse),
     time = time.toEpochMilli(),
     dueTime = dueTime.toEpochMilli(),
     returnTime = returnTime.takeIf { hasReturnTime() }?.toEpochMilli()
+)
+
+fun LibraryOuterClass.AddUserResponse.toModel() =
+    AccountCapability.TemporaryPassword(password = temporaryPassword, expireSeconds = lifeSpanSeconds)
+
+fun LibraryOuterClass.User.toModel() = User(
+    id = IntegerIdentifier(id),
+    deviceName = deviceName,
+    role = role,
+    readerId = readerId?.let { UuidIdentifier.parse(it) }
 )
 
 fun Timestamp(millis: Long) = timestamp {
@@ -76,8 +86,15 @@ fun Borrow.toProto(): LibraryOuterClass.Borrow = borrow {
 fun BorrowBatch.toProto(): LibraryOuterClass.BorrowBatch = borrowBatch {
     id = this@toProto.id.toString()
     readerId = this@toProto.readerId.toString()
-    bookIds.addAll(this@toProto.bookIds.map(Identifier::toString))
+    bookIds.addAll(this@toProto.bookIds.map(UuidIdentifier::toString))
     time = Timestamp(this@toProto.time)
     dueTime = Timestamp(this@toProto.dueTime)
     this@toProto.returnTime?.let { returnTime = Timestamp(it) }
+}
+
+fun User.toProto(): LibraryOuterClass.User = user {
+    id = this@toProto.id.id
+    deviceName = this@toProto.deviceName
+    role = this@toProto.role
+    this@toProto.readerId?.toString()?.let { readerId = it }
 }

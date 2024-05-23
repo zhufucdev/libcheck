@@ -5,7 +5,6 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Rect
-import library.Library
 import java.time.Duration
 import java.time.Instant
 import java.time.temporal.ChronoUnit
@@ -17,7 +16,7 @@ class AppViewModel(
     val navigator: NavigationModel,
     val configurations: Configurations,
 ) {
-    val booksInBasket = mutableStateListOf<Identifier>()
+    val booksInBasket = mutableStateListOf<UuidIdentifier>()
     var basketFabBounds by mutableStateOf(Rect.Zero)
     var draggingIn by mutableStateOf(false)
     var outDraggingBounds by mutableStateOf(Rect.Zero)

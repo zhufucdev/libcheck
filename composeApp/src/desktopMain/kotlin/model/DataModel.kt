@@ -5,25 +5,28 @@ package model
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
 import com.sqlmaster.proto.LibraryOuterClass
+import com.sqlmaster.proto.LibraryOuterClass.UserRole
 import kotlinx.serialization.KSerializer
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.descriptors.SerialDescriptor
 import kotlinx.serialization.encoding.Decoder
 import kotlinx.serialization.encoding.Encoder
-import library.Library
-import library.SortModel
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.*
 import java.time.Instant
 import java.util.*
 
-interface Identifiable {
-    val id: Identifier
+interface Identifiable<T : Identifier> {
+    val id: T
 }
 
-interface Searchable : Identifiable {
+interface Identifier {
+    override fun equals(other: Any?): Boolean
+}
+
+interface Searchable : Identifiable<UuidIdentifier> {
     fun matches(keyword: String): Boolean
     val name: String
 
@@ -32,28 +35,28 @@ interface Searchable : Identifiable {
 }
 
 @Serializable(IdentifierSerializer::class)
-data class Identifier(val uuid: UUID = UUID.randomUUID()) {
+data class UuidIdentifier(val uuid: UUID = UUID.randomUUID()) : Identifier {
     override fun toString(): String {
         return uuid.toString()
     }
 
     companion object {
-        fun parse(str: String) = Identifier(UUID.fromString(str))
+        fun parse(str: String) = UuidIdentifier(UUID.fromString(str))
     }
 }
 
-class IdentifierSerializer : KSerializer<Identifier> {
+class IdentifierSerializer : KSerializer<UuidIdentifier> {
     private val serializer = String.serializer()
 
     override val descriptor: SerialDescriptor = serializer.descriptor
 
-    override fun serialize(encoder: Encoder, value: Identifier) {
+    override fun serialize(encoder: Encoder, value: UuidIdentifier) {
         encoder.encodeSerializableValue(serializer, value.uuid.toString())
     }
 
-    override fun deserialize(decoder: Decoder): Identifier {
+    override fun deserialize(decoder: Decoder): UuidIdentifier {
         val str = decoder.decodeSerializableValue(serializer)
-        return Identifier(UUID.fromString(str))
+        return UuidIdentifier(UUID.fromString(str))
     }
 }
 
@@ -62,7 +65,7 @@ data class Book(
     override val name: String,
     val author: String,
     val isbn: String,
-    override val id: Identifier,
+    override val id: UuidIdentifier,
     val avatarUri: String,
     val stock: UInt,
 ) : Searchable {
@@ -77,7 +80,7 @@ data class Book(
 @Serializable
 data class Reader(
     override val name: String,
-    override val id: Identifier,
+    override val id: UuidIdentifier,
     val avatarUri: String,
     val tier: LibraryOuterClass.ReaderTier,
     val creditability: Float = 0f,
@@ -88,21 +91,30 @@ data class Reader(
     override fun displayName(): String = name
 }
 
+data class IntegerIdentifier(val id: Int) : Identifier
+
+data class User(
+    override val id: IntegerIdentifier,
+    val deviceName: String,
+    val role: UserRole,
+    val readerId: UuidIdentifier?,
+) : Identifiable<IntegerIdentifier>
+
 @Serializable
-sealed interface BorrowLike : Identifiable {
-    val readerId: Identifier
+sealed interface BorrowLike : Identifiable<UuidIdentifier> {
+    val readerId: UuidIdentifier
     val time: Long
     val dueTime: Long
     val returnTime: Long?
     val expired get() = Instant.now().toEpochMilli() >= dueTime
-    fun hasBook(id: Identifier): Boolean
+    fun hasBook(id: UuidIdentifier): Boolean
     fun instance(library: Library): BorrowLikeInstanced
 }
 
 sealed interface BorrowLikeInstanced : Searchable {
-    val readerId: Identifier
+    val readerId: UuidIdentifier
     val reader: Reader?
-    val bookId: Identifier
+    val bookId: UuidIdentifier
     val book: Book?
     val time: Long
     val dueTime: Long
@@ -112,9 +124,9 @@ sealed interface BorrowLikeInstanced : Searchable {
 
 @Serializable
 data class Borrow(
-    override val id: Identifier,
-    override val readerId: Identifier,
-    val bookId: Identifier,
+    override val id: UuidIdentifier,
+    override val readerId: UuidIdentifier,
+    val bookId: UuidIdentifier,
     override val time: Long,
     override val dueTime: Long,
     override val returnTime: Long? = null,
@@ -132,14 +144,14 @@ data class Borrow(
             this
         )
 
-    override fun hasBook(id: Identifier): Boolean = bookId == id
+    override fun hasBook(id: UuidIdentifier): Boolean = bookId == id
 }
 
 @Serializable
 data class BorrowBatch(
-    override val id: Identifier,
-    override val readerId: Identifier,
-    val bookIds: List<Identifier>,
+    override val id: UuidIdentifier,
+    override val readerId: UuidIdentifier,
+    val bookIds: List<UuidIdentifier>,
     override val time: Long,
     override val dueTime: Long,
     override val returnTime: Long? = null,
@@ -157,15 +169,15 @@ data class BorrowBatch(
             this
         )
 
-    override fun hasBook(id: Identifier): Boolean = bookIds.contains(id)
+    override fun hasBook(id: UuidIdentifier): Boolean = bookIds.contains(id)
 }
 
 @Stable
 class BorrowInstanced(
-    override val id: Identifier,
-    override val readerId: Identifier,
+    override val id: UuidIdentifier,
+    override val readerId: UuidIdentifier,
     override val reader: Reader?,
-    override val bookId: Identifier,
+    override val bookId: UuidIdentifier,
     override val book: Book?,
     override val time: Long,
     override val dueTime: Long,
@@ -186,17 +198,17 @@ class BorrowInstanced(
 
 @Stable
 class BorrowBatchInstanced(
-    override val id: Identifier,
-    override val readerId: Identifier,
+    override val id: UuidIdentifier,
+    override val readerId: UuidIdentifier,
     override val reader: Reader?,
-    firstBookId: Identifier,
+    firstBookId: UuidIdentifier,
     val books: List<Book?>,
     override val time: Long,
     override val dueTime: Long,
     override val returnTime: Long?,
     override val original: BorrowBatch,
 ) : BorrowLikeInstanced {
-    override val bookId: Identifier = firstBookId
+    override val bookId: UuidIdentifier = firstBookId
     override val book: Book?
         get() = books.first()
 

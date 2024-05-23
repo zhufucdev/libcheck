@@ -3,6 +3,7 @@ package library
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.launch
+import model.Library
 
 fun Library.searchFlow(query: String) = channelFlow {
     if (query.isNotEmpty()) {

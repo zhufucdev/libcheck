@@ -25,10 +25,10 @@ interface NavigationParameters
 data class Route(val type: RouteType, val parameters: NavigationParameters)
 
 @Stable
-open class RevealParameters(val identifier: Identifier) : NavigationParameters
+open class RevealParameters(val identifier: UuidIdentifier) : NavigationParameters
 
 @Stable
-open class RevealDetailsParameters(val identifier: Identifier) : NavigationParameters
+open class RevealDetailsParameters(val identifier: UuidIdentifier) : NavigationParameters
 
 sealed class FilterParameters<T> : NavigationParameters {
     abstract fun T.isCandidate(): Boolean
@@ -36,15 +36,15 @@ sealed class FilterParameters<T> : NavigationParameters {
 
 @Stable
 open class FilterBorrowParameters(
-    private val books: List<Identifier> = emptyList(),
-    private val readers: List<Identifier> = emptyList(),
+    private val books: List<UuidIdentifier> = emptyList(),
+    private val readers: List<UuidIdentifier> = emptyList(),
 ) : FilterParameters<BorrowLike>() {
     override fun BorrowLike.isCandidate(): Boolean =
         (books.isEmpty() || books.any { hasBook(it) })
                 && (readers.isEmpty() || readers.contains(readerId))
 }
 
-data class ReconstructParameters(val identifier: Identifier) : NavigationParameters
+data class ReconstructParameters(val identifier: UuidIdentifier) : NavigationParameters
 
 data object EmptyParameters : NavigationParameters
 

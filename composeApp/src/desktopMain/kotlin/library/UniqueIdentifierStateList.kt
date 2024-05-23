@@ -5,14 +5,14 @@ import kotlinx.coroutines.flow.Flow
 import model.Identifiable
 import model.Identifier
 
-suspend fun <T : Identifiable> UniqueIdentifierStateList(flow: Flow<Pair<Identifier, T?>>): SnapshotStateList<T> {
+suspend fun <T : Identifiable<*>> UniqueIdentifierStateList(flow: Flow<Pair<Identifier, T?>>): SnapshotStateList<T> {
     val list = SnapshotStateList<T>()
     UniqueIdentifierStateList.bindTo(list, flow)
     return list
 }
 
 object UniqueIdentifierStateList {
-    suspend fun <T : Identifiable> bindTo(
+    suspend fun <T : Identifiable<*>> bindTo(
         list: SnapshotStateList<T>,
         flow: Flow<Pair<Identifier, T?>>,
         onUpdate: (suspend (SnapshotStateList<T>) -> Unit)? = null,

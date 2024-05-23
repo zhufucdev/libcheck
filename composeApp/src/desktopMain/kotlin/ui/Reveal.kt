@@ -15,7 +15,7 @@ import kotlin.time.Duration.Companion.seconds
 @Composable
 fun rememberRevealAnimation(
     model: AppViewModel,
-    current: Identifier,
+    current: UuidIdentifier,
     surfaceColor: Color = MaterialTheme.colorScheme.surfaceVariant,
 ): Color {
     val primarySurfaceColor = MaterialTheme.colorScheme.primaryContainer
@@ -44,7 +44,7 @@ fun rememberRevealAnimation(
 
 @Suppress("FunctionName")
 @Composable
-fun LaunchReveal(list: List<Identifiable>, model: AppViewModel, state: Any) {
+fun LaunchReveal(list: List<Identifiable<UuidIdentifier>>, model: AppViewModel, state: Any) {
     val identifier =
         model.navigator.current.parameters.takeIfInstanceOf<NavigationParameters, RevealParameters>()?.identifier
     LaunchedEffect(identifier) {

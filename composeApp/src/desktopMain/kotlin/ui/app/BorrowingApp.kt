@@ -31,7 +31,6 @@ import extension.takeIfInstanceOf
 import extension.toFixed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import library.Library
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.getString
@@ -66,14 +65,13 @@ fun BorrowingApp(model: AppViewModel) {
 
     var judgingReader by remember { mutableStateOf<JudgeReaderModel?>(null) }
 
-    val onReturn: ((borrow: BorrowLike) -> Unit)? = model.library.let { library ->
-        if (library !is Library.WithReturnCapability) null
-        else { borrow ->
+    val onReturn: ((borrow: BorrowLike) -> Unit)? = model.library.components.of<ReturnCapability>()?.let { component ->
+        { borrow ->
             coroutine.launch {
                 val onTime = Instant.now().toEpochMilli() <= borrow.dueTime
-                val reader = library.getReader(borrow.readerId) ?: return@launch
+                val reader = model.library.getReader(borrow.readerId) ?: return@launch
                 val newCredit = calculateCredit(reader, model.configurations, model.configurations.creditStep, onTime)
-                with(library) {
+                with(component) {
                     borrow.setReturned(newCredit.toFloat())
                 }
                 val res = snackbars.showSnackbar(
@@ -87,7 +85,7 @@ fun BorrowingApp(model: AppViewModel) {
                 )
                 if (res == SnackbarResult.ActionPerformed) {
                     judgingReader = JudgeReaderModel(reader, onTime) {
-                        with(library) {
+                        with(component) {
                             borrow.setReturned(it)
                         }
                     }
@@ -263,7 +261,7 @@ private fun BorrowItem(
 }
 
 @Composable
-private fun RowScope.ReaderTextButton(reader: Reader?, id: Identifier, app: AppViewModel) {
+private fun RowScope.ReaderTextButton(reader: Reader?, id: UuidIdentifier, app: AppViewModel) {
     if (reader == null) {
         ReconstructButton(
             icon = {

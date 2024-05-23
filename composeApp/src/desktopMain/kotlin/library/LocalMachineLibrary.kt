@@ -18,8 +18,7 @@ import java.io.File
 import java.time.Instant
 
 @OptIn(ExperimentalSerializationApi::class)
-class LocalMachineLibrary(private val context: DataSource.Context) : Library, Library.WithModificationCapability,
-    Library.WithBorrowCapability, Library.WithReturnCapability {
+class LocalMachineLibrary(private val context: DataSource.Context) : Library {
     private val workingDir by lazy { if (context is DataSource.Context.WithRootPath) File(context.defaultRootPath) else currentPlatform.dataDir }
     private val booksFile get() = File(workingDir, "books.json")
     private val readerFile get() = File(workingDir, "readers.json")
@@ -45,6 +44,7 @@ class LocalMachineLibrary(private val context: DataSource.Context) : Library, Li
     override val sorter: LibrarySortingModel by lazy {
         DefaultSorter(context, this)
     }
+    override val components = LibraryComponentsCollection(defaultComponent)
 
     override suspend fun connect() = withContext(Dispatchers.IO) {
         mInitialized = false
@@ -53,6 +53,8 @@ class LocalMachineLibrary(private val context: DataSource.Context) : Library, Li
         if (!workingDir.exists()) {
             workingDir.mkdirs()
         }
+
+        components.connectAll()
         booksFile.apply {
             if (exists()) {
                 inputStream().use {
@@ -87,92 +89,99 @@ class LocalMachineLibrary(private val context: DataSource.Context) : Library, Li
         mInitialized = true
     }
 
-    override suspend fun addBook(book: Book) {
-        books.add(book)
-        sorter.sortBooks()
-        saveBooks()
-    }
+    private val defaultComponent
+        get() = object : ModificationCapability, BorrowCapability, ReturnCapability {
+            override suspend fun addBook(book: Book) {
+                books.add(book)
+                sorter.sortBooks()
+                saveBooks()
+            }
 
-    override suspend fun updateBook(book: Book) {
-        val index = books.indexOfFirst { it.id == book.id }
-        if (index < 0) {
-            throw NoSuchElementException(book.name)
+            override suspend fun updateBook(book: Book) {
+                val index = books.indexOfFirst { it.id == book.id }
+                if (index < 0) {
+                    throw NoSuchElementException(book.name)
+                }
+                books[index] = book
+                sorter.sortBooks()
+                saveBooks()
+            }
+
+
+            override suspend fun deleteBook(book: Book) {
+                val index = books.indexOfFirst { it.id == book.id }
+                if (index < 0) {
+                    throw NoSuchElementException(book.name)
+                }
+                books.removeAt(index)
+                saveBooks()
+            }
+
+            override suspend fun addBorrow(borrower: Reader, book: Book, due: Instant) {
+                borrows.add(Borrow(UuidIdentifier(), borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
+                sorter.sortBorrows()
+                saveBorrows()
+            }
+
+            override suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant) {
+                val batch =
+                    BorrowBatch(UuidIdentifier(), borrower.id, books.map(Book::id), System.currentTimeMillis(), due.toEpochMilli())
+                borrows.add(batch)
+                sorter.sortBorrows()
+                saveBorrows()
+            }
+
+            override suspend fun BorrowLike.setReturned(readerCredit: Float) {
+                val index = borrows.indexOf(this)
+                if (index < 0) {
+                    throw NoSuchElementException()
+                }
+                borrows[index] = when (this) {
+                    is Borrow -> copy(returnTime = Instant.now().toEpochMilli())
+                    is BorrowBatch -> copy(returnTime = Instant.now().toEpochMilli())
+                }
+                sorter.sortBorrows()
+                saveBorrows()
+                getReader(readerId)?.let {
+                    updateReader(it.copy(creditability = readerCredit))
+                }
+            }
+
+            override suspend fun connect() {
+            }
+
+            override suspend fun addReader(reader: Reader) {
+                readers.add(reader)
+                sorter.sortReaders()
+                saveReaders()
+            }
+
+            override suspend fun updateReader(reader: Reader) {
+                val index = readers.indexOfFirst { it.id == reader.id }
+                if (index < 0) {
+                    throw NoSuchElementException(reader.name)
+                }
+                readers[index] = reader
+                saveReaders()
+            }
+
+            override suspend fun deleteReader(reader: Reader) {
+                val index = readers.indexOfFirst { it.id == reader.id }
+                if (index < 0) {
+                    throw NoSuchElementException(reader.name)
+                }
+                readers.removeAt(index)
+                saveReaders()
+            }
         }
-        books[index] = book
-        sorter.sortBooks()
-        saveBooks()
-    }
 
-    override fun getBook(id: Identifier) = books.firstOrNull { it.id == id }
-
-    override suspend fun deleteBook(book: Book) {
-        val index = books.indexOfFirst { it.id == book.id }
-        if (index < 0) {
-            throw NoSuchElementException(book.name)
-        }
-        books.removeAt(index)
-        saveBooks()
-    }
-
-    override suspend fun addBorrow(borrower: Reader, book: Book, due: Instant) {
-        borrows.add(Borrow(Identifier(), borrower.id, book.id, System.currentTimeMillis(), due.toEpochMilli()))
-        sorter.sortBorrows()
-        saveBorrows()
-    }
-
-    override suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant) {
-        val batch =
-            BorrowBatch(Identifier(), borrower.id, books.map(Book::id), System.currentTimeMillis(), due.toEpochMilli())
-        borrows.add(batch)
-        sorter.sortBorrows()
-        saveBorrows()
-    }
-
-    override suspend fun BorrowLike.setReturned(readerCredit: Float) {
-        val index = borrows.indexOf(this)
-        if (index < 0) {
-            throw NoSuchElementException()
-        }
-        borrows[index] = when (this) {
-            is Borrow -> copy(returnTime = Instant.now().toEpochMilli())
-            is BorrowBatch -> copy(returnTime = Instant.now().toEpochMilli())
-        }
-        sorter.sortBorrows()
-        saveBorrows()
-        getReader(readerId)?.let {
-            updateReader(it.copy(creditability = readerCredit))
-        }
-    }
+    override fun getBook(id: UuidIdentifier) = books.firstOrNull { it.id == id }
 
     override fun Book.getStock() = stock - borrows.count { it.hasBook(id) && it.returnTime == null }.toUInt()
 
-    override suspend fun addReader(reader: Reader) {
-        readers.add(reader)
-        sorter.sortReaders()
-        saveReaders()
-    }
-
-    override fun getReader(id: Identifier) = readers.firstOrNull { it.id == id }
-
-    override suspend fun updateReader(reader: Reader) {
-        val index = readers.indexOfFirst { it.id == reader.id }
-        if (index < 0) {
-            throw NoSuchElementException(reader.name)
-        }
-        readers[index] = reader
-        saveReaders()
-    }
+    override fun getReader(id: UuidIdentifier) = readers.firstOrNull { it.id == id }
 
     override fun Reader.getBorrows(): List<BorrowLike> = borrows.filter { it.readerId == id && it.returnTime == null }
-
-    override suspend fun deleteReader(reader: Reader) {
-        val index = readers.indexOfFirst { it.id == reader.id }
-        if (index < 0) {
-            throw NoSuchElementException(reader.name)
-        }
-        readers.removeAt(index)
-        saveReaders()
-    }
 
     override fun search(query: String): Flow<Searchable> = searchFlow(query)
 

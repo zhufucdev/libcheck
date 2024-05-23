@@ -29,7 +29,6 @@ import extension.toFixed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import library.Library
 import model.*
 import org.jetbrains.compose.resources.*
 import resources.*
@@ -57,7 +56,7 @@ fun ReadersApp(model: AppViewModel) {
 
     var editMode by remember(reconstructId) {
         mutableStateOf<ReaderEditMode?>(reconstructId?.let { i ->
-            model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+            model.library.components.of<ModificationCapability>()
                 ?.let { l ->
                     ReaderEditMode.Reconstruct(i, l)
                 }
@@ -68,12 +67,12 @@ fun ReadersApp(model: AppViewModel) {
     Scaffold(
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
-                model.library.takeIfInstanceOf<Library, Library.WithBorrowCapability>()
+                model.library.components.of<BorrowCapability>()
                     ?.let {
                         Basket(model, it)
                     }
                 Spacer(Modifier.width(PaddingLarge))
-                model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                model.library.components.of<ModificationCapability>()
                     ?.let {
                         ExtendedFloatingActionButton(
                             text = { Text(stringResource(Res.string.new_reader_para)) },
@@ -146,12 +145,12 @@ private sealed interface ReaderEditMode {
     suspend fun apply(model: Reader)
 
     sealed interface SpecificId {
-        val identifier: Identifier
+        val identifier: UuidIdentifier
     }
 
-    data class Overwrite(val original: Reader, val library: Library.WithModificationCapability) : ReaderEditMode,
+    data class Overwrite(val original: Reader, val library: ModificationCapability) : ReaderEditMode,
         SpecificId {
-        override val identifier: Identifier
+        override val identifier: UuidIdentifier
             get() = original.id
 
         override suspend fun apply(model: Reader) {
@@ -159,13 +158,13 @@ private sealed interface ReaderEditMode {
         }
     }
 
-    data class Create(val library: Library.WithModificationCapability) : ReaderEditMode {
+    data class Create(val library: ModificationCapability) : ReaderEditMode {
         override suspend fun apply(model: Reader) {
             library.addReader(model)
         }
     }
 
-    data class Reconstruct(override val identifier: Identifier, val library: Library.WithModificationCapability) :
+    data class Reconstruct(override val identifier: UuidIdentifier, val library: ModificationCapability) :
         ReaderEditMode, SpecificId {
         override suspend fun apply(model: Reader) {
             library.addReader(model)
@@ -273,7 +272,7 @@ private fun EditReaderDialog(
                         Reader(
                             readerName,
                             if (mode is ReaderEditMode.SpecificId) mode.identifier
-                            else Identifier(),
+                            else UuidIdentifier(),
                             readerUri,
                             readerTier
                         )
@@ -292,8 +291,8 @@ private fun EditReaderDialog(
 private fun ReaderList(
     model: AppViewModel,
     onReaderClick: (Reader) -> Unit,
-    onEditReaderRequest: (Reader, Library.WithModificationCapability) -> Unit,
-    onReaderDeleted: (Reader, Library.WithModificationCapability) -> Unit,
+    onEditReaderRequest: (Reader, ModificationCapability) -> Unit,
+    onReaderDeleted: (Reader, ModificationCapability) -> Unit,
 ) {
     val library = model.library
     val coroutine = rememberCoroutineScope()
@@ -392,7 +391,7 @@ private fun ReaderList(
                                 ) {
                                     Box {
                                         ReaderAvatar(reader.avatarUri)
-                                        model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                                        model.library.components.of<ModificationCapability>()
                                             ?.let { library ->
                                                 CommonContextMenu(
                                                     expanded = contextMenu,

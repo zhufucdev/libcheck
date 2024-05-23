@@ -47,7 +47,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import library.Library
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.getString
@@ -66,7 +65,7 @@ fun BooksApp(model: AppViewModel) {
             model.navigator.current.parameters
                 .takeIfInstanceOf<NavigationParameters, ReconstructParameters>()
                 ?.let { p ->
-                    model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                    model.library.components.of<ModificationCapability>()
                         ?.let { l ->
                             BookEditMode.Reconstruct(p.identifier, l)
                         }
@@ -85,12 +84,12 @@ fun BooksApp(model: AppViewModel) {
     Scaffold(
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
-                model.library.takeIfInstanceOf<Library, Library.WithBorrowCapability>()
+                model.library.components.of<BorrowCapability>()
                     ?.let {
                         Basket(model, it)
                     }
                 Spacer(Modifier.width(PaddingLarge))
-                model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                model.library.components.of<ModificationCapability>()
                     ?.let {
                         ExtendedFloatingActionButton(
                             text = { Text(stringResource(Res.string.new_book_para)) },
@@ -151,16 +150,14 @@ fun BooksApp(model: AppViewModel) {
             mode = mode,
             library = model.library,
             onDismissRequest = { editMode = null },
-            onUpdateRequest = model.library.let { library ->
-                if (library !is Library.WithModificationCapability) null
-                else { it ->
+            onUpdateRequest = model.library.components.of<ModificationCapability>()?.let { _ ->
+                {
                     coroutineScope.launch {
                         mode.apply(it)
                         if (mode is BookEditMode.Reconstruct) {
                             model.navigator.replace()
                         }
                     }
-                    Unit
                 }
             }
         )
@@ -171,12 +168,12 @@ private sealed interface BookEditMode {
     suspend fun apply(model: Book)
 
     sealed interface SpecificId {
-        val identifier: Identifier
+        val identifier: UuidIdentifier
     }
 
-    data class Overwrite(val original: Book, val library: Library.WithModificationCapability) : BookEditMode,
+    data class Overwrite(val original: Book, val library: ModificationCapability) : BookEditMode,
         SpecificId {
-        override val identifier: Identifier
+        override val identifier: UuidIdentifier
             get() = original.id
 
         override suspend fun apply(model: Book) {
@@ -184,13 +181,13 @@ private sealed interface BookEditMode {
         }
     }
 
-    data class Create(val library: Library.WithModificationCapability) : BookEditMode {
+    data class Create(val library: ModificationCapability) : BookEditMode {
         override suspend fun apply(model: Book) {
             library.addBook(model)
         }
     }
 
-    data class Reconstruct(override val identifier: Identifier, val library: Library.WithModificationCapability) :
+    data class Reconstruct(override val identifier: UuidIdentifier, val library: ModificationCapability) :
         BookEditMode, SpecificId {
         override suspend fun apply(model: Book) {
             library.addBook(model)
@@ -341,7 +338,7 @@ private fun EditBookDialog(
                         bookAuthor,
                         bookIsbn,
                         if (mode is BookEditMode.SpecificId) mode.identifier
-                        else Identifier(),
+                        else UuidIdentifier(),
                         bookUri,
                         bookStockParsed!!
                     )
@@ -360,8 +357,8 @@ private fun EditBookDialog(
 private fun BookList(
     model: AppViewModel,
     onBookClicked: (Book) -> Unit,
-    onBookEditRequest: (Book, Library.WithModificationCapability) -> Unit,
-    onBookDeleted: (Book, Library.WithModificationCapability) -> Unit,
+    onBookEditRequest: (Book, ModificationCapability) -> Unit,
+    onBookDeleted: (Book, ModificationCapability) -> Unit,
 ) {
     val library = model.library
     val state = remember { LazyGridState() }
@@ -450,8 +447,8 @@ private fun BookCard(
     model: AppViewModel,
     book: Book,
     onClick: (Book) -> Unit,
-    onEdit: (Book, Library.WithModificationCapability) -> Unit,
-    onDeleted: (Book, Library.WithModificationCapability) -> Unit,
+    onEdit: (Book, ModificationCapability) -> Unit,
+    onDeleted: (Book, ModificationCapability) -> Unit,
 ) {
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
@@ -514,7 +511,7 @@ private fun BookCard(
                     offset = dragOff
                 )
 
-                model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                model.library.components.of<ModificationCapability>()
                     ?.let { library ->
                         CommonContextMenu(
                             expanded = contextMenu,

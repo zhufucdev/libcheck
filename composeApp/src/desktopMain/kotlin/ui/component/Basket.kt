@@ -45,11 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
-import library.Library
-import model.AppViewModel
-import model.Book
-import model.Identifier
-import model.Reader
+import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
@@ -69,7 +65,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 @Composable
-fun Basket(model: AppViewModel, library: Library.WithBorrowCapability) {
+fun Basket(model: AppViewModel, component: BorrowCapability) {
     val coroutine = rememberCoroutineScope()
     var basketExpanded by remember { mutableStateOf(false) }
     var revealPercentage by remember { mutableStateOf(0f) }
@@ -228,7 +224,7 @@ fun Basket(model: AppViewModel, library: Library.WithBorrowCapability) {
                                                     stringResource(Res.string.unknown_book_para),
                                                     "",
                                                     "",
-                                                    Identifier(),
+                                                    UuidIdentifier(),
                                                     "",
                                                     0u
                                                 )
@@ -296,9 +292,9 @@ fun Basket(model: AppViewModel, library: Library.WithBorrowCapability) {
             onBorrow = { due ->
                 coroutine.launch {
                     if (droppedBooks.size == 1) {
-                        library.addBorrow(it, droppedBooks[0], due)
+                        component.addBorrow(it, droppedBooks[0], due)
                     } else if (droppedBooks.size > 1) {
-                        library.addBorrowBatch(it, droppedBooks, due)
+                        component.addBorrowBatch(it, droppedBooks, due)
                     }
                     droppedBooks = emptyList()
                 }

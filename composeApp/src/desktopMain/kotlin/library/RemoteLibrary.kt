@@ -1,29 +1,24 @@
 package library
 
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import com.google.protobuf.ByteString
 import com.sqlmaster.proto.*
 import com.sqlmaster.proto.LibraryOuterClass.UpdateEffect
+import com.sqlmaster.proto.LibraryOuterClass.UserRole
 import currentPlatform
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.merge
-import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.*
 import model.*
 import java.time.Instant
 
-class RemoteLibrary(
+open class RemoteLibrary(
     private val deviceName: String,
     private val context: DataSource.Context,
     channelBuilder: () -> ManagedChannel,
-) : Library, Library.WithBorrowCapability, Library.WithModificationCapability, Library.WithReturnCapability {
+) : Library {
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     private val channel by lazy { channelBuilder.invoke() }
@@ -36,25 +31,177 @@ class RemoteLibrary(
     override val sorter: LibrarySortingModel by lazy {
         DefaultSorter(context, this)
     }
+    override val components = LibraryComponentsCollection()
 
-    override suspend fun BorrowLike.setReturned(readerCredit: Float) {
-        val res =
-            when (val p = this@setReturned) {
-                is Borrow ->
-                    libraryChannel.updateBorrow(newUpdateRequest(id) {
-                        borrow = p.copy(returnTime = System.currentTimeMillis()).toProto()
-                    })
-
-                is BorrowBatch ->
-                    libraryChannel.updateBorrowBatch(newUpdateRequest(id) {
-                        batch = p.copy(returnTime = System.currentTimeMillis()).toProto()
-                    })
+    private val librarianComponent
+        get() = object : ModificationCapability, BorrowCapability, ReturnCapability {
+            private fun newUpdateRequest(id: UuidIdentifier, init: UpdateRequestKt.Dsl.() -> Unit) = updateRequest {
+                token = accessToken
+                this.id = id.toString()
+                init(this)
             }
-        res.effect.maybeThrow()
-        getReader(readerId)?.let {
-            updateReader(it.copy(creditability = readerCredit))
+
+            private fun newAddRequest(init: AddRequestKt.Dsl.() -> Unit) = addRequest {
+                token = accessToken
+                init(this)
+            }
+
+            private fun newDeleteRequest(id: UuidIdentifier) = deleteRequest {
+                token = accessToken
+                this.id = id.toString()
+            }
+
+            override suspend fun addBook(book: Book) {
+                val res =
+                    libraryChannel.addBook(
+                        newAddRequest {
+                            this.book = book.toProto()
+                        }
+                    )
+                res.effect.maybeThrow()
+            }
+
+            override suspend fun updateBook(book: Book) {
+                val res =
+                    libraryChannel.updateBook(
+                        newUpdateRequest(book.id) {
+                            this.book = book.toProto()
+                        }
+                    )
+                res.effect.maybeThrow()
+            }
+
+            override suspend fun deleteBook(book: Book) {
+                libraryChannel.deleteBook(newDeleteRequest(book.id))
+            }
+
+            override suspend fun addReader(reader: Reader) {
+                val res =
+                    libraryChannel.addReader(newAddRequest {
+                        this.reader = reader.toProto()
+                    })
+                res.effect.maybeThrow()
+            }
+
+            override suspend fun updateReader(reader: Reader) {
+                val res =
+                    libraryChannel.updateReader(newUpdateRequest(reader.id) {
+                        this.reader = reader.toProto()
+                    })
+                res.effect.maybeThrow()
+            }
+
+            override suspend fun deleteReader(reader: Reader) {
+                libraryChannel.deleteReader(newDeleteRequest(reader.id)).effect.maybeThrow()
+            }
+
+            override suspend fun addBorrow(borrower: Reader, book: Book, due: Instant) {
+                val res =
+                    libraryChannel.addBorrow(newAddRequest {
+                        borrow = borrow {
+                            id = UuidIdentifier().toString()
+                            readerId = borrower.id.toString()
+                            bookId = book.id.toString()
+                            time = Timestamp(Instant.now().toEpochMilli())
+                            dueTime = Timestamp(due.toEpochMilli())
+                        }
+                    })
+                res.effect.maybeThrow()
+            }
+
+            override suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant) {
+                val res =
+                    libraryChannel.addBorrowBatch(newAddRequest {
+                        batch = borrowBatch {
+                            id = UuidIdentifier().toString()
+                            readerId = borrower.id.toString()
+                            bookIds.addAll(books.map { it.id.toString() })
+                            time = Timestamp(Instant.now().toEpochMilli())
+                            dueTime = Timestamp(due.toEpochMilli())
+                        }
+                    })
+                res.effect.maybeThrow()
+            }
+
+            override suspend fun BorrowLike.setReturned(readerCredit: Float) {
+                val res =
+                    when (val p = this@setReturned) {
+                        is Borrow ->
+                            libraryChannel.updateBorrow(newUpdateRequest(id) {
+                                borrow = p.copy(returnTime = System.currentTimeMillis()).toProto()
+                            })
+
+                        is BorrowBatch ->
+                            libraryChannel.updateBorrowBatch(newUpdateRequest(id) {
+                                batch = p.copy(returnTime = System.currentTimeMillis()).toProto()
+                            })
+                    }
+                res.effect.maybeThrow()
+                getReader(readerId)?.let {
+                    updateReader(it.copy(creditability = readerCredit))
+                }
+            }
+
+            override suspend fun connect() {
+            }
         }
-    }
+
+    private val adminComponent
+        get() = object : AccountCapability {
+            override val users: SnapshotStateList<User> = mutableStateListOf()
+
+            override suspend fun connect() {
+                coroutineScope.launch {
+                    UniqueIdentifierStateList.bindTo(
+                        users,
+                        libraryChannel.getUsers(newGetRequest())
+                            .filter { !it.end }
+                            .map { IntegerIdentifier(it.id) to it.user.toModel() }
+                    )
+                }
+            }
+
+            override suspend fun inviteUser(role: UserRole, readerId: UuidIdentifier?): Flow<AccountCapability.TemporaryPassword> {
+                val pwdChan = Channel<String>()
+                val revChan = Channel<LibraryState.PasswordRequired.AuthResult>()
+                state = LibraryState.PasswordRequired(pwdChan, revChan)
+
+                return flow {
+                    while (true) {
+                        val pwd = pwdChan.receive()
+                        val res = libraryChannel.addUser(addUserRequest {
+                            deviceName = this@RemoteLibrary.deviceName
+                            password = pwd
+                            this.role = role
+                            readerId?.toString()?.let { this.readerId = it }
+                        })
+                        var allowed = true
+                        res.collect {
+                            if (it.allowed) {
+                                emit(it.toModel())
+                            } else {
+                                allowed = false
+                            }
+                        }
+                        if (allowed) {
+                            break
+                        }
+                    }
+                }
+            }
+
+            override suspend fun updateUser(user: User) {
+                libraryChannel.updateUser(updateUserRequest {
+                    token = accessToken
+                    userId = user.id.id
+                    this.user = user.toProto()
+                })
+            }
+
+            override suspend fun deleteUser(user: User) {
+                TODO()
+            }
+        }
 
     override fun Book.getStock(): UInt {
         val count by derivedStateOf { stock - borrows.count { it.hasBook(id) && it.returnTime == null }.toUInt() }
@@ -67,30 +214,9 @@ class RemoteLibrary(
 
     override fun Reader.getBorrows(): List<BorrowLike> = borrows.filter { it.readerId == id }
 
-    private fun newUpdateRequest(id: Identifier, init: UpdateRequestKt.Dsl.() -> Unit) = updateRequest {
-        token = accessToken
-        this.id = id.toString()
-        init(this)
-    }
-
-    private fun newAddRequest(init: AddRequestKt.Dsl.() -> Unit) = addRequest {
-        token = accessToken
-        init(this)
-    }
-
     private fun newGetRequest() = getRequest { token = accessToken }
-    private fun newDeleteRequest(id: Identifier) = deleteRequest {
-        token = accessToken
-        this.id = id.toString()
-    }
 
-    override suspend fun connect() {
-        val capturedState = state
-        if (capturedState !is LibraryState.Initializing || capturedState.progress > 0) {
-            // already connected or is connecting
-            return
-        }
-
+    private suspend fun signIn(): UserRole {
         if (context is DataSource.Context.WithToken && context.token != null) {
             val init = ByteString.copyFrom(context.token)
             val auth = authenticationRequest {
@@ -99,6 +225,7 @@ class RemoteLibrary(
             val authResult = authenticationChannel.authenticate(auth)
             if (authResult.allowed) {
                 accessToken = init
+                return authResult.role
             }
         } else if (context is DataSource.Context.WithPassword) {
             val auth = authorizationRequest {
@@ -113,10 +240,13 @@ class RemoteLibrary(
                     context.token = res.token.toByteArray()
                     context.save()
                 }
+                return res.role
             } else {
                 throw AccessDeniedException("Password authorization failed")
             }
-        } else {
+        }
+
+        if (!::accessToken.isInitialized) {
             val pwdChan = Channel<String>()
             val resChan = Channel<LibraryState.PasswordRequired.AuthResult>()
             state = LibraryState.PasswordRequired(pwdChan, resChan)
@@ -135,10 +265,27 @@ class RemoteLibrary(
                         context.save()
                     }
                     resChan.send(LibraryState.PasswordRequired.AuthResult(true, res.token.toByteArray()))
-                    break
+                    return res.role
                 }
                 resChan.send(LibraryState.PasswordRequired.AuthResult(false, null))
             }
+        }
+
+        return UserRole.ROLE_UNSPECIFIC
+    }
+
+    override suspend fun connect() {
+        val capturedState = state
+        if (capturedState !is LibraryState.Initializing || capturedState.progress > 0) {
+            // already connected or is connecting
+            return
+        }
+
+        val role = signIn()
+        when (role) {
+            UserRole.ROLE_UNSPECIFIC, UserRole.UNRECOGNIZED, UserRole.ROLE_READER -> {}
+            UserRole.ROLE_ADMIN -> components.add(librarianComponent, adminComponent)
+            UserRole.ROLE_LIBRARIAN -> components.add(librarianComponent)
         }
 
         state = LibraryState.Synchronizing(0f, false)
@@ -177,7 +324,7 @@ class RemoteLibrary(
                         }
                     }
                     .filter { !it.end }
-                    .map { Identifier.parse(it.id) to it.readerOrNull?.toModel() }
+                    .map { UuidIdentifier.parse(it.id) to it.readerOrNull?.toModel() }
             ) {
                 if (state !is LibraryState.Initializing) {
                     sorter.sortReaders()
@@ -195,7 +342,7 @@ class RemoteLibrary(
                         }
                     }
                     .filter { !it.end }
-                    .map { Identifier.parse(it.id) to it.bookOrNull?.toModel() }
+                    .map { UuidIdentifier.parse(it.id) to it.bookOrNull?.toModel() }
             ) {
                 if (state !is LibraryState.Initializing) {
                     sorter.sortBooks()
@@ -213,7 +360,7 @@ class RemoteLibrary(
                             }
                         }
                         .filter { !it.end }
-                        .map { Identifier.parse(it.id) to it.batchOrNull?.toModel() },
+                        .map { UuidIdentifier.parse(it.id) to it.batchOrNull?.toModel() },
                     libraryChannel
                         .getBorrows(newGetRequest())
                         .onEach {
@@ -222,7 +369,7 @@ class RemoteLibrary(
                             }
                         }
                         .filter { !it.end }
-                        .map { Identifier.parse(it.id) to it.borrowOrNull?.toModel() }
+                        .map { UuidIdentifier.parse(it.id) to it.borrowOrNull?.toModel() }
                 )
             ) {
                 if (state !is LibraryState.Initializing) {
@@ -232,81 +379,9 @@ class RemoteLibrary(
         }
     }
 
-    override suspend fun addBook(book: Book) {
-        val res =
-            libraryChannel.addBook(
-                newAddRequest {
-                    this.book = book.toProto()
-                }
-            )
-        res.effect.maybeThrow()
-    }
+    override fun getBook(id: UuidIdentifier): Book? = books.firstOrNull { it.id == id }
 
-    override suspend fun updateBook(book: Book) {
-        val res =
-            libraryChannel.updateBook(
-                newUpdateRequest(book.id) {
-                    this.book = book.toProto()
-                }
-            )
-        res.effect.maybeThrow()
-    }
-
-    override fun getBook(id: Identifier): Book? = books.firstOrNull { it.id == id }
-
-    override suspend fun deleteBook(book: Book) {
-        libraryChannel.deleteBook(newDeleteRequest(book.id))
-    }
-
-    override suspend fun addBorrow(borrower: Reader, book: Book, due: Instant) {
-        val res =
-            libraryChannel.addBorrow(newAddRequest {
-                borrow = borrow {
-                    id = Identifier().toString()
-                    readerId = borrower.id.toString()
-                    bookId = book.id.toString()
-                    time = Timestamp(Instant.now().toEpochMilli())
-                    dueTime = Timestamp(due.toEpochMilli())
-                }
-            })
-        res.effect.maybeThrow()
-    }
-
-    override suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant) {
-        val res =
-            libraryChannel.addBorrowBatch(newAddRequest {
-                batch = borrowBatch {
-                    id = Identifier().toString()
-                    readerId = borrower.id.toString()
-                    bookIds.addAll(books.map { it.id.toString() })
-                    time = Timestamp(Instant.now().toEpochMilli())
-                    dueTime = Timestamp(due.toEpochMilli())
-                }
-            })
-        res.effect.maybeThrow()
-    }
-
-    override suspend fun addReader(reader: Reader) {
-        val res =
-            libraryChannel.addReader(newAddRequest {
-                this.reader = reader.toProto()
-            })
-        res.effect.maybeThrow()
-    }
-
-    override fun getReader(id: Identifier): Reader? = readers.firstOrNull { it.id == id }
-
-    override suspend fun updateReader(reader: Reader) {
-        val res =
-            libraryChannel.updateReader(newUpdateRequest(reader.id) {
-                this.reader = reader.toProto()
-            })
-        res.effect.maybeThrow()
-    }
-
-    override suspend fun deleteReader(reader: Reader) {
-        libraryChannel.deleteReader(newDeleteRequest(reader.id)).effect.maybeThrow()
-    }
+    override fun getReader(id: UuidIdentifier): Reader? = readers.firstOrNull { it.id == id }
 
     override fun search(query: String) = searchFlow(query)
 

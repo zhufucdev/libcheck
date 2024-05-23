@@ -1,46 +1,29 @@
-package library
+package model
 
 import androidx.compose.runtime.Stable
 import kotlinx.coroutines.channels.ReceiveChannel
 import kotlinx.coroutines.channels.SendChannel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
-import model.*
 import java.io.Closeable
-import java.time.Instant
 
-sealed interface Library : Closeable {
+interface Library : Closeable {
     val state: LibraryState
     val sorter: LibrarySortingModel
-    fun Book.getStock(): UInt
+
     val readers: List<Reader>
     val books: List<Book>
     val borrows: List<BorrowLike>
+    val components: LibraryComponentsCollection
+
+    fun Book.getStock(): UInt
     fun Reader.getBorrows(): List<BorrowLike>
 
     suspend fun connect()
-    fun getBook(id: Identifier): Book?
-    fun getReader(id: Identifier): Reader?
+    fun getBook(id: UuidIdentifier): Book?
+    fun getReader(id: UuidIdentifier): Reader?
 
     fun search(query: String): Flow<Searchable>
-
-    interface WithModificationCapability : Library {
-        suspend fun addBook(book: Book)
-        suspend fun updateBook(book: Book)
-        suspend fun deleteBook(book: Book)
-        suspend fun addReader(reader: Reader)
-        suspend fun updateReader(reader: Reader)
-        suspend fun deleteReader(reader: Reader)
-    }
-
-    interface WithBorrowCapability : Library {
-        suspend fun addBorrow(borrower: Reader, book: Book, due: Instant)
-        suspend fun addBorrowBatch(borrower: Reader, books: List<Book>, due: Instant)
-    }
-
-    interface WithReturnCapability : Library {
-        suspend fun BorrowLike.setReturned(readerCredit: Float)
-    }
 }
 
 sealed interface LibraryState {
