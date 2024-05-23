@@ -47,6 +47,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import library.Library
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.getString
@@ -64,7 +65,13 @@ fun BooksApp(model: AppViewModel) {
         mutableStateOf<BookEditMode?>(
             model.navigator.current.parameters
                 .takeIfInstanceOf<NavigationParameters, ReconstructParameters>()
-                ?.let { BookEditMode.Reconstruct(it.identifier) })
+                ?.let { p ->
+                    model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                        ?.let { l ->
+                            BookEditMode.Reconstruct(p.identifier, l)
+                        }
+                }
+        )
     }
     val detailedBook by remember(model) {
         derivedStateOf {
@@ -78,13 +85,19 @@ fun BooksApp(model: AppViewModel) {
     Scaffold(
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
-                Basket(model)
+                model.library.takeIfInstanceOf<Library, Library.WithBorrowCapability>()
+                    ?.let {
+                        Basket(model, it)
+                    }
                 Spacer(Modifier.width(PaddingLarge))
-                ExtendedFloatingActionButton(
-                    text = { Text(stringResource(Res.string.new_book_para)) },
-                    icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "") },
-                    onClick = { editMode = BookEditMode.Create }
-                )
+                model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                    ?.let {
+                        ExtendedFloatingActionButton(
+                            text = { Text(stringResource(Res.string.new_book_para)) },
+                            icon = { Icon(imageVector = Icons.Default.BookmarkAdd, contentDescription = "") },
+                            onClick = { editMode = BookEditMode.Create(it) }
+                        )
+                    }
             }
         },
         snackbarHost = { SnackbarHost(snackbars) }
@@ -97,17 +110,17 @@ fun BooksApp(model: AppViewModel) {
                         parameters = RevealDetailsParameters(book.id)
                     )
                 },
-                onBookEditRequest = { book ->
-                    editMode = BookEditMode.Overwrite(book)
+                onBookEditRequest = { book, library ->
+                    editMode = BookEditMode.Overwrite(book, library)
                 },
-                onBookDeleted = {
+                onBookDeleted = { book, library ->
                     coroutineScope.launch {
                         val res = snackbars.showSnackbar(
-                            getString(Res.string.is_deleted_para, it.name),
+                            getString(Res.string.is_deleted_para, book.name),
                             getString(Res.string.undo_para)
                         )
                         if (res == SnackbarResult.ActionPerformed) {
-                            model.library.addBook(it)
+                            library.addBook(book)
                         }
                     }
                 }
@@ -138,12 +151,16 @@ fun BooksApp(model: AppViewModel) {
             mode = mode,
             library = model.library,
             onDismissRequest = { editMode = null },
-            onUpdateRequest = {
-                coroutineScope.launch {
-                    mode.apply(it, model.library)
-                    if (mode is BookEditMode.Reconstruct) {
-                        model.navigator.replace()
+            onUpdateRequest = model.library.let { library ->
+                if (library !is Library.WithModificationCapability) null
+                else { it ->
+                    coroutineScope.launch {
+                        mode.apply(it)
+                        if (mode is BookEditMode.Reconstruct) {
+                            model.navigator.replace()
+                        }
                     }
+                    Unit
                 }
             }
         )
@@ -151,29 +168,31 @@ fun BooksApp(model: AppViewModel) {
 }
 
 private sealed interface BookEditMode {
-    suspend fun apply(model: Book, library: Library)
+    suspend fun apply(model: Book)
 
     sealed interface SpecificId {
         val identifier: Identifier
     }
 
-    data class Overwrite(val original: Book) : BookEditMode, SpecificId {
+    data class Overwrite(val original: Book, val library: Library.WithModificationCapability) : BookEditMode,
+        SpecificId {
         override val identifier: Identifier
             get() = original.id
 
-        override suspend fun apply(model: Book, library: Library) {
+        override suspend fun apply(model: Book) {
             library.updateBook(model)
         }
     }
 
-    data object Create : BookEditMode {
-        override suspend fun apply(model: Book, library: Library) {
+    data class Create(val library: Library.WithModificationCapability) : BookEditMode {
+        override suspend fun apply(model: Book) {
             library.addBook(model)
         }
     }
 
-    data class Reconstruct(override val identifier: Identifier) : BookEditMode, SpecificId {
-        override suspend fun apply(model: Book, library: Library) {
+    data class Reconstruct(override val identifier: Identifier, val library: Library.WithModificationCapability) :
+        BookEditMode, SpecificId {
+        override suspend fun apply(model: Book) {
             library.addBook(model)
         }
     }
@@ -184,7 +203,7 @@ private fun EditBookDialog(
     mode: BookEditMode,
     library: Library,
     onDismissRequest: () -> Unit,
-    onUpdateRequest: (Book) -> Unit,
+    onUpdateRequest: ((Book) -> Unit)? = null,
 ) {
     val textColor = MaterialTheme.colorScheme.onSurface
 
@@ -311,6 +330,9 @@ private fun EditBookDialog(
             }
         },
         confirmButton = {
+            if (onUpdateRequest == null) {
+                return@AlertDialog
+            }
             TextButton(
                 content = { Text(stringResource(Res.string.ok_caption)) },
                 onClick = {
@@ -338,8 +360,8 @@ private fun EditBookDialog(
 private fun BookList(
     model: AppViewModel,
     onBookClicked: (Book) -> Unit,
-    onBookEditRequest: (Book) -> Unit,
-    onBookDeleted: (Book) -> Unit,
+    onBookEditRequest: (Book, Library.WithModificationCapability) -> Unit,
+    onBookDeleted: (Book, Library.WithModificationCapability) -> Unit,
 ) {
     val library = model.library
     val state = remember { LazyGridState() }
@@ -428,8 +450,8 @@ private fun BookCard(
     model: AppViewModel,
     book: Book,
     onClick: (Book) -> Unit,
-    onEdit: (Book) -> Unit,
-    onDeleted: (Book) -> Unit,
+    onEdit: (Book, Library.WithModificationCapability) -> Unit,
+    onDeleted: (Book, Library.WithModificationCapability) -> Unit,
 ) {
     var dragging by remember { mutableStateOf(false) }
     var dragOff by remember { mutableStateOf(Offset.Zero) }
@@ -492,21 +514,28 @@ private fun BookCard(
                     offset = dragOff
                 )
 
-                CommonContextMenu(
-                    expanded = contextMenu,
-                    onDismissRequest = { contextMenu = false },
-                    onDelete = {
-                        withContext(Dispatchers.IO) {
-                            model.library.deleteBook(book)
-                            onDeleted(book)
-                        }
-                    },
-                    onEdit = {
-                        onEdit(book)
+                model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                    ?.let { library ->
+                        CommonContextMenu(
+                            expanded = contextMenu,
+                            onDismissRequest = { contextMenu = false },
+                            onDelete = {
+                                withContext(Dispatchers.IO) {
+                                    library.deleteBook(book)
+                                    onDeleted(book, library)
+                                }
+                            },
+                            onEdit = {
+                                onEdit.invoke(book, library)
+                            }
+                        )
                     }
-                )
             }
-            Text(text = book.displayName(), style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+            Text(
+                text = book.displayName(),
+                style = MaterialTheme.typography.titleMedium,
+                textAlign = TextAlign.Center
+            )
             Text(text = book.author, style = MaterialTheme.typography.bodySmall)
         }
     }

@@ -29,6 +29,7 @@ import extension.toFixed
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import library.Library
 import model.*
 import org.jetbrains.compose.resources.*
 import resources.*
@@ -55,10 +56,11 @@ fun ReadersApp(model: AppViewModel) {
     }
 
     var editMode by remember(reconstructId) {
-        mutableStateOf<ReaderEditMode?>(reconstructId?.let {
-            ReaderEditMode.Reconstruct(
-                it
-            )
+        mutableStateOf<ReaderEditMode?>(reconstructId?.let { i ->
+            model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                ?.let { l ->
+                    ReaderEditMode.Reconstruct(i, l)
+                }
         })
     }
     val snackbars = remember { SnackbarHostState() }
@@ -66,13 +68,19 @@ fun ReadersApp(model: AppViewModel) {
     Scaffold(
         floatingActionButton = {
             Row(horizontalArrangement = Arrangement.End, verticalAlignment = Alignment.Bottom) {
-                Basket(model)
+                model.library.takeIfInstanceOf<Library, Library.WithBorrowCapability>()
+                    ?.let {
+                        Basket(model, it)
+                    }
                 Spacer(Modifier.width(PaddingLarge))
-                ExtendedFloatingActionButton(
-                    text = { Text(stringResource(Res.string.new_reader_para)) },
-                    icon = { Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "") },
-                    onClick = { editMode = ReaderEditMode.Create }
-                )
+                model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                    ?.let {
+                        ExtendedFloatingActionButton(
+                            text = { Text(stringResource(Res.string.new_reader_para)) },
+                            icon = { Icon(imageVector = Icons.Default.PersonAdd, contentDescription = "") },
+                            onClick = { editMode = ReaderEditMode.Create(it) }
+                        )
+                    }
             }
         },
         snackbarHost = { SnackbarHost(snackbars) }
@@ -83,17 +91,17 @@ fun ReadersApp(model: AppViewModel) {
                 onReaderClick = { reader ->
                     model.navigator.replace(parameters = RevealDetailsParameters(reader.id))
                 },
-                onEditReaderRequest = { reader ->
-                    editMode = ReaderEditMode.Overwrite(reader)
+                onEditReaderRequest = { reader, library ->
+                    editMode = ReaderEditMode.Overwrite(reader, library)
                 },
-                onReaderDeleted = {
+                onReaderDeleted = { reader, library ->
                     coroutine.launch {
                         val res = snackbars.showSnackbar(
-                            getString(Res.string.is_deleted_para, it.name),
+                            getString(Res.string.is_deleted_para, reader.name),
                             getString(Res.string.undo_para)
                         )
                         if (res == SnackbarResult.ActionPerformed) {
-                            model.library.addReader(it)
+                            library.addReader(reader)
                         }
                     }
                 }
@@ -107,7 +115,7 @@ fun ReadersApp(model: AppViewModel) {
             onDismissRequest = { editMode = null },
             onUpdateRequest = {
                 coroutine.launch {
-                    mode.apply(it, model.library)
+                    mode.apply(it)
                     if (reconstructId != null) {
                         model.navigator.replace()
                     }
@@ -135,28 +143,31 @@ fun ReadersApp(model: AppViewModel) {
 }
 
 private sealed interface ReaderEditMode {
-    suspend fun apply(model: Reader, library: Library)
+    suspend fun apply(model: Reader)
 
     sealed interface SpecificId {
         val identifier: Identifier
     }
 
-    data class Overwrite(val original: Reader) : ReaderEditMode, SpecificId {
+    data class Overwrite(val original: Reader, val library: Library.WithModificationCapability) : ReaderEditMode,
+        SpecificId {
         override val identifier: Identifier
             get() = original.id
-        override suspend fun apply(model: Reader, library: Library) {
+
+        override suspend fun apply(model: Reader) {
             library.updateReader(model)
         }
     }
 
-    data object Create : ReaderEditMode {
-        override suspend fun apply(model: Reader, library: Library) {
+    data class Create(val library: Library.WithModificationCapability) : ReaderEditMode {
+        override suspend fun apply(model: Reader) {
             library.addReader(model)
         }
     }
 
-    data class Reconstruct(override val identifier: Identifier) : ReaderEditMode, SpecificId {
-        override suspend fun apply(model: Reader, library: Library) {
+    data class Reconstruct(override val identifier: Identifier, val library: Library.WithModificationCapability) :
+        ReaderEditMode, SpecificId {
+        override suspend fun apply(model: Reader) {
             library.addReader(model)
         }
     }
@@ -281,8 +292,8 @@ private fun EditReaderDialog(
 private fun ReaderList(
     model: AppViewModel,
     onReaderClick: (Reader) -> Unit,
-    onEditReaderRequest: (Reader) -> Unit,
-    onReaderDeleted: (Reader) -> Unit,
+    onEditReaderRequest: (Reader, Library.WithModificationCapability) -> Unit,
+    onReaderDeleted: (Reader, Library.WithModificationCapability) -> Unit,
 ) {
     val library = model.library
     val coroutine = rememberCoroutineScope()
@@ -381,19 +392,22 @@ private fun ReaderList(
                                 ) {
                                     Box {
                                         ReaderAvatar(reader.avatarUri)
-                                        CommonContextMenu(
-                                            expanded = contextMenu,
-                                            onDismissRequest = { contextMenu = false },
-                                            onEdit = {
-                                                onEditReaderRequest(reader)
-                                            },
-                                            onDelete = {
-                                                withContext(Dispatchers.IO) {
-                                                    model.library.deleteReader(reader)
-                                                    onReaderDeleted(reader)
-                                                }
+                                        model.library.takeIfInstanceOf<Library, Library.WithModificationCapability>()
+                                            ?.let { library ->
+                                                CommonContextMenu(
+                                                    expanded = contextMenu,
+                                                    onDismissRequest = { contextMenu = false },
+                                                    onEdit = {
+                                                        onEditReaderRequest(reader, library)
+                                                    },
+                                                    onDelete = {
+                                                        withContext(Dispatchers.IO) {
+                                                            library.deleteReader(reader)
+                                                            onReaderDeleted(reader, library)
+                                                        }
+                                                    }
+                                                )
                                             }
-                                        )
                                     }
                                     Text(text = reader.name, style = MaterialTheme.typography.titleMedium)
                                     Text(

@@ -23,7 +23,7 @@ class RemoteLibrary(
     private val deviceName: String,
     private val context: DataSource.Context,
     channelBuilder: () -> ManagedChannel,
-) : Library {
+) : Library, Library.WithBorrowCapability, Library.WithModificationCapability, Library.WithReturnCapability {
     private val coroutineScope = CoroutineScope(Dispatchers.IO)
 
     private val channel by lazy { channelBuilder.invoke() }
@@ -37,7 +37,7 @@ class RemoteLibrary(
         DefaultSorter(context, this)
     }
 
-    override suspend fun BorrowLike.setReturned() {
+    override suspend fun BorrowLike.setReturned(readerCredit: Float) {
         val res =
             when (val p = this@setReturned) {
                 is Borrow ->
@@ -51,6 +51,9 @@ class RemoteLibrary(
                     })
             }
         res.effect.maybeThrow()
+        getReader(readerId)?.let {
+            updateReader(it.copy(creditability = readerCredit))
+        }
     }
 
     override fun Book.getStock(): UInt {

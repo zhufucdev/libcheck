@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
+import library.Library
 import model.AppViewModel
 import model.Book
 import model.Identifier
@@ -68,7 +69,7 @@ import kotlin.math.pow
 import kotlin.math.sqrt
 
 @Composable
-fun Basket(model: AppViewModel) {
+fun Basket(model: AppViewModel, library: Library.WithBorrowCapability) {
     val coroutine = rememberCoroutineScope()
     var basketExpanded by remember { mutableStateOf(false) }
     var revealPercentage by remember { mutableStateOf(0f) }
@@ -295,9 +296,9 @@ fun Basket(model: AppViewModel) {
             onBorrow = { due ->
                 coroutine.launch {
                     if (droppedBooks.size == 1) {
-                        model.library.addBorrow(it, droppedBooks[0], due)
+                        library.addBorrow(it, droppedBooks[0], due)
                     } else if (droppedBooks.size > 1) {
-                        model.library.addBorrowBatch(it, droppedBooks, due)
+                        library.addBorrowBatch(it, droppedBooks, due)
                     }
                     droppedBooks = emptyList()
                 }

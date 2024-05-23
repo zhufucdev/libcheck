@@ -18,7 +18,8 @@ import java.io.File
 import java.time.Instant
 
 @OptIn(ExperimentalSerializationApi::class)
-class LocalMachineLibrary(private val context: DataSource.Context) : Library {
+class LocalMachineLibrary(private val context: DataSource.Context) : Library, Library.WithModificationCapability,
+    Library.WithBorrowCapability, Library.WithReturnCapability {
     private val workingDir by lazy { if (context is DataSource.Context.WithRootPath) File(context.defaultRootPath) else currentPlatform.dataDir }
     private val booksFile get() = File(workingDir, "books.json")
     private val readerFile get() = File(workingDir, "readers.json")
@@ -127,7 +128,7 @@ class LocalMachineLibrary(private val context: DataSource.Context) : Library {
         saveBorrows()
     }
 
-    override suspend fun BorrowLike.setReturned() {
+    override suspend fun BorrowLike.setReturned(readerCredit: Float) {
         val index = borrows.indexOf(this)
         if (index < 0) {
             throw NoSuchElementException()
@@ -138,10 +139,12 @@ class LocalMachineLibrary(private val context: DataSource.Context) : Library {
         }
         sorter.sortBorrows()
         saveBorrows()
+        getReader(readerId)?.let {
+            updateReader(it.copy(creditability = readerCredit))
+        }
     }
 
-    override fun Book.getStock() =
-        stock - borrows.count { it.hasBook(id) && it.returnTime == null }.toUInt()
+    override fun Book.getStock() = stock - borrows.count { it.hasBook(id) && it.returnTime == null }.toUInt()
 
     override suspend fun addReader(reader: Reader) {
         readers.add(reader)
@@ -160,8 +163,7 @@ class LocalMachineLibrary(private val context: DataSource.Context) : Library {
         saveReaders()
     }
 
-    override fun Reader.getBorrows(): List<BorrowLike> =
-        borrows.filter { it.readerId == id && it.returnTime == null }
+    override fun Reader.getBorrows(): List<BorrowLike> = borrows.filter { it.readerId == id && it.returnTime == null }
 
     override suspend fun deleteReader(reader: Reader) {
         val index = readers.indexOfFirst { it.id == reader.id }

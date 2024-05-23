@@ -31,6 +31,7 @@ import extension.takeIfInstanceOf
 import extension.toFixed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import library.Library
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.getString
@@ -65,26 +66,32 @@ fun BorrowingApp(model: AppViewModel) {
 
     var judgingReader by remember { mutableStateOf<JudgeReaderModel?>(null) }
 
-    val onReturn: (borrow: BorrowLike) -> Unit = { borrow ->
-        coroutine.launch {
-            with(model.library) {
-                borrow.setReturned()
-            }
-            val onTime = Instant.now().toEpochMilli() <= borrow.dueTime
-            val reader = model.library.getReader(borrow.readerId) ?: return@launch
-            val newCredit = calculateCredit(reader, model.configurations, model.configurations.creditStep, onTime)
-            model.library.updateReader(reader.copy(creditability = newCredit.toFloat()))
-            val res = snackbars.showSnackbar(
-                message = getString(
-                    if (onTime) Res.string.readers_creditability_increased_para
-                    else Res.string.readers_creditability_decreased_para,
-                    reader.name
-                ),
-                withDismissAction = true,
-                actionLabel = getString(Res.string.details_para)
-            )
-            if (res == SnackbarResult.ActionPerformed) {
-                judgingReader = JudgeReaderModel(reader, onTime)
+    val onReturn: ((borrow: BorrowLike) -> Unit)? = model.library.let { library ->
+        if (library !is Library.WithReturnCapability) null
+        else { borrow ->
+            coroutine.launch {
+                val onTime = Instant.now().toEpochMilli() <= borrow.dueTime
+                val reader = library.getReader(borrow.readerId) ?: return@launch
+                val newCredit = calculateCredit(reader, model.configurations, model.configurations.creditStep, onTime)
+                with(library) {
+                    borrow.setReturned(newCredit.toFloat())
+                }
+                val res = snackbars.showSnackbar(
+                    message = getString(
+                        if (onTime) Res.string.readers_creditability_increased_para
+                        else Res.string.readers_creditability_decreased_para,
+                        reader.name
+                    ),
+                    withDismissAction = true,
+                    actionLabel = getString(Res.string.details_para)
+                )
+                if (res == SnackbarResult.ActionPerformed) {
+                    judgingReader = JudgeReaderModel(reader, onTime) {
+                        with(library) {
+                            borrow.setReturned(it)
+                        }
+                    }
+                }
             }
         }
     }
@@ -155,7 +162,7 @@ fun BorrowingApp(model: AppViewModel) {
                                         now = now,
                                         hasSeparator = hasSeparator,
                                         modifier = Modifier.animateItemPlacement(),
-                                        onReturnRequest = { onReturn(borrow) }
+                                        onReturnRequest = onReturn
                                     )
 
                                 is BorrowBatch ->
@@ -167,7 +174,7 @@ fun BorrowingApp(model: AppViewModel) {
                                         now = now,
                                         hasSeparator = hasSeparator,
                                         modifier = Modifier.animateItemPlacement(),
-                                        onReturnRequest = { onReturn(borrow) }
+                                        onReturnRequest = onReturn
                                     )
                             }
                         }
@@ -184,9 +191,9 @@ fun BorrowingApp(model: AppViewModel) {
             onDismissRequest = {
                 judgingReader = null
             },
-            onConfirmRequest = { r ->
+            onConfirmRequest = { credit ->
                 coroutine.launch {
-                    model.library.updateReader(r)
+                    it.update(credit)
                 }
             }
         )
@@ -202,7 +209,7 @@ private fun BorrowItem(
     formatter: DateTimeFormatter,
     now: Instant,
     hasSeparator: Boolean,
-    onReturnRequest: () -> Unit,
+    onReturnRequest: ((BorrowLike) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     BasicBorrowLike(
@@ -300,7 +307,7 @@ private fun BorrowBatchItem(
     formatter: DateTimeFormatter,
     now: Instant,
     hasSeparator: Boolean,
-    onReturnRequest: () -> Unit,
+    onReturnRequest: ((BorrowLike) -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
     val filtering by remember(model) {
@@ -438,7 +445,7 @@ private fun BasicBorrowLike(
     now: Instant,
     separator: Boolean,
     modifier: Modifier = Modifier,
-    onReturnRequest: () -> Unit,
+    onReturnRequest: ((BorrowLike) -> Unit)? = null,
     content: @Composable FlowRowScope.() -> Unit,
 ) {
     val coroutine = rememberCoroutineScope()
@@ -510,7 +517,7 @@ private fun BasicBorrowLike(
         content()
         VSpacer()
         Spacer(Modifier.weight(1f))
-        if (model.returnTime == null) {
+        if (model.returnTime == null && onReturnRequest != null) {
             TooltipBox(
                 state = rememberTooltipState(),
                 tooltip = {
@@ -520,7 +527,9 @@ private fun BasicBorrowLike(
                 },
                 content = {
                     IconButton(
-                        onClick = onReturnRequest,
+                        onClick = {
+                            onReturnRequest(model)
+                        },
                         content = {
                             Icon(imageVector = Icons.Default.Archive, contentDescription = "")
                         },
@@ -597,14 +606,14 @@ private fun ReconstructButton(
     }
 }
 
-private data class JudgeReaderModel(val reader: Reader, val onTime: Boolean)
+private data class JudgeReaderModel(val reader: Reader, val onTime: Boolean, val update: suspend (Float) -> Unit)
 
 @Composable
 private fun JudgeReaderDialog(
     model: JudgeReaderModel,
     configurations: Configurations,
     onDismissRequest: () -> Unit,
-    onConfirmRequest: (Reader) -> Unit,
+    onConfirmRequest: (Float) -> Unit,
 ) {
     val initialStep = remember(model) { if (model.onTime) configurations.creditStep else -configurations.creditStep }
     var step by remember { mutableFloatStateOf(initialStep) }
@@ -661,7 +670,7 @@ private fun JudgeReaderDialog(
         onDismissRequest = onDismissRequest,
         confirmButton = {
             TextButton(onClick = {
-                onConfirmRequest(currentReader)
+                onConfirmRequest(currentReader.creditability)
                 onDismissRequest()
             }) {
                 Text(stringResource(Res.string.ok_caption))
