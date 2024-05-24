@@ -39,7 +39,12 @@ open class RemoteLibrary(
 
     private val basicComponent
         get() = object : AccountCapability {
+            private val connectChan = Channel<Boolean>()
+
             override val account: Flow<User> = flow {
+                if (!::accessToken.isInitialized) {
+                    connectChan.receive()
+                }
                 val res = authenticationChannel.getUser(getRequest {
                     token = accessToken
                 })
@@ -78,7 +83,7 @@ open class RemoteLibrary(
 
             override suspend fun connect() {
                 sessions.clear()
-
+                connectChan.send(true)
                 val res = authenticationChannel.getSessions(getRequest {
                     token = accessToken
                 })
@@ -295,7 +300,7 @@ open class RemoteLibrary(
             val init = ByteString.copyFrom(context.token)
             val auth = authenticationRequest {
                 token = init
-                this.deviceName = deviceName
+                deviceName = this@RemoteLibrary.deviceName
             }
             val authResult = authenticationChannel.authenticate(auth)
             if (authResult.allowed) {
