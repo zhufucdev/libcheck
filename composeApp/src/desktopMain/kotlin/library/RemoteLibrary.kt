@@ -393,9 +393,7 @@ open class RemoteLibrary(
                     .filter { !it.end }
                     .map { UuidIdentifier.parse(it.id) to it.readerOrNull?.toModel() }
             ) {
-                if (state !is LibraryState.Initializing) {
-                    sorter.sortReaders()
-                }
+                sorter.sortReaders()
             }
         }
         coroutineScope.launch {
@@ -411,9 +409,7 @@ open class RemoteLibrary(
                     .filter { !it.end }
                     .map { UuidIdentifier.parse(it.id) to it.bookOrNull?.toModel() }
             ) {
-                if (state !is LibraryState.Initializing) {
-                    sorter.sortBooks()
-                }
+                sorter.sortBooks()
             }
         }
         coroutineScope.launch {
@@ -439,9 +435,7 @@ open class RemoteLibrary(
                         .map { UuidIdentifier.parse(it.id) to it.borrowOrNull?.toModel() }
                 )
             ) {
-                if (state !is LibraryState.Initializing) {
-                    sorter.sortBorrows()
-                }
+                sorter.sortBorrows()
             }
         }
     }
