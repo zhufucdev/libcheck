@@ -68,7 +68,7 @@ interface AccountCapability : LibraryComponent {
 }
 
 interface ModAccountCapability : LibraryComponent {
-    data class TemporaryPassword(val password: String, val expireSeconds: Int)
+    data class TemporaryPassword(val password: String, val expireSeconds: Int, val createTime: Instant = Instant.now())
 
     val users: List<User>
 

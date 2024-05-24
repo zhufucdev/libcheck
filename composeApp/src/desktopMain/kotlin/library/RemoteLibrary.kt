@@ -8,10 +8,13 @@ import com.sqlmaster.proto.LibraryOuterClass.UpdateEffect
 import com.sqlmaster.proto.LibraryOuterClass.UserRole
 import currentPlatform
 import io.grpc.ManagedChannel
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.launch
 import model.*
 import java.time.Instant
 
@@ -219,6 +222,7 @@ open class RemoteLibrary(
             ): Flow<ModAccountCapability.TemporaryPassword> {
                 val pwdChan = Channel<String>()
                 val revChan = Channel<LibraryState.PasswordRequired.AuthResult>()
+                val lastState = state
                 state = LibraryState.PasswordRequired(pwdChan, revChan)
 
                 return flow {
@@ -238,6 +242,7 @@ open class RemoteLibrary(
                         res.collect {
                             if (it.allowed) {
                                 emit(it.toModel())
+                                state = lastState
                             } else {
                                 allowed = false
                             }
@@ -246,6 +251,8 @@ open class RemoteLibrary(
                             break
                         }
                     }
+
+                    state = lastState
                 }
             }
 
@@ -362,19 +369,6 @@ open class RemoteLibrary(
             ended++
             if (ended == 4) {
                 state = LibraryState.Idle
-                coroutineScope.launch {
-                    coroutineScope {
-                        launch {
-                            sorter.sortBooks()
-                        }
-                        launch {
-                            sorter.sortReaders()
-                        }
-                        launch {
-                            sorter.sortBorrows()
-                        }
-                    }
-                }
             } else if (ended < 4) {
                 state = LibraryState.Initializing(ended / 4f)
             }

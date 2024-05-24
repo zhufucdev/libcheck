@@ -14,13 +14,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.password_para
 
 @Suppress("FunctionName")
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun OutlinedPasswordTextField(
     value: String,
@@ -28,11 +26,15 @@ fun OutlinedPasswordTextField(
     showPassword: Boolean,
     onShowPasswordChanged: (Boolean) -> Unit,
     enabled: Boolean = true,
+    label: (@Composable () -> Unit)? = null,
+    isError: Boolean = false,
+    supportingText: (@Composable () -> Unit)? = null,
+    modifier: Modifier = Modifier
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(stringResource(Res.string.password_para)) },
+        label = label ?: { Text(stringResource(Res.string.password_para)) },
         enabled = enabled,
         singleLine = true,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -45,6 +47,8 @@ fun OutlinedPasswordTextField(
                 )
             }
         },
-        modifier = Modifier.fillMaxWidth(),
+        isError = isError,
+        supportingText = supportingText,
+        modifier = Modifier.fillMaxWidth().then(modifier)
     )
 }

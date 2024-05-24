@@ -29,7 +29,6 @@ import extension.calculateCredit
 import extension.getClearCredit
 import extension.takeIfInstanceOf
 import extension.toFixed
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.*
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -44,7 +43,6 @@ import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import kotlin.math.abs
-import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalFoundationApi::class)
 @Composable
@@ -554,18 +552,6 @@ private fun Separator() {
         Modifier.fillMaxWidth().height(1.dp).padding(horizontal = PaddingLarge)
             .background(MaterialTheme.colorScheme.surfaceVariant)
     )
-}
-
-@Composable
-private fun rememberNow(): Instant {
-    var now by remember { mutableStateOf(Instant.now()) }
-    LaunchedEffect(true) {
-        while (true) {
-            delay(0.5.seconds)
-            now = Instant.now()
-        }
-    }
-    return now
 }
 
 @OptIn(ExperimentalMaterial3Api::class)

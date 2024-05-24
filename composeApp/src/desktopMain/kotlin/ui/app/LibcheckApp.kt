@@ -235,7 +235,18 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                     Text(stringResource(Res.string.ok_caption))
                 }
             },
-            onDismissRequest = {}
+            dismissButton = {
+                if (it.cancelable) {
+                    TextButton(onClick = { it.cancel() }) {
+                        Text(stringResource(Res.string.cancel_para))
+                    }
+                }
+            },
+            onDismissRequest = {
+                if (it.cancelable) {
+                    it.cancel()
+                }
+            }
         )
     }
 }

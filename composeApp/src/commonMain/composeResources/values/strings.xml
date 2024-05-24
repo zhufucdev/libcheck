@@ -119,4 +119,24 @@
     <string name="password_required_para">Password required</string>
     <string name="token_is_expired_use_password_authorization_para">Current token is expired. Authorize with password to continue this process</string>
     <string name="accounts_para">Accounts</string>
+    <string-array name="user_role_para">
+        <item>Unspecific</item>
+        <item>Administrator</item>
+        <item>Librarian</item>
+        <item>Reader</item>
+    </string-array>
+    <string name="sign_out_para">Sign out</string>
+    <string name="change_password_para">Change password</string>
+    <string name="old_password_para">Old password</string>
+    <string name="new_password_para">New password</string>
+    <string name="new_password_repeated_para">New password repeated</string>
+    <string name="passwords_mismatch_para">Passwords mismatch</string>
+    <string-array name="change_password_result_para">
+        <item>Change has been applied</item>
+        <item>Wrong old password. Check it and try again</item>
+        <item>Invalid session state. You will have to sign out and try again</item>
+    </string-array>
+    <string name="invite_user_para">Invite user</string>
+    <string name="under_same_server_use_following_password">Use the following password under the same Checkmate server to create a new account</string>
+    <string name="cancel_para">Cancel</string>
 </resources>

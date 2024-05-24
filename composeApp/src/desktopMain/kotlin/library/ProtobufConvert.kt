@@ -47,7 +47,7 @@ fun LibraryOuterClass.User.toModel() = User(
     id = IntegerIdentifier(id),
     deviceName = deviceName,
     role = role,
-    readerId = readerId?.let { UuidIdentifier.parse(it) }
+    readerId = readerId.takeIf { it.isNotBlank() }?.let { UuidIdentifier.parse(it) }
 )
 
 fun Timestamp(millis: Long) = timestamp {

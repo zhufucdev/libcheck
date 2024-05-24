@@ -74,13 +74,13 @@ fun Modifier.shimmerBackground(shape: Shape = RoundedCornerShape(4.dp)): Modifie
         initialValue = 0f,
         targetValue = 400f,
         animationSpec = infiniteRepeatable(
-            tween(durationMillis = 1500, easing = LinearOutSlowInEasing),
+            tween(durationMillis = 1500, easing = LinearEasing),
             RepeatMode.Restart
         ),
     )
     val shimmerColors = listOf(
-        Color.LightGray.copy(alpha = 0.9f),
-        Color.LightGray.copy(alpha = 0.4f),
+        Color.LightGray.copy(alpha = 0.7f),
+        Color.LightGray.copy(alpha = 0.2f),
     )
     val brush = Brush.linearGradient(
         colors = shimmerColors,
