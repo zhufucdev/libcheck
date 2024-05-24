@@ -40,6 +40,7 @@ open class RemoteLibrary(
     private val basicComponent
         get() = object : AccountCapability {
             override var account: User? by mutableStateOf(null)
+            override var session: LibraryOuterClass.Session? by mutableStateOf(null)
             override val sessions: SnapshotStateList<LibraryOuterClass.Session> = mutableStateListOf()
 
             override suspend fun changePassword(oldPassword: String, newPassword: String): AccountCapability.ChangePasswordResult {
@@ -67,6 +68,7 @@ open class RemoteLibrary(
                 if (!res.allowed) {
                     throw AccessDeniedException("Revoke session")
                 }
+                sessions.removeIf { it.id == session.id }
             }
 
             override suspend fun connect() {
@@ -74,8 +76,11 @@ open class RemoteLibrary(
                 val user = authenticationChannel.getUser(getRequest {
                     token = accessToken
                 })
-                if (user.allowed) {
+                if (user.hasUser()) {
                     account = user.user.toModel()
+                }
+                if (user.hasSession()) {
+                    session = user.session
                 }
                 val sessionRes = authenticationChannel.getSessions(getRequest {
                     token = accessToken
@@ -83,6 +88,7 @@ open class RemoteLibrary(
                 sessionRes.collect {
                     sessions.add(it)
                 }
+                sessions.sortByDescending { it.lastAccess.toEpochMilli() }
             }
         }
 
@@ -304,7 +310,7 @@ open class RemoteLibrary(
             val auth = authorizationRequest {
                 password = context.password
                 deviceName = this@RemoteLibrary.deviceName
-                os = currentPlatform::class.simpleName!!
+                os = currentPlatform.name
             }
             val res = authenticationChannel.authorize(auth)
             if (res.allowed) {
