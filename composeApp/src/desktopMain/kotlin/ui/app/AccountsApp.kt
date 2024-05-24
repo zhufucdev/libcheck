@@ -46,7 +46,6 @@ fun AccountsApp(model: AppViewModel) {
     val coroutine = rememberCoroutineScope()
 
     val component = model.library.components.of<AccountCapability>() ?: return
-    val account by component.account.collectAsState(null)
     var openChangePasswordDialog by remember { mutableStateOf(false) }
     var invitationState by remember { mutableStateOf<InvitationState?>(null) }
 
@@ -72,7 +71,7 @@ fun AccountsApp(model: AppViewModel) {
                             contentDescription = "account card",
                             modifier = Modifier.padding(end = PaddingLarge).size(64.dp)
                         )
-                        AnimatedContent(account) { user ->
+                        AnimatedContent(component.account) { user ->
                             if (user == null) {
                                 Column {
                                     Box(Modifier.size(280.dp, 40.dp).shimmerBackground())

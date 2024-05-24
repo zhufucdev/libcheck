@@ -39,19 +39,7 @@ open class RemoteLibrary(
 
     private val basicComponent
         get() = object : AccountCapability {
-            private val connectChan = Channel<Boolean>()
-
-            override val account: Flow<User> = flow {
-                if (!::accessToken.isInitialized) {
-                    connectChan.receive()
-                }
-                val res = authenticationChannel.getUser(getRequest {
-                    token = accessToken
-                })
-                if (res.allowed) {
-                    emit(res.user.toModel())
-                }
-            }
+            override var account: User? by mutableStateOf(null)
             override val sessions: SnapshotStateList<LibraryOuterClass.Session> = mutableStateListOf()
 
             override suspend fun changePassword(oldPassword: String, newPassword: String): AccountCapability.ChangePasswordResult {
@@ -83,11 +71,16 @@ open class RemoteLibrary(
 
             override suspend fun connect() {
                 sessions.clear()
-                connectChan.send(true)
-                val res = authenticationChannel.getSessions(getRequest {
+                val user = authenticationChannel.getUser(getRequest {
                     token = accessToken
                 })
-                res.collect {
+                if (user.allowed) {
+                    account = user.user.toModel()
+                }
+                val sessionRes = authenticationChannel.getSessions(getRequest {
+                    token = accessToken
+                })
+                sessionRes.collect {
                     sessions.add(it)
                 }
             }
@@ -373,13 +366,17 @@ open class RemoteLibrary(
         var ended = 0
         fun bumpEnded() {
             ended++
-            if (ended == 4) {
+            if (ended == 5) {
                 state = LibraryState.Idle
-            } else if (ended < 4) {
+            } else if (ended < 5) {
                 state = LibraryState.Initializing(ended / 4f)
             }
         }
 
+        coroutineScope.launch {
+            components.connectAll()
+            bumpEnded()
+        }
         coroutineScope.launch {
             UniqueIdentifierStateList.bindTo(
                 readers,

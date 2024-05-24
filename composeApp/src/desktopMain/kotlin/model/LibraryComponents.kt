@@ -61,7 +61,7 @@ interface AccountCapability : LibraryComponent {
         OK, Forbidden, Invalid
     }
 
-    val account: Flow<User>
+    val account: User?
     val sessions: List<Session>
     suspend fun changePassword(oldPassword: String, newPassword: String): ChangePasswordResult
     suspend fun revokeSession(session: Session)
