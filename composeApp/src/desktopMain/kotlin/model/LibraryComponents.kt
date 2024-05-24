@@ -1,5 +1,6 @@
 package model
 
+import com.sqlmaster.proto.LibraryOuterClass.Session
 import com.sqlmaster.proto.LibraryOuterClass.UserRole
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -30,6 +31,7 @@ class LibraryComponentsCollection(vararg component: LibraryComponent) {
     }
 
     inline fun <reified T : LibraryComponent> of() = list.firstOrNull { it is T }?.let { it as T }
+    inline fun <reified T : LibraryComponent> has() = list.any { it is T }
 }
 
 sealed interface LibraryComponent {
@@ -55,6 +57,17 @@ interface ReturnCapability : LibraryComponent {
 }
 
 interface AccountCapability : LibraryComponent {
+    enum class ChangePasswordResult {
+        OK, Forbidden, Invalid
+    }
+
+    val account: Flow<User>
+    val sessions: List<Session>
+    suspend fun changePassword(oldPassword: String, newPassword: String): ChangePasswordResult
+    suspend fun revokeSession(session: Session)
+}
+
+interface ModAccountCapability : LibraryComponent {
     data class TemporaryPassword(val password: String, val expireSeconds: Int)
 
     val users: List<User>

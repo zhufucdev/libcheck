@@ -44,12 +44,20 @@ sealed interface LibraryState {
     data class PasswordRequired(
         private val passwordChannel: SendChannel<String>,
         private val resultChannel: ReceiveChannel<AuthResult>,
+        val cancelable: Boolean = true
     ) : LibraryState {
         class AuthResult(val allowed: Boolean, val token: ByteArray?)
 
         suspend fun retry(password: String): AuthResult {
             passwordChannel.send(password)
             return resultChannel.receive()
+        }
+
+        fun cancel() {
+            if (!cancelable) {
+                throw IllegalStateException("Not cancelable library state")
+            }
+            passwordChannel.close()
         }
     }
 }

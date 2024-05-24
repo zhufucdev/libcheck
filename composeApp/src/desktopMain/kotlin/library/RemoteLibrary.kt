@@ -10,6 +10,7 @@ import currentPlatform
 import io.grpc.ManagedChannel
 import kotlinx.coroutines.*
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.channels.ClosedReceiveChannelException
 import kotlinx.coroutines.flow.*
 import model.*
 import java.time.Instant
@@ -31,7 +32,58 @@ open class RemoteLibrary(
     override val sorter: LibrarySortingModel by lazy {
         DefaultSorter(context, this)
     }
-    override val components = LibraryComponentsCollection()
+    override val components = LibraryComponentsCollection(basicComponent)
+
+    private val basicComponent
+        get() = object : AccountCapability {
+            override val account: Flow<User> = flow {
+                val res = authenticationChannel.getUser(getRequest {
+                    token = accessToken
+                })
+                if (res.allowed) {
+                    emit(res.user.toModel())
+                }
+            }
+            override val sessions: SnapshotStateList<LibraryOuterClass.Session> = mutableStateListOf()
+
+            override suspend fun changePassword(oldPassword: String, newPassword: String): AccountCapability.ChangePasswordResult {
+                val res = authenticationChannel.changePassword(changePasswordRequest {
+                    password = oldPassword
+                    token = accessToken
+                    this.newPassword = newPassword
+                })
+                return when (res.effect!!) {
+                    UpdateEffect.EFFECT_UNSPECIFIED, UpdateEffect.UNRECOGNIZED -> {
+                        res.effect.maybeThrow()
+                        error("not reachable")
+                    }
+                    UpdateEffect.EFFECT_OK -> AccountCapability.ChangePasswordResult.OK
+                    UpdateEffect.EFFECT_NOT_FOUND -> AccountCapability.ChangePasswordResult.Invalid
+                    UpdateEffect.EFFECT_FORBIDDEN -> AccountCapability.ChangePasswordResult.Forbidden
+                }
+            }
+
+            override suspend fun revokeSession(session: LibraryOuterClass.Session) {
+                val res = authenticationChannel.revoke(revokeTokenRequest {
+                    token = accessToken
+                    sessionId = session.id
+                })
+                if (!res.allowed) {
+                    throw AccessDeniedException("Revoke session")
+                }
+            }
+
+            override suspend fun connect() {
+                sessions.clear()
+
+                val res = authenticationChannel.getSessions(getRequest {
+                    token = accessToken
+                })
+                res.collect {
+                    sessions.add(it)
+                }
+            }
+        }
 
     private val librarianComponent
         get() = object : ModificationCapability, BorrowCapability, ReturnCapability {
@@ -147,7 +199,7 @@ open class RemoteLibrary(
         }
 
     private val adminComponent
-        get() = object : AccountCapability {
+        get() = object : ModAccountCapability {
             override val users: SnapshotStateList<User> = mutableStateListOf()
 
             override suspend fun connect() {
@@ -161,14 +213,21 @@ open class RemoteLibrary(
                 }
             }
 
-            override suspend fun inviteUser(role: UserRole, readerId: UuidIdentifier?): Flow<AccountCapability.TemporaryPassword> {
+            override suspend fun inviteUser(
+                role: UserRole,
+                readerId: UuidIdentifier?,
+            ): Flow<ModAccountCapability.TemporaryPassword> {
                 val pwdChan = Channel<String>()
                 val revChan = Channel<LibraryState.PasswordRequired.AuthResult>()
                 state = LibraryState.PasswordRequired(pwdChan, revChan)
 
                 return flow {
                     while (true) {
-                        val pwd = pwdChan.receive()
+                        val pwd = try {
+                            pwdChan.receive()
+                        } catch (e: ClosedReceiveChannelException) {
+                            break
+                        }
                         val res = libraryChannel.addUser(addUserRequest {
                             deviceName = this@RemoteLibrary.deviceName
                             password = pwd
@@ -191,15 +250,23 @@ open class RemoteLibrary(
             }
 
             override suspend fun updateUser(user: User) {
-                libraryChannel.updateUser(updateUserRequest {
+                val res = libraryChannel.updateUser(updateUserRequest {
                     token = accessToken
                     userId = user.id.id
                     this.user = user.toProto()
                 })
+                res.effect.maybeThrow()
             }
 
             override suspend fun deleteUser(user: User) {
-                TODO()
+                val pwdChan = Channel<String>()
+                val revChan = Channel<LibraryState.PasswordRequired.AuthResult>()
+                state = LibraryState.PasswordRequired(pwdChan, revChan)
+
+                libraryChannel.deleteUser(deleteUserRequest {
+                    userId = user.id.id
+
+                })
             }
         }
 
@@ -249,7 +316,7 @@ open class RemoteLibrary(
         if (!::accessToken.isInitialized) {
             val pwdChan = Channel<String>()
             val resChan = Channel<LibraryState.PasswordRequired.AuthResult>()
-            state = LibraryState.PasswordRequired(pwdChan, resChan)
+            state = LibraryState.PasswordRequired(pwdChan, resChan, cancelable = false)
             while (true) {
                 val pwd = pwdChan.receive()
                 val auth = authorizationRequest {

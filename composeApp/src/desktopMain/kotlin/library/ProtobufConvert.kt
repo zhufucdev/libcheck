@@ -41,7 +41,7 @@ fun LibraryOuterClass.BorrowBatch.toModel(): BorrowBatch = BorrowBatch(
 )
 
 fun LibraryOuterClass.AddUserResponse.toModel() =
-    AccountCapability.TemporaryPassword(password = temporaryPassword, expireSeconds = lifeSpanSeconds)
+    ModAccountCapability.TemporaryPassword(password = temporaryPassword, expireSeconds = lifeSpanSeconds)
 
 fun LibraryOuterClass.User.toModel() = User(
     id = IntegerIdentifier(id),

@@ -54,6 +54,17 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         model.library.search(searchQuery).toCollection(searchResult)
     }
 
+    val navigatableRoutes by remember(model.library) {
+        derivedStateOf {
+            buildList {
+                addAll(arrayOf(RouteType.Books, RouteType.Readers, RouteType.Borrowing))
+                if (model.library.components.has<AccountCapability>()) {
+                    add(RouteType.Accounts)
+                }
+            }
+        }
+    }
+
     Scaffold(
         topBar = {
             Column(
@@ -148,7 +159,7 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
         bottomBar = {
             if (windowSize < WindowSize.WIDE) {
                 NavigationBar {
-                    BottomNavigationItems(model.navigator.current.type) {
+                    BottomNavigationItems(model.navigator.current.type, navigatableRoutes) {
                         model.navigator.replace(it)
                     }
                 }
@@ -164,7 +175,10 @@ fun LibcheckApp(model: AppViewModel, windowSize: WindowSize) {
                 if (windowSize >= WindowSize.WIDE) {
                     Row {
                         PermanentDrawerSheet {
-                            NavigationDrawerItems(model.navigator.current.type) { next -> model.navigator.replace(next) }
+                            NavigationDrawerItems(
+                                model.navigator.current.type,
+                                navigatableRoutes
+                            ) { next -> model.navigator.replace(next) }
                         }
                         MainContent(model)
                     }
@@ -247,33 +261,33 @@ private fun InitializationPlaceholder() {
 }
 
 @Composable
-private fun NavigationDrawerItems(current: RouteType, onNavigation: (RouteType) -> Unit) {
+private fun NavigationDrawerItems(current: RouteType, items: List<RouteType>, onNavigation: (RouteType) -> Unit) {
     Spacer(Modifier.height(PaddingLarge))
     Column(Modifier.padding(horizontal = PaddingMedium)) {
-        RouteType.entries.forEach {
-            if (it.docked) {
-                NavigationDrawerItem(
-                    label = { Text(stringResource(it.label)) },
-                    onClick = { onNavigation(it) },
-                    icon = { Icon(imageVector = it.icon, contentDescription = "") },
-                    selected = current == it
-                )
-            }
+        items.forEach {
+            NavigationDrawerItem(
+                label = { Text(stringResource(it.label)) },
+                onClick = { onNavigation(it) },
+                icon = { Icon(imageVector = it.icon, contentDescription = "") },
+                selected = current == it
+            )
         }
     }
 }
 
 @Composable
-private fun RowScope.BottomNavigationItems(current: RouteType, onNavigation: (RouteType) -> Unit) {
-    RouteType.entries.forEach {
-        if (it.docked) {
-            NavigationBarItem(
-                selected = current == it,
-                onClick = { onNavigation(it) },
-                icon = { Icon(it.icon, "") },
-                label = { Text(stringResource(it.label)) }
-            )
-        }
+private fun RowScope.BottomNavigationItems(
+    current: RouteType,
+    items: List<RouteType>,
+    onNavigation: (RouteType) -> Unit,
+) {
+    items.forEach {
+        NavigationBarItem(
+            selected = current == it,
+            onClick = { onNavigation(it) },
+            icon = { Icon(it.icon, "") },
+            label = { Text(stringResource(it.label)) }
+        )
     }
 }
 
@@ -283,6 +297,7 @@ private fun MainContent(model: AppViewModel) {
         RouteType.Books -> BooksApp(model)
         RouteType.Readers -> ReadersApp(model)
         RouteType.Borrowing -> BorrowingApp(model)
+        RouteType.Accounts -> AccountsApp(model)
         else -> {}
     }
 }

@@ -118,4 +118,5 @@
     <string name="default_creditability_step">Default creditability step</string>
     <string name="password_required_para">Password required</string>
     <string name="token_is_expired_use_password_authorization_para">Current token is expired. Authorize with password to continue this process</string>
+    <string name="accounts_para">Accounts</string>
 </resources>

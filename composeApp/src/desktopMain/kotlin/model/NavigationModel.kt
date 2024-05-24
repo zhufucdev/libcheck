@@ -1,15 +1,9 @@
-@file:OptIn(ExperimentalResourceApi::class)
-
 package model
 
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Book
-import androidx.compose.material.icons.filled.Key
-import androidx.compose.material.icons.filled.People
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.vector.ImageVector
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.StringResource
 import resources.*
 
@@ -17,6 +11,7 @@ enum class RouteType(val label: StringResource, val icon: ImageVector, val docke
     Books(Res.string.books_para, Icons.Default.Book),
     Readers(Res.string.readers_para, Icons.Default.People),
     Borrowing(Res.string.borrowing_para, Icons.Default.Key),
+    Accounts(Res.string.accounts_para, Icons.Default.AccountCircle),
     Preferences(Res.string.preferences_para, Icons.Default.Settings, docked = false),
 }
 
