@@ -15,7 +15,6 @@ import kotlinx.serialization.encoding.Encoder
 import kotlinx.serialization.serializer
 import library.LocalMachineLibrary
 import library.RemoteLibrary
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.StringResource
 import redempt.crunch.Crunch
 import redempt.crunch.functional.EvaluationEnvironment
@@ -69,30 +68,9 @@ sealed class DataSource {
                     .build()
             }
         }
-
-        override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-
-            other as Remote
-
-            if (remoteHost != other.remoteHost) return false
-            if (useTransportSecurity != other.useTransportSecurity) return false
-            if (remotePort != other.remotePort) return false
-
-            return true
-        }
-
-        override fun hashCode(): Int {
-            var result = remoteHost.hashCode()
-            result = 31 * result + useTransportSecurity.hashCode()
-            result = 31 * result + remotePort
-            return result
-        }
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 enum class DataSourceType(
     val clazz: KClass<out DataSource>,
     val titleStrRes: StringResource,

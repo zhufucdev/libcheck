@@ -295,6 +295,7 @@ open class RemoteLibrary(
             val init = ByteString.copyFrom(context.token)
             val auth = authenticationRequest {
                 token = init
+                this.deviceName = deviceName
             }
             val authResult = authenticationChannel.authenticate(auth)
             if (authResult.allowed) {
