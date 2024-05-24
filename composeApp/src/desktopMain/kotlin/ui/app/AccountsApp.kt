@@ -456,7 +456,7 @@ private fun InvitationDialog(
                     modifier = Modifier.padding(vertical = PaddingLarge)
                 )
                 Text(
-                    stringResource(Res.string.under_same_server_use_following_password),
+                    stringResource(Res.string.under_same_server_use_following_password_para),
                     textAlign = TextAlign.Start
                 )
                 Spacer(Modifier.height(PaddingLarge * 2))
