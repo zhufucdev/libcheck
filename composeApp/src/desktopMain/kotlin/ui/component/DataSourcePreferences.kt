@@ -159,41 +159,20 @@ private fun BasicRemoteDataSourcePreferences(
     val portValid by remember { derivedStateOf { port.toShortOrNull()?.let { it > 0 } == true } }
 
     LaunchedEffect(host, port, deviceName, useTls) {
-        if (state.loading) {
+        if (state.loading || !state.valid) {
             return@LaunchedEffect
         }
-        val captured = listOf(host, port, deviceName, useTls)
-        delay(1.seconds)
-        if (!state.valid) {
-            return@LaunchedEffect
-        }
-        val current = listOf(host, port, deviceName, useTls)
-        if (current == captured) {
-            onValueChanged(
-                DataSource.Remote(
-                    host,
-                    port.toInt(),
-                    deviceName,
-                    useTls,
-                )
+        onValueChanged(
+            DataSource.Remote(
+                host,
+                port.toInt(),
+                deviceName,
+                useTls,
             )
-        }
+        )
     }
     LaunchedEffect(port, deviceName) {
         state.valid = portValid && deviceName.isNotBlank()
-    }
-
-    DisposableEffect(true) {
-        onDispose {
-            onValueChanged(
-                DataSource.Remote(
-                    host,
-                    port.toInt(),
-                    deviceName,
-                    useTls,
-                )
-            )
-        }
     }
 
     Column(modifier) {
