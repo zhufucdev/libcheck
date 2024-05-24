@@ -139,4 +139,19 @@
     <string name="invite_user_para">Invite user</string>
     <string name="under_same_server_use_following_password">Use the following password under the same Checkmate server to create a new account</string>
     <string name="cancel_para">Cancel</string>
+    <string name="last_accessed_at_para">Last accessed at %1$s</string>
+    <plurals name="last_accessed_days_ago_para">
+        <item quantity="one">Last accessed %1$d day ago</item>
+        <item quantity="other">Last accessed %1%d days ago</item>
+    </plurals>
+    <plurals name="last_accessed_months_ago">
+        <item quantity="one">Last accessed last month</item>
+        <item quantity="other">Last accessed %1$d months ago</item>
+    </plurals>
+    <string name="last_accessed_long_ago">Last accessed long ago</string>
+    <string name="revoke_session_header">Revoke Session</string>
+    <string name="revoke_session_para">Revoke session</string>
+    <string name="this_operation_cannot_be_undone_para">This operation cannot be undone</string>
+    <string name="current_session_span">current session</string>
+    <string name="my_devices_para">My devices</string>
 </resources>

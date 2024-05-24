@@ -62,6 +62,7 @@ interface AccountCapability : LibraryComponent {
     }
 
     val account: User?
+    val session: Session?
     val sessions: List<Session>
     suspend fun changePassword(oldPassword: String, newPassword: String): ChangePasswordResult
     suspend fun revokeSession(session: Session)

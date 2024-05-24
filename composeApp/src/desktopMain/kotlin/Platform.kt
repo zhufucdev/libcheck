@@ -4,16 +4,30 @@ import com.github.tkuenneth.nativeparameterstoreaccess.WindowsRegistry
 import java.io.File
 import java.net.InetAddress
 import java.nio.file.Paths
+import java.util.*
 
 sealed interface Platform {
     fun isDarkModeEnabled(): Boolean
     val dataDir: File
+    val name: String
 }
 
 fun getUserHome() = System.getProperty("user.home")!!
 fun getHostName() = InetAddress.getLocalHost().hostName!!
 
 class MacOS : Platform {
+    override val name: String
+        get() = "macOS $version"
+    private val version: String
+
+    init {
+        val process = ProcessBuilder("sw_vers", "-productVersion").start()
+        process.inputStream.use {
+            val scanner = Scanner(it).useDelimiter("\\A")
+            version = scanner.next().trimEnd()
+        }
+    }
+
     override fun isDarkModeEnabled() = MacOSDefaults.getDefaultsEntry("AppleInterfaceStyle") == "Dark"
     override val dataDir: File by lazy {
         Paths.get(getUserHome(), "Library", "Application Support", "libcheck").toFile()
@@ -29,6 +43,9 @@ class MacOS : Platform {
 }
 
 class Windows : Platform {
+    override val name: String
+        get() = System.getProperty("os.name")!!
+
     override fun isDarkModeEnabled() = WindowsRegistry.getWindowsRegistryEntry(
         "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
         "AppsUseLightTheme"
@@ -45,6 +62,9 @@ class Windows : Platform {
 }
 
 class Linux : Platform {
+    override val name: String
+        get() = "Linux ${System.getProperty("os.version")!!}"
+
     override fun isDarkModeEnabled() =
         Dconf.HAS_DCONF
                 && Dconf.getDconfEntry("/org/gnome/desktop/interface/gtk-theme").lowercase().contains("dark")
@@ -61,6 +81,9 @@ class Linux : Platform {
 }
 
 class OtherOS : Platform {
+    override val name: String
+        get() = "${System.getProperty("os.name")!!} ${System.getProperty("os.version")!!}"
+
     override fun isDarkModeEnabled() = false
     override val dataDir: File by lazy { File(getUserHome(), "libcheck") }
 
