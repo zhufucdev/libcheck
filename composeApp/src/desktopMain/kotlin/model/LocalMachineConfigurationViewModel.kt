@@ -41,6 +41,12 @@ private data class ConfigurationsModel(
 )
 
 class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurations {
+    init {
+        if (!rootDir.exists()) {
+            rootDir.mkdirs()
+        }
+    }
+
     private val configFile = File(rootDir, "preferences.json")
     private val libraryConfigFiles = buildMap {
         DataSource::class.sealedSubclasses.forEach {
