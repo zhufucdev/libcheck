@@ -26,11 +26,19 @@ object UniqueIdentifierStateList {
                 } else {
                     list.add(value)
                 }
-                onUpdate?.invoke(list)
+                try {
+                    onUpdate?.invoke(list)
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
             } else {
                 val removed = list.removeIf { it.id == next.first }
                 if (removed) {
-                    onUpdate?.invoke(list)
+                    try {
+                        onUpdate?.invoke(list)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                    }
                 }
             }
         }
