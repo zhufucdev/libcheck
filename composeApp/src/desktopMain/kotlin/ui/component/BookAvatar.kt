@@ -40,7 +40,7 @@ fun BookAvatar(uri: String, modifier: Modifier = Modifier) {
                     uri = uri,
                     state = state,
                     modifier = Modifier.clip(RoundedCornerShape(topEnd = PaddingLarge, bottomEnd = PaddingLarge))
-                        .fillMaxSize()
+                        .then(if (state.error) Modifier.fillMaxSize() else Modifier)
                 )
             } else {
                 Icon(
