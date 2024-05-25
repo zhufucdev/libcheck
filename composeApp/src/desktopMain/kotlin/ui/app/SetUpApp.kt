@@ -4,12 +4,9 @@
 package ui.app
 
 import androidx.compose.animation.*
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircleOutline
@@ -35,10 +32,7 @@ import resources.*
 import ui.PaddingLarge
 import ui.PaddingMedium
 import ui.WindowSize
-import ui.component.ConnectionAlertDialog
-import ui.component.LocalDataSourcePreferences
-import ui.component.PasswordRemoteDataSourcePreferences
-import ui.component.PreferenceState
+import ui.component.*
 
 @Composable
 fun SetUpApp(windowSize: WindowSize, model: SetUpAppModel) {
@@ -67,7 +61,7 @@ fun SetUpApp(windowSize: WindowSize, model: SetUpAppModel) {
             when (windowSize) {
                 WindowSize.WIDE ->
                     Card(Modifier.fillMaxHeight().width(800.dp).padding(PaddingLarge)) {
-                        Pager(
+                        SimplePager(
                             step = model.step,
                             {
                                 Setup(
@@ -85,7 +79,7 @@ fun SetUpApp(windowSize: WindowSize, model: SetUpAppModel) {
                     }
 
                 else ->
-                    Pager(
+                    SimplePager(
                         step = model.step,
                         {
                             Setup(
@@ -263,24 +257,6 @@ private fun Ready(model: SetUpAppModel, modifier: Modifier = Modifier) {
             }
         }
     }
-}
-
-@OptIn(ExperimentalFoundationApi::class)
-@Composable
-private fun Pager(
-    step: Int,
-    vararg steps: @Composable () -> Unit,
-) {
-    val state = rememberPagerState { steps.count() }
-    LaunchedEffect(step) {
-        state.animateScrollToPage(step)
-    }
-    HorizontalPager(
-        state = state,
-        pageContent = { s ->
-            steps[s]()
-        },
-    )
 }
 
 @Composable

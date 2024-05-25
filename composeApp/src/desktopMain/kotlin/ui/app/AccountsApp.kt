@@ -38,10 +38,12 @@ import library.toEpochMilli
 import model.AccountCapability
 import model.AppViewModel
 import model.ModAccountCapability
+import model.Reader
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import resources.*
 import ui.*
+import ui.component.ExposedDropdownTextField
 import ui.component.OutlinedPasswordTextField
 import ui.component.shimmerBackground
 import java.time.Instant
@@ -79,7 +81,11 @@ fun AccountsApp(model: AppViewModel) {
                 onChangePasswordRequested = { openChangePasswordDialog = true }
             )
             Spacer(Modifier.height(PaddingLarge * 2))
-            Text(stringResource(Res.string.my_devices_para), style = MaterialTheme.typography.titleLarge, modifier = Modifier.padding(start = PaddingMedium))
+            Text(
+                stringResource(Res.string.my_devices_para),
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.padding(start = PaddingMedium)
+            )
             Spacer(Modifier.height(PaddingLarge))
             SessionsCards(
                 component = component,
@@ -408,7 +414,9 @@ private fun ChangePasswordDialog(
 
 @Stable
 private class InvitationState(val component: ModAccountCapability) {
+    var step by mutableIntStateOf(0)
     var role: UserRole by mutableStateOf(UserRole.ROLE_READER)
+    var reader: Reader? by mutableStateOf(null)
     var password: ModAccountCapability.TemporaryPassword? by mutableStateOf(null)
 }
 
@@ -417,6 +425,72 @@ private class InvitationState(val component: ModAccountCapability) {
 private fun InvitationDialog(
     state: InvitationState,
     onDismissRequested: () -> Unit,
+) {
+    BasicAlertDialog(onDismissRequested) {
+        Card {
+            Column(Modifier.padding(PaddingLarge * 2)) {
+                Text(
+                    stringResource(Res.string.invite_user_para),
+                    style = MaterialTheme.typography.titleLarge,
+                    modifier = Modifier.padding(vertical = PaddingLarge)
+                )
+                AnimatedContent(state.step) { s ->
+                    when (s) {
+                        0 -> InvitationSetUpContent(state)
+                        1 -> PasswordDisplayInvitationContent(state, onDismissRequested)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun InvitationSetUpContent(state: InvitationState, modifier: Modifier = Modifier) {
+    var exposed by remember { mutableStateOf(false) }
+    Column(modifier) {
+        Text(stringResource(Res.string.role_the_new_user_will_take_on_para))
+        Spacer(Modifier.height(PaddingMedium))
+        ExposedDropdownMenuBox(
+            expanded = exposed,
+            onExpandedChange = { exposed = it }
+        ) {
+            ExposedDropdownTextField(
+                value = state.role.string(),
+                label = { Text(stringResource(Res.string.role_para)) },
+                modifier = Modifier.menuAnchor().fillMaxWidth()
+            )
+            ExposedDropdownMenu(
+                expanded = exposed,
+                onDismissRequest = { exposed = false }
+            ) {
+                UserRole.entries.slice(UserRole.ROLE_ADMIN.ordinal..UserRole.ROLE_LIBRARIAN.ordinal)
+                    .forEach { role ->
+                        DropdownMenuItem(
+                            text = { Text(role.string()) },
+                            onClick = {
+                                state.role = role
+                                exposed = false
+                            }
+                        )
+                    }
+            }
+        }
+        Spacer(Modifier.height(PaddingLarge))
+        Row(Modifier.align(Alignment.End)) {
+            TextButton(onClick = { state.step++ }) {
+                Text(stringResource(Res.string.next_para))
+            }
+        }
+    }
+}
+
+@Composable
+private fun PasswordDisplayInvitationContent(
+    state: InvitationState,
+    onDismissRequested: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     val now = rememberNow()
     val remainingRatioTarget by remember(
@@ -437,8 +511,9 @@ private fun InvitationDialog(
     }
     val ratio by animateFloatAsState(remainingRatioTarget, tween(1000, easing = LinearEasing))
 
-    LaunchedEffect(state.role) {
-        val res = state.component.inviteUser(state.role)
+    LaunchedEffect(state.role, state.reader) {
+        val res =
+            state.component.inviteUser(state.role, state.reader?.id?.takeIf { state.role == UserRole.ROLE_READER })
         res.collect {
             state.password = it
         }
@@ -447,36 +522,36 @@ private fun InvitationDialog(
         }
     }
 
-    BasicAlertDialog(onDismissRequested) {
-        Card {
-            Column(Modifier.padding(PaddingLarge * 2)) {
-                Text(
-                    stringResource(Res.string.invite_user_para),
-                    style = MaterialTheme.typography.titleLarge,
-                    modifier = Modifier.padding(vertical = PaddingLarge)
-                )
-                Text(
-                    stringResource(Res.string.under_same_server_use_following_password_para),
-                    textAlign = TextAlign.Start
-                )
-                Spacer(Modifier.height(PaddingLarge * 2))
-                state.password.let {
-                    if (it == null) {
-                        Box(Modifier.size(300.dp, 66.dp).shimmerBackground())
-                    } else {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            BasicTextField(
-                                value = it.password,
-                                textStyle = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface),
-                                onValueChange = {},
-                                readOnly = true
-                            )
-                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
-                                CircularProgressIndicator(progress = { ratio }, modifier = Modifier.size(32.dp))
-                            }
-                        }
+    Column(modifier) {
+        Text(
+            stringResource(Res.string.under_same_server_use_following_password_para),
+            textAlign = TextAlign.Start
+        )
+        Spacer(Modifier.height(PaddingLarge * 2))
+        state.password.let {
+            if (it == null) {
+                Box(Modifier.size(300.dp, 66.dp).shimmerBackground())
+            } else {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BasicTextField(
+                        value = it.password,
+                        textStyle = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onSurface),
+                        onValueChange = {},
+                        readOnly = true
+                    )
+                    Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.CenterEnd) {
+                        CircularProgressIndicator(progress = { ratio }, modifier = Modifier.size(32.dp))
                     }
                 }
+            }
+        }
+        Spacer(Modifier.padding(PaddingLarge))
+        Row(Modifier.align(Alignment.End)) {
+            TextButton(onClick = { state.step-- }) {
+                Text(stringResource(Res.string.back_para))
+            }
+            TextButton(onClick = onDismissRequested) {
+                Text(stringResource(Res.string.done_para))
             }
         }
     }
