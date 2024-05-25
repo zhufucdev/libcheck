@@ -415,7 +415,7 @@ private fun ChangePasswordDialog(
 @Stable
 private class InvitationState(val component: ModAccountCapability) {
     var step by mutableIntStateOf(0)
-    var role: UserRole by mutableStateOf(UserRole.ROLE_READER)
+    var role: UserRole by mutableStateOf(UserRole.ROLE_LIBRARIAN)
     var reader: Reader? by mutableStateOf(null)
     var password: ModAccountCapability.TemporaryPassword? by mutableStateOf(null)
 }
