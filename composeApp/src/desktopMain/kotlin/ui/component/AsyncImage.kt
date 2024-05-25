@@ -7,9 +7,9 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ImageNotSupported
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -24,10 +24,24 @@ import java.net.URI
 
 private val cache = mutableMapOf<String, ImageBitmap>()
 
+@Stable
+class AsyncImageState {
+    var error: Boolean by mutableStateOf(false)
+    var loading: Boolean by mutableStateOf(false)
+}
+
 @Composable
-fun AsyncImage(uri: String, contentScale: ContentScale = ContentScale.Fit, modifier: Modifier = Modifier) {
+fun AsyncImage(
+    uri: String,
+    state: AsyncImageState = remember { AsyncImageState() },
+    contentScale: ContentScale = ContentScale.Fit,
+    modifier: Modifier = Modifier,
+) {
     var image by remember { mutableStateOf(cache[uri]) }
-    var error by remember { mutableStateOf(false) }
+
+    LaunchedEffect(image) {
+        state.loading = image == null
+    }
 
     LaunchedEffect(uri) {
         if (image == null) {
@@ -37,15 +51,15 @@ fun AsyncImage(uri: String, contentScale: ContentScale = ContentScale.Fit, modif
                     val ba = IOUtils.toByteArray(URI.create(uri))
                     image = org.jetbrains.skia.Image.makeFromEncoded(ba).toComposeImageBitmap()
                     cache[uri] = image!!
-                    error = false
+                    state.error = false
                 } catch (e: Exception) {
-                    error = true
+                    state.error = true
                 }
             }
         }
     }
 
-    if (error) {
+    if (state.error) {
         Icon(
             imageVector = Icons.Default.ImageNotSupported,
             contentDescription = "",

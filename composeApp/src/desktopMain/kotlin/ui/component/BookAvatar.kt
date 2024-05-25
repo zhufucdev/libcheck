@@ -11,6 +11,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,18 +24,23 @@ fun BookAvatar(uri: String, modifier: Modifier = Modifier) {
     Box(modifier, contentAlignment = Alignment.Center) {
         Box {
             if (uri.isNotBlank()) {
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .offset(x = PaddingMedium)
-                        .background(
-                            color = Color.LightGray,
-                            shape = RoundedCornerShape(topEnd = PaddingLarge * 2, bottomEnd = PaddingLarge * 2)
-                        )
-                )
+                val state = remember { AsyncImageState() }
+                if (!state.error && !state.loading) {
+                    Box(
+                        Modifier
+                            .matchParentSize()
+                            .offset(x = PaddingMedium)
+                            .background(
+                                color = Color.LightGray,
+                                shape = RoundedCornerShape(topEnd = PaddingLarge * 2, bottomEnd = PaddingLarge * 2)
+                            )
+                    )
+                }
                 AsyncImage(
                     uri = uri,
+                    state = state,
                     modifier = Modifier.clip(RoundedCornerShape(topEnd = PaddingLarge, bottomEnd = PaddingLarge))
+                        .fillMaxSize()
                 )
             } else {
                 Icon(
