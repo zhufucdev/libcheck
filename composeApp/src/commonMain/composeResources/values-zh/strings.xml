@@ -1,0 +1,153 @@
+<resources>
+    <string name="libcheck_header">LibCheck</string>
+    <string name="new_book_para">新书</string>
+    <string name="adding_a_book_para">添加书本</string>
+    <string name="editing_a_book_para">编辑书本</string>
+    <string name="cover_para">封面</string>
+    <string name="title_para">标题</string>
+    <string name="auther_para">作者</string>
+    <string name="isbn_caption">ISBN</string>
+    <string name="stock_para">库存</string>
+    <string name="ok_caption">OK</string>
+    <string name="no_books_available_para">暂无书本</string>
+    <string name="no_books_available_des">点击“新书”键以开始</string>
+    <string name="keyword_para">关键词</string>
+    <string name="no_borrow_records_para">无借阅记录</string>
+    <string name="returned_at_para">已归还于%1$s</string>
+    <string name="due_in">%1$s到期</string>
+    <string name="mark_as_returned_para">点击还书</string>
+    <string name="loading_library_para">正在加载</string>
+    <string name="new_reader_para">新读者</string>
+    <string name="adding_a_reader_para">添加读者</string>
+    <string name="editing_a_reader_para">编辑读者</string>
+    <string name="avatar_para">头像</string>
+    <string name="name_para">名称</string>
+    <string name="no_readers_available_para">暂无读者</string>
+    <string name="no_readers_available_des">点击“新读者”键以开始</string>
+    <plurals name="borrows_creditability_span">
+        <item quantity="other">已借阅%1$d本书，%2$s信誉度</item>
+    </plurals>
+    <plurals name="borrows_span">
+        <item quantity="other">已借阅%1$d本书</item>
+    </plurals>
+    <plurals name="lending_books_para">
+        <item quantity="other">借书</item>
+    </plurals>
+    <string name="unknown_book_para">未知书本</string>
+    <string name="clear_basket_para">清空书篮</string>
+    <string name="drag_here_to_stage_para">将书本拖至此处以借阅</string>
+    <string name="out_of_stock_header">库存不足</string>
+    <string name="delete_para">删除</string>
+    <string name="order_para">排序</string>
+    <string name="ascending_para">降序</string>
+    <string name="descending_para">升序</string>
+    <string name="select_file_para">选择文件</string>
+    <string name="tier_para">会员等级</string>
+    <string-array name="reader_tiers_para">
+        <item>未定义</item>
+        <item>新用户</item>
+        <item>白银会员</item>
+        <item>黄金会员</item>
+        <item>白金会员</item>
+    </string-array>
+    <string name="welcome_to_libcheck_para">欢迎来到LibCheck</string>
+    <string name="next_para">下一步</string>
+    <string name="store_locally_para">存储在本地</string>
+    <string name="store_locally_des">我想让所有图书馆信息存储在我的电脑</string>
+    <string name="store_on_a_checkmate_server_para">存储在Checkmate服务器</string>
+    <string name="store_on_a_checkmate_server_des">如果有可用的Checkmate服务器，我想连接它并将图书馆数据存储在其中。我的更改可被他人所见，反之亦然。</string>
+    <string name="root_path_para">根路径</string>
+    <string name="host_para">主机</string>
+    <string name="port_para">端口</string>
+    <string name="this_device_name_para">此设备名称</string>
+    <string name="use_transport_layer_security_para">使用传输层安全</string>
+    <string name="password_para">密码</string>
+    <string name="books_para">书本</string>
+    <string name="readers_para">读者</string>
+    <string name="borrowing_para">借阅</string>
+    <string name="preferences_para">偏好设置</string>
+    <string name="navigate_up_span">返回</string>
+    <string name="library_not_working_para">无法连接到图书馆</string>
+    <string name="tune_the_preferences_to_fix">%1$s\n调整偏好设置以修复</string>
+    <string name="go_para">前往</string>
+    <string name="launch_app_para">启动应用</string>
+    <string name="back_para">上一步</string>
+    <string name="you_are_all_set_para">设置已完成！</string>
+    <string name="edit_para">编辑</string>
+    <string name="about_this_book_para">关于此书</string>
+    <string name="by_auther_para">%1$s的著作</string>
+    <string name="available_borrowed_total_para">%1$d可借阅，%2$d已借阅，总数：%3$d</string>
+    <string name="borrows_para">借阅</string>
+    <string name="about_this_reader_para">关于此读者</string>
+    <string-array name="tier_reader_para">
+        <item>未定义</item>
+        <item>新用户</item>
+        <item>白银会员</item>
+        <item>黄金会员</item>
+        <item>白金会员</item>
+    </string-array>
+    <string name="is_deleted_para">%1$s已被删除</string>
+    <string name="undo_para">撤销</string>
+    <string name="reconstruct_para">重建</string>
+    <string name="reader_was_not_found">未找到此读者</string>
+    <string name="book_was_not_found">未找到此书</string>
+    <string name="reconstructing_a_reader_para">重建读者</string>
+    <string name="reconstructing_a_book_para">重建书本</string>
+    <string name="lent_to_para">%1$s借给%2$s</string>
+    <string name="unknown_reader_span">未知读者</string>
+    <string name="unknown_book_span">未知书本</string>
+    <string name="reveal_in_books_para">转到“书本”中显示</string>
+    <string name="data_source_para">数据源</string>
+    <string name="reader_tiers_para">读者会员等级</string>
+    <string name="use_same_creditability_transformation_for_each_tier_para">对每位会员使用相同的信誉度换算函数</string>
+    <string name="base_creditability_para">基础信誉度</string>
+    <string name="creditability_transformation_para">信誉度换算函数</string>
+    <string name="transformation_para">换算函数</string>
+    <string name="reader_creditability_para">读者信誉度</string>
+    <string name="readers_creditability_decreased_para">%1$s的信誉度减少</string>
+    <string name="readers_creditability_increased_para">%1$s的信誉度增加</string>
+    <string name="details_para">明细</string>
+    <string name="creditability_details_para">信誉度明细</string>
+    <string name="reset_para">重置</string>
+    <string name="default_creditability_step">默认信誉度步进</string>
+    <string name="password_required_para">密码请求</string>
+    <string name="token_is_expired_use_password_authorization_para">当前令牌已过期，输入密码以继续进程</string>
+    <string name="accounts_para">账户</string>
+    <string-array name="user_role_para">
+        <item>未定义</item>
+        <item>系统管理员</item>
+        <item>图书管理员</item>
+        <item>读者</item>
+    </string-array>
+    <string name="sign_out_para">登出</string>
+    <string name="change_password_para">更改密码</string>
+    <string name="old_password_para">旧密码</string>
+    <string name="new_password_para">新密码</string>
+    <string name="new_password_repeated_para">重复新密码</string>
+    <string name="passwords_mismatch_para">密码不匹配</string>
+    <string-array name="change_password_result_para">
+        <item>更改已应用</item>
+        <item>旧密码错误，请检查并重试</item>
+        <item>当前会话状态无效，请登出并重试</item>
+    </string-array>
+    <string name="invite_user_para">邀请用户</string>
+    <string name="under_same_server_use_following_password_para">在相同Checkmate服务器使用以下密码以创建新账户</string>
+    <string name="cancel_para">取消</string>
+    <string name="last_accessed_at_span">最近访问于%1$s</string>
+    <plurals name="last_accessed_days_ago_span">
+        <item quantity="other">最近访问于%1$d天前</item>
+    </plurals>
+    <plurals name="last_accessed_months_ago_span">
+        <item quantity="one">最近访问于1个月以前</item>
+        <item quantity="other">最近访问于%1$d个月前</item>
+    </plurals>
+    <string name="last_accessed_long_ago_span">最近访问于很久以前</string>
+    <string name="revoke_session_header">撤销会话</string>
+    <string name="revoke_session_para">撤销会话</string>
+    <string name="this_operation_cannot_be_undone_para">此操作无法撤回</string>
+    <string name="current_session_span">当前会话</string>
+    <string name="my_devices_para">我的设备</string>
+    <string name="done_para">完成</string>
+    <string name="role_para">身份</string>
+    <string name="role_the_new_user_will_take_on_para">新用户身份</string>
+</resources>
