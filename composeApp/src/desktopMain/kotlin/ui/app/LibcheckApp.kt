@@ -265,7 +265,7 @@ private fun InitializationPlaceholder() {
         )
         Spacer(Modifier.height(PaddingLarge))
         Text(
-            text = "Loading library",
+            text = stringResource(Res.string.loading_library_para),
             style = MaterialTheme.typography.bodyLarge
         )
     }
