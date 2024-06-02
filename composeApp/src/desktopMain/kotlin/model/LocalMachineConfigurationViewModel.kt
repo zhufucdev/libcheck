@@ -89,9 +89,9 @@ class LocalMachineConfigurationViewModel(private val rootDir: File) : Configurat
 
     var sortModels = model.sorting
     override val dataSourceContext: DataSource.Context
-        get() = when (sources[currentSourceType]!!) {
+        get() = when (val source = sources[currentSourceType]!!) {
             is DataSource.Local -> object : DataSource.Context.WithRootPath, DataSource.Context.WithSortModel {
-                override val defaultRootPath: String = rootDir.absolutePath
+                override val defaultRootPath: String = source.rootPath ?: rootDir.absolutePath
                 override var sortModel: SortModelSnapshot by ::sortModels
 
                 override suspend fun save() = this@LocalMachineConfigurationViewModel.save()
