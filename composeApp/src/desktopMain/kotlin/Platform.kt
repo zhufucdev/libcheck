@@ -67,7 +67,7 @@ class Linux : Platform {
 
     override fun isDarkModeEnabled() =
         Dconf.HAS_DCONF
-                && Dconf.getDconfEntry("/org/gnome/desktop/interface/gtk-theme").lowercase().contains("dark")
+                && Dconf.getDconfEntry("/org/gnome/desktop/interface/color-scheme").lowercase().contains("dark")
 
     override val dataDir: File by lazy { File(getUserHome(), ".libcheck") }
 
