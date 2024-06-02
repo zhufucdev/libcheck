@@ -1,3 +1,4 @@
+import com.github.javakeyring.BackendNotSupportedException
 import com.github.javakeyring.Keyring
 import com.github.javakeyring.PasswordAccessException
 import kotlinx.coroutines.Dispatchers
@@ -47,21 +48,25 @@ suspend fun AesCipher(): AesCipher {
     val captured = keychainedAes
     if (captured == null) {
         return withContext(Dispatchers.IO) {
-            val keyring = Keyring.create()
-            val passphrase = try {
-                keyring.getPassword("libcheck", "default")
-            } catch (_: PasswordAccessException) {
-                val random = try {
-                    SecureRandom.getInstanceStrong()
-                } catch (_: NoSuchAlgorithmException) {
-                    SecureRandom()
+            try {
+                val keyring = Keyring.create()
+                val passphrase = try {
+                    keyring.getPassword("libcheck", "default")
+                } catch (_: PasswordAccessException) {
+                    val random = try {
+                        SecureRandom.getInstanceStrong()
+                    } catch (_: NoSuchAlgorithmException) {
+                        SecureRandom()
+                    }
+                    val seed = random.generateSeed(32)
+                    Base64.getEncoder().encodeToString(seed).also {
+                        keyring.setPassword("libcheck", "default", it)
+                    }
                 }
-                val seed = random.generateSeed(32)
-                Base64.getEncoder().encodeToString(seed).also {
-                    keyring.setPassword("libcheck", "default", it)
-                }
+                AesCipher(passphrase).also { keychainedAes = it }
+            } catch (e: BackendNotSupportedException) {
+                AesCipher("animebassme")
             }
-            AesCipher(passphrase).also { keychainedAes = it }
         }
     } else {
         return captured
