@@ -28,7 +28,7 @@
         <item quantity="other">已借阅%1$d次，%2$s信誉度</item>
     </plurals>
     <plurals name="borrows_span">
-        <item quantity="other">次%1$d借阅</item>
+        <item quantity="other">%1$d次借阅</item>
     </plurals>
     <plurals name="lending_books_para">
         <item quantity="other">借书</item>
