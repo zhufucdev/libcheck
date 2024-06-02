@@ -1,4 +1,5 @@
 @file:OptIn(ExperimentalResourceApi::class)
+@file:Suppress("FunctionName")
 
 package ui.component
 

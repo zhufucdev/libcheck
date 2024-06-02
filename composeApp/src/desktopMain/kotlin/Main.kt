@@ -14,7 +14,6 @@ import androidx.compose.ui.window.awaitApplication
 import androidx.compose.ui.window.rememberWindowState
 import kotlinx.coroutines.runBlocking
 import model.*
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.libcheck_header
@@ -24,6 +23,7 @@ import ui.app.SetUpApp
 import ui.calculateWindowSize
 import ui.rememberSystemDarkMode
 
+@Suppress("FunctionName")
 @Composable
 @Preview
 fun App(windowState: WindowState, configurations: Configurations) {
@@ -83,7 +83,6 @@ fun App(windowState: WindowState, configurations: Configurations) {
     }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 fun main() = runBlocking {
     val config = LocalMachineConfigurationViewModel(currentPlatform.dataDir)
     awaitApplication {

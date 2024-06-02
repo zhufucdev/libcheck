@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.dp
 import ui.PaddingLarge
 import ui.variant
 
+@Suppress("FunctionName")
 @Composable
 fun HeadingPlaceholder(imageVector: ImageVector, title: @Composable () -> Unit, description: (@Composable () -> Unit)? = null) {
     Column(

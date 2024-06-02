@@ -1,5 +1,4 @@
 @file:Suppress("FunctionName")
-@file:OptIn(ExperimentalResourceApi::class)
 
 package ui.component
 
@@ -46,7 +45,6 @@ import androidx.compose.ui.window.Popup
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import model.*
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.pluralStringResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.skia.Path

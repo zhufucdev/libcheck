@@ -1,5 +1,5 @@
 @file:Suppress("FunctionName")
-@file:OptIn(ExperimentalResourceApi::class, ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 
 package ui.app
 
@@ -30,7 +30,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import model.*
-import org.jetbrains.compose.resources.*
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.pluralStringResource
+import org.jetbrains.compose.resources.stringArrayResource
+import org.jetbrains.compose.resources.stringResource
 import resources.*
 import ui.*
 import ui.component.*

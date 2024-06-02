@@ -6,6 +6,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 
+@Suppress("FunctionName")
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun SimplePager(

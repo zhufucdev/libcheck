@@ -65,7 +65,7 @@ suspend fun AesCipher(): AesCipher {
                 }
                 AesCipher(passphrase).also { keychainedAes = it }
             } catch (e: BackendNotSupportedException) {
-                AesCipher("animebassme")
+                AesCipher("animebassme").also { keychainedAes = it }
             }
         }
     } else {

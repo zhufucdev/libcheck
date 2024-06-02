@@ -11,13 +11,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.delete_para
 import resources.edit_para
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun CommonContextMenu(
     expanded: Boolean,

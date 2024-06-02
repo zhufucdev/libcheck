@@ -1,5 +1,4 @@
 @file:Suppress("FunctionName")
-@file:OptIn(ExperimentalResourceApi::class)
 
 package ui.component
 
@@ -21,7 +20,6 @@ import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import currentPlatform
 import kotlinx.coroutines.delay
 import model.DataSource
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.*
 import ui.PaddingMedium

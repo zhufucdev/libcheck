@@ -1,5 +1,5 @@
 @file:Suppress("FunctionName")
-@file:OptIn(ExperimentalMaterial3Api::class, ExperimentalResourceApi::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
 
 package ui.component
 
@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.rememberComponentRectPositionProvider
 import com.darkrockstudios.libraries.mpfilepicker.FilePicker
 import getUserHome
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.Res
 import resources.select_file_para

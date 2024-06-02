@@ -1,4 +1,5 @@
-@file:OptIn(ExperimentalResourceApi::class, ExperimentalMaterial3Api::class)
+@file:OptIn(ExperimentalMaterial3Api::class)
+@file:Suppress("FunctionName")
 
 package ui.app
 
@@ -21,7 +22,6 @@ import extension.toFixed
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import model.*
-import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
 import resources.*
 import ui.PaddingLarge
