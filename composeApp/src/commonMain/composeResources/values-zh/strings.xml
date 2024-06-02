@@ -150,4 +150,5 @@
     <string name="done_para">完成</string>
     <string name="role_para">身份</string>
     <string name="role_the_new_user_will_take_on_para">新用户身份</string>
+    <string name="sort_para">排序</string>
 </resources>
