@@ -19,10 +19,7 @@ import androidx.compose.ui.unit.dp
 import model.SortOrder
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.stringResource
-import resources.Res
-import resources.ascending_para
-import resources.descending_para
-import resources.order_para
+import resources.*
 import ui.PaddingLarge
 
 @Composable
@@ -100,7 +97,7 @@ fun SortButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
         content = {
             Icon(imageVector = Icons.Default.SortByAlpha, contentDescription = "")
             Spacer(Modifier.width(4.dp))
-            Text("Sort")
+            Text(stringResource(Res.string.sort_para))
         },
         onClick = onClick,
         modifier = modifier

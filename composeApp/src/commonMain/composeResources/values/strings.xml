@@ -157,4 +157,5 @@
     <string name="done_para">Done</string>
     <string name="role_para">Role</string>
     <string name="role_the_new_user_will_take_on_para">The role the new user will take on</string>
+    <string name="sort_para">Sort</string>
 </resources>
